@@ -6,7 +6,7 @@ interface InputProps {
     onchange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const Input = ({ id, type, className, placeholder, onchange }: InputProps) => {
+export default function Input({ id, type, className, placeholder, onchange }: InputProps) {
     return (
         <input
             id={id}
