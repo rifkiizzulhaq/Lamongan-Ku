@@ -1,6 +1,7 @@
 import Button from "@/src/components/ui/Button";
 import CardBungkus from "@/src/components/bungkus/CardBungkus";
 import Link from "next/link";
+import PageHeader from "@/src/components/ui/PageHeader";
 
 const dummyAntreanBungkus = [
   {
@@ -10,6 +11,8 @@ const dummyAntreanBungkus = [
     items: [
       { n: "Ayam Goreng", q: 1 },
       { n: "Nasi Putih", q: 2 },
+      { n: "Es Teh Manis", q: 1 },
+      { n: "Es Teh Manis", q: 1 },
       { n: "Es Teh Manis", q: 1 },
     ],
   },
@@ -38,23 +41,18 @@ const dummyAntreanBungkus = [
 
 export default function Page() {
   return (
-    <section className="h-[calc(100dvh-45px)] md:min-h-screen dark:bg-neutral-800 p-5 flex flex-col overflow-hidden">
-      <main className="relative max-w-87.5 mx-auto w-full flex flex-col h-full">
-        <div className="absolute bottom-5 right-0 z-50">
+    <section className="h-[calc(100dvh-45px)] md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
+      <PageHeader title="Antrean Bungkus" />
+      <main className="relative max-w-87.5 mx-auto w-full flex flex-col h-full pt-2">
+        <div className="absolute bottom-25 right-0 z-50">
           <Link href="/bungkus/ordering">
-            <Button className="bg-white hover:bg-neutral-200 shadow-lg dark:text-black font-bold py-2 px-5 rounded-full scale-100 active:scale-95 transition-transform">
+            <Button className="dark:bg-white bg-neutral-800 text-white hover:bg-neutral-200 shadow-lg dark:text-black font-bold py-2 px-5 rounded-full scale-100 active:scale-95 transition-transform">
               + Tambah Pesanan
             </Button>
           </Link>
         </div>
 
-        <div className="mb-5 shrink-0">
-          <h1 className="text-2xl font-bold text-gray-800 uppercase dark:text-white">
-            Antrean Bungkus
-          </h1>
-        </div>
-
-        <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-24 pr-1 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
+        <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-40 pr-1 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
           {dummyAntreanBungkus.map((pesanan, idx) => (
             <CardBungkus
               key={idx}

@@ -1,4 +1,5 @@
 import Button from "@/src/components/ui/Button";
+import Link from "next/link";
 
 export interface OrderItem {
   n: string;
@@ -12,13 +13,21 @@ export interface CardBungkusProps {
   items: OrderItem[];
 }
 
-export default function CardBungkus({ id, totalPrice, status, items }: CardBungkusProps) {
+export default function CardBungkus({
+  id,
+  totalPrice,
+  status,
+  items,
+}: CardBungkusProps) {
   return (
-    <section className="w-full h-60 bg-white dark:bg-neutral-700 rounded-xl border border-neutral-300 dark:border-neutral-600 flex items-center justify-between">
+    <section className="w-full h-60 bg-white dark:bg-neutral-700 rounded-xl border border-neutral-300 dark:border-neutral-600 flex items-center justify-between shadow-sm group-hover:border-orange-500/50 transition-colors">
       <main className="w-full h-full flex items-center justify-between">
         <div className="w-2 h-full bg-orange rounded-l-xl flex items-center justify-center"></div>
         <div className="w-full h-full flex flex-col justify-between">
-          <div className="flex flex-col items-center justify-between px-5 py-3">
+          <Link
+            href="/bungkus/ordering?mode=update"
+            className="flex flex-col items-center justify-between px-5 py-3"
+          >
             <div className="w-full flex items-center justify-between">
               <h1 className="text-lg font-bold text-gray-800 dark:text-white uppercase">
                 {id}
@@ -43,14 +52,14 @@ export default function CardBungkus({ id, totalPrice, status, items }: CardBungk
                   <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
                     {item.n}
                   </span>
-                  <span className="flex items-center justify-center min-w-[20px] h-5 bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 font-bold rounded text-[10px]">
+                  <span className="flex items-center justify-center min-w-5 h-5 bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 font-bold rounded text-[10px]">
                     {item.q}
                   </span>
                 </div>
               ))}
             </div>
-          </div>
-          <Button className="h-20 bg-black uppercase font-bold rounded-br-xl mt-auto">
+          </Link>
+          <Button className="h-20 bg-black text-white uppercase font-bold rounded-br-xl mt-auto z-10 relative">
             Bayar
           </Button>
         </div>

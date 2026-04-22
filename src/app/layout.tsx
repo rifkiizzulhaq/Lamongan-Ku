@@ -28,7 +28,7 @@ export default function RootLayout({
       lang="en"
       className={`${jakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col pb-16">
+      <body className="min-h-full flex flex-col">
         <main className="grow">{children}</main>
         <BottomNavbar />
       </body>

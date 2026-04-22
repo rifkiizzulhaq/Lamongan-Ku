@@ -76,7 +76,7 @@ export default function BottomNavbar() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full h-16 dark:bg-white">
+    <div className="fixed bottom-0 left-0 z-50 w-full h-16 dark:bg-white bg-white border-t-2 border-neutral-800 dark:border-neutral-200">
       <div className="grid h-full max-w-lg grid-cols-4 mx-auto font-medium">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
