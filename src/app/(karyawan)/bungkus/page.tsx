@@ -2,6 +2,7 @@ import Button from "@/src/components/ui/Button";
 import CardBungkus from "@/src/components/bungkus/CardBungkus";
 import Link from "next/link";
 import PageHeader from "@/src/components/ui/PageHeader";
+import { LuPlus } from "react-icons/lu";
 
 const dummyAntreanBungkus = [
   {
@@ -46,8 +47,9 @@ export default function Page() {
       <main className="relative max-w-87.5 mx-auto w-full flex flex-col h-full pt-2">
         <div className="absolute bottom-25 right-0 z-50">
           <Link href="/bungkus/ordering">
-            <Button className="dark:bg-white bg-neutral-800 text-white hover:bg-neutral-200 shadow-lg dark:text-black font-bold py-2 px-5 rounded-full scale-100 active:scale-95 transition-transform">
-              + Tambah Pesanan
+            <Button className="flex items-center gap-1 dark:bg-white bg-neutral-800 text-white hover:bg-neutral-200 shadow-lg dark:text-black font-bold py-2 px-3 rounded-full scale-100 active:scale-95 transition-transform">
+              <LuPlus size={24} strokeWidth={3} />
+              Tambah Pesanan
             </Button>
           </Link>
         </div>

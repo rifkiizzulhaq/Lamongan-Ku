@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import PageHeader from "@/src/components/ui/PageHeader";
 import CardKursi from "@/src/components/meja/CardKursi";
+import { LuUsers, LuUtensils, LuUser, LuPlus } from "react-icons/lu";
 
 const dummyKursi = [
   {
@@ -45,10 +46,10 @@ const dummyKursi = [
 ];
 
 const modeOptions = [
-//   { label: "Rombongan", href: "/meja/makan?mode=rombongan", icon: "👥" },
-  { label: "Rombongan", href: "/meja/kursi/makan", icon: "👥" },
-  { label: "Makan Bareng", href: "/meja/kursi/makan", icon: "🍽️" },
-  { label: "Sendiri", href: "/meja/kursi/makan", icon: "👤" },
+  //   { label: "Rombongan", href: "/meja/makan?mode=rombongan", icon: <LuUsers /> },
+  { label: "Rombongan", href: "/meja/kursi/makan", icon: <LuUsers /> },
+  { label: "Makan Bareng", href: "/meja/kursi/makan", icon: <LuUtensils /> },
+  { label: "Sendiri", href: "/meja/kursi/makan", icon: <LuUser /> },
 ];
 
 export default function Page() {
@@ -58,12 +59,15 @@ export default function Page() {
     <section className="h-[calc(100dvh-45px)] md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
       <PageHeader title="Meja 1 > Kursi" tag="Makan di tempat" />
       <main className="relative max-w-87.5 mx-auto w-full flex flex-col h-full pt-2">
-
         <div className="absolute bottom-25 right-0 z-50 flex flex-col items-end gap-2">
           {open && (
             <div className="flex flex-col items-end gap-2">
               {modeOptions.map((opt) => (
-                <Link key={opt.label} href={opt.href} onClick={() => setOpen(false)}>
+                <Link
+                  key={opt.label}
+                  href={opt.href}
+                  onClick={() => setOpen(false)}
+                >
                   <div className="flex items-center gap-2">
                     <span className="bg-white dark:bg-neutral-900 text-neutral-800 dark:text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md border border-neutral-200 dark:border-neutral-700 whitespace-nowrap">
                       {opt.label}
@@ -85,7 +89,7 @@ export default function Page() {
                 : "bg-neutral-800 dark:bg-white text-white dark:text-black"
             }`}
           >
-            +
+            <LuPlus size={24} strokeWidth={3} />
           </button>
         </div>
 
@@ -106,4 +110,3 @@ export default function Page() {
     </section>
   );
 }
-

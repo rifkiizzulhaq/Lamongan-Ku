@@ -4,6 +4,7 @@ import Button from "@/src/components/ui/Button";
 import PaymentModal from "@/src/components/PaymentModal";
 import Link from "next/link";
 import { useState } from "react";
+import { LuTrash2 } from "react-icons/lu";
 
 export interface KursiItem {
   n: string;
@@ -50,7 +51,9 @@ export default function CardKursi({
               <div className="w-full flex items-center justify-between mt-1">
                 {tipe ? (
                   <div className="flex items-center justify-center w-fit h-5 bg-blue-500 text-white text-xs font-bold px-2 py-2 rounded-full">
-                    <h3 className="text-xs text-left font-semibold">Tipe: {tipe}</h3>
+                    <h3 className="text-xs text-left font-semibold">
+                      Tipe: {tipe}
+                    </h3>
                   </div>
                 ) : null}
               </div>
@@ -85,21 +88,7 @@ export default function CardKursi({
 
             <div className="flex shrink-0">
               <Button className="h-12 w-16 shrink-0 bg-red-500 text-white hover:bg-red-600 dark:bg-red-900 dark:hover:bg-red-700 uppercase font-bold rounded-none text-xs transition-colors mt-auto z-10 relative flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 6h18" />
-                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                </svg>
+                <LuTrash2 size={18} strokeWidth={2.5} />
               </Button>
               <Button
                 onClick={() => setShowPayment(true)}

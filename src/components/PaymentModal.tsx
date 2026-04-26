@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LuX, LuCheck } from "react-icons/lu";
 
 export interface PaymentModalProps {
   id: string;
@@ -58,9 +59,7 @@ export default function PaymentModal({
         onClick={onClose}
       />
 
-      {/* Sheet */}
       <div className="relative w-full max-w-md bg-neutral-900 rounded-t-3xl overflow-hidden shadow-2xl z-10">
-        {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-neutral-800">
           <div>
             <h2 className="text-white font-black uppercase tracking-widest text-base">
@@ -74,25 +73,11 @@ export default function PaymentModal({
             onClick={onClose}
             className="text-neutral-400 hover:text-white transition-colors"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <LuX size={22} strokeWidth={2.5} />
           </button>
         </div>
 
         <div className="px-6 pt-4 pb-2">
-          {/* Total */}
           <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1">
             Total Tagihan
           </p>
@@ -100,7 +85,6 @@ export default function PaymentModal({
             Rp {totalPrice.toLocaleString("id-ID")}
           </p>
 
-          {/* Presets */}
           <div className="flex gap-2 mt-4">
             {presets.map((p) => (
               <button
@@ -117,7 +101,6 @@ export default function PaymentModal({
             ))}
           </div>
 
-          {/* Info */}
           <div className="mt-4 flex flex-col gap-2">
             <div className="flex justify-between items-center py-1">
               <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
@@ -139,7 +122,6 @@ export default function PaymentModal({
             </div>
           </div>
 
-          {/* Input display */}
           {!selected && (
             <div className="mt-3 text-right min-h-9">
               <p className="text-2xl font-black text-white tracking-wider">
@@ -149,7 +131,6 @@ export default function PaymentModal({
           )}
         </div>
 
-        {/* Numpad */}
         <div className="grid grid-cols-3 gap-px bg-neutral-800 border-t border-neutral-800 mt-2">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "⌫"].map(
             (d) => (
@@ -164,7 +145,6 @@ export default function PaymentModal({
           )}
         </div>
 
-        {/* Done button */}
         <button
           onClick={onClose}
           disabled={kembalian < 0}
@@ -180,19 +160,7 @@ export default function PaymentModal({
               kembalian < 0 ? "bg-neutral-700/50" : "bg-white/20"
             }`}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+            <LuCheck size={16} strokeWidth={3} />
           </span>
         </button>
       </div>
