@@ -19,7 +19,7 @@ const dummyAntreanBungkus = [
   {
     id: "Bungkus #02",
     totalPrice: 45000,
-    status: "Menunggu Pembayaran",
+    status: "Sedang Diproses..",
     items: [
       { n: "Lele Goreng", q: 2 },
       { n: "Nasi Putih", q: 3 },
@@ -30,7 +30,7 @@ const dummyAntreanBungkus = [
   {
     id: "Bungkus #03",
     totalPrice: 35000,
-    status: "Selesai Dimasak",
+    status: "Sedang Diproses..",
     items: [
       { n: "Bebek Jumbo", q: 1 },
       { n: "Nasi Putih", q: 1 },

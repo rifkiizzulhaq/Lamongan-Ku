@@ -14,7 +14,7 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
       <PageHeader
-        title={`Bungkus ${isUpdate ? "#02" : "Baru"}`}
+        title={`Bungkus ${isUpdate ? "#02" : "#01"}`}
         tag="ordering"
       />
       <main className="relative max-w-87.5 mx-auto w-full flex-1 flex flex-col overflow-hidden pt-2">
@@ -25,6 +25,7 @@ export default async function Page({ searchParams }: PageProps) {
               name={order.name}
               price={order.price}
               quantity={order.quantity}
+              sisa={order.sisa}
             />
           ))}
         </div>

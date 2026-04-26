@@ -1,54 +1,53 @@
-export interface OrderHistory {
-  id: string;
-  type: "Bungkus" | "Meja";
-  tableNumber?: number;
-  date: string;
-  total: number;
-  status: "Selesai" | "Dibatalkan";
+export interface OrderItem {
+  n: string;
+  q: number;
 }
 
-export default function CardRiwayat({ data }: { data: OrderHistory }) {
-  const isSelesai = data.status === "Selesai";
+export interface CardRiwayatProps {
+  id: string;
+  date: string;
+  totalPrice: number;
+  items: OrderItem[];
+}
 
+export default function CardRiwayat({
+  id,
+  date,
+  totalPrice,
+  items,
+}: CardRiwayatProps) {
   return (
-    <div className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700/50 rounded-xl p-4 flex flex-col gap-3 shadow-sm">
-      <div className="flex justify-between items-center border-b border-neutral-100 dark:border-neutral-800 pb-2">
-        <div className="flex items-center gap-2">
-          <span
-            className={`text-xs font-semibold px-2 py-1 rounded-md ${
-              data.type === "Meja"
-                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-            }`}
-          >
-            {data.type}
-            {data.type === "Meja" && data.tableNumber
-              ? ` ${data.tableNumber}`
-              : ""}
-          </span>
-          <span className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
-            {data.id}
-          </span>
+    <section className="w-full bg-white dark:bg-neutral-700 rounded-xl border border-neutral-300 dark:border-neutral-600 flex items-stretch shadow-sm hover:border-orange-500/50 transition-colors cursor-default">
+      <div className="w-2 bg-orange rounded-l-xl shrink-0"></div>
+      <div className="flex flex-col px-5 py-4 w-full">
+        <div className="w-full flex items-center justify-between">
+          <h1 className="text-lg font-bold text-gray-800 dark:text-white uppercase tracking-wide">
+            {id}
+          </h1>
+          <p className="text-lg font-bold text-neutral-800 dark:text-white">
+            Rp {totalPrice.toLocaleString("id-ID")}
+          </p>
         </div>
-        <span
-          className={`text-xs font-medium px-2 py-1 rounded-full ${
-            isSelesai
-              ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-              : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-          }`}
-        >
-          {data.status}
-        </span>
-      </div>
+        <p className="text-[13px] font-semibold text-neutral-500 dark:text-neutral-300 mt-1 mb-3">
+          {date}
+        </p>
 
-      <div className="flex justify-between items-end">
-        <div className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-          {data.date}
-        </div>
-        <div className="text-lg font-bold text-neutral-900 dark:text-white">
-          Rp {data.total.toLocaleString("id-ID")}
+        <div className="w-full flex flex-wrap content-start gap-2 bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800 rounded-lg p-2.5 overflow-y-auto max-h-24 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
+          {items.map((item, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-2 px-2.5 py-1 bg-white dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 rounded-md shadow-sm hover:border-orange-400/50 dark:hover:border-orange-500/50 transition-colors"
+            >
+              <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                {item.n}
+              </span>
+              <span className="flex items-center justify-center min-w-5 h-5 bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 font-bold rounded text-[10px]">
+                {item.q}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
-    </div>
+    </section>
   );
 }

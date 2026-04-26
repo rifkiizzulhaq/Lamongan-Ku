@@ -3,9 +3,10 @@ import React from "react";
 export interface PageHeaderProps {
   title: string | React.ReactNode;
   tag?: string;
+  onTagClick?: () => void;
 }
 
-export default function PageHeader({ title, tag }: PageHeaderProps) {
+export default function PageHeader({ title, tag, onTagClick }: PageHeaderProps) {
   if (tag) {
     return (
       <header className="w-full h-16 bg-black p-4 shrink-0 z-10">
@@ -13,11 +14,15 @@ export default function PageHeader({ title, tag }: PageHeaderProps) {
           <h1 className="text-2xl font-bold text-white dark:text-white uppercase truncate pr-2">
             {title}
           </h1>
-          <span className="flex flex-row-reverse w-32 h-7 bg-white shrink-0">
-            <p className="bg-orange font-bold w-30 h-full flex items-center justify-center uppercase text-[10px] tracking-widest text-white">
+          <button 
+            onClick={onTagClick}
+            disabled={!onTagClick}
+            className={`flex flex-row-reverse w-32 h-7 bg-white shrink-0 ${onTagClick ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
+          >
+            <p className={`font-bold w-30 h-full flex items-center justify-center uppercase text-[10px] tracking-widest text-white transition-colors ${tag === 'Bungkus' ? 'bg-black border border-white' : 'bg-orange'}`}>
               {tag}
             </p>
-          </span>
+          </button>
         </div>
       </header>
     );

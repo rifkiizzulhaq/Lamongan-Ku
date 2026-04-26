@@ -8,7 +8,7 @@ export default function Cart({ mode = "meja" }: PayProps) {
   return (
     <div className="w-full bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 p-5 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.3)] z-50 mt-auto shrink-0">
       <div className="max-w-87.5 mx-auto">
-        <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 flex flex-col gap-2 mb-4 pr-2">
+        {/* <div className="max-h-32 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 flex flex-col gap-2 mb-4 pr-2">
           <div className="flex justify-between items-center border-b border-neutral-100 dark:border-neutral-800 pb-2">
             <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
               Ayam <span className="text-orange font-black ml-1">1x</span>
@@ -41,7 +41,7 @@ export default function Cart({ mode = "meja" }: PayProps) {
               Rp 5.000
             </p>
           </div>
-        </div>
+        </div> */}
 
         <div className="flex flex-col gap-4 mb-5">
           <div className="flex justify-between items-end">

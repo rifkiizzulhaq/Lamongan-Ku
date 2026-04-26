@@ -5,35 +5,37 @@ import PaymentModal from "@/src/components/PaymentModal";
 import Link from "next/link";
 import { useState } from "react";
 
-export interface OrderItem {
+export interface KursiItem {
   n: string;
   q: number;
 }
 
-export interface CardBungkusProps {
+export interface CardKursiProps {
   id: string;
   totalPrice: number;
   status: string;
-  items: OrderItem[];
+  items: KursiItem[];
 }
 
-export default function CardBungkus({
+export default function CardKursi({
   id,
   totalPrice,
   status,
   items,
-}: CardBungkusProps) {
+  label,
+  tipe,
+}: CardKursiProps & { label: string; tipe: string }) {
   const [showPayment, setShowPayment] = useState(false);
 
   return (
     <>
       <section className="w-full h-60 bg-white dark:bg-neutral-700 rounded-xl border border-neutral-300 dark:border-neutral-600 flex items-center justify-between shadow-sm group-hover:border-orange-500/50 transition-colors">
         <main className="w-full h-full flex items-center justify-between">
-          <div className="w-2 h-full bg-orange rounded-l-xl flex items-center justify-center"></div>
+          <div className="w-2 h-full bg-orange rounded-l-xl flex items-center justify-center shrink-0"></div>
           <div className="w-full h-full flex flex-col justify-between">
             <Link
-              href="/bungkus/ordering?mode=update"
-              className="flex flex-col items-center justify-between px-5 py-3"
+              href="/meja/kursi/makan"
+              className="flex flex-col items-center justify-between px-5 py-3 flex-1 overflow-hidden"
             >
               <div className="w-full flex items-center justify-between">
                 <h1 className="text-lg font-bold text-gray-800 dark:text-white uppercase">
@@ -46,9 +48,23 @@ export default function CardBungkus({
                 </span>
               </div>
               <div className="w-full flex items-center justify-between mt-1">
+                {tipe ? (
+                  <div className="flex items-center justify-center w-fit h-5 bg-blue-500 text-white text-xs font-bold px-2 py-2 rounded-full">
+                    <h3 className="text-xs text-left font-semibold">Tipe: {tipe}</h3>
+                  </div>
+                ) : null}
+              </div>
+              <div className="w-full flex items-center justify-between mt-1">
                 <h4 className="animate-pulse text-sm text-left font-semibold text-orange">
                   {status}
                 </h4>
+                {label ? (
+                  <div className="flex items-center justify-center w-fit h-5 bg-hijau text-hijau-700 dark:bg-hijau-500/30 dark:text-hijau-300 text-xs font-bold px-2 py-2 rounded-full">
+                    <h3 className="text-xs text-left font-semibold text-white">
+                      {label}
+                    </h3>
+                  </div>
+                ) : null}
               </div>
               <div className="w-full flex flex-wrap content-start gap-2 bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800 rounded-lg p-2.5 mt-3 overflow-y-auto max-h-24 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
                 {items.map((item, i) => (
@@ -66,7 +82,8 @@ export default function CardBungkus({
                 ))}
               </div>
             </Link>
-            <div className="flex">
+
+            <div className="flex shrink-0">
               <Button className="h-12 w-16 shrink-0 bg-red-500 text-white hover:bg-red-600 dark:bg-red-900 dark:hover:bg-red-700 uppercase font-bold rounded-none text-xs transition-colors mt-auto z-10 relative flex items-center justify-center">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
