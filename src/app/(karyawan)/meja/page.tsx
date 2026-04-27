@@ -1,4 +1,4 @@
-import CardMeja from "@/src/components/meja/CardMeja";
+import CardMeja from "@/src/features/karyawan/meja/components/CardMeja";
 import PageHeader from "@/src/components/ui/PageHeader";
 
 export default function Meja() {

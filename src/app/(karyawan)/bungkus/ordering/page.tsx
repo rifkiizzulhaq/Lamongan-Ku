@@ -1,5 +1,7 @@
-import CardOrdering, { dummyOrderData } from "@/src/components/CardOrdering";
-import Cart from "@/src/components/Cart";
+import CardOrdering, {
+  dummyOrderData,
+} from "@/src/features/karyawan/pos/components/CardOrdering";
+import Cart from "@/src/features/karyawan/pos/components/Cart";
 import PageHeader from "@/src/components/ui/PageHeader";
 
 interface PageProps {

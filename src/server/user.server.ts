@@ -1,7 +1,7 @@
 "use server";
 
-import { db } from "../../db";
-import { users, NewUser } from "../../db/schema";
+import { db } from "@/db";
+import { users, NewUser } from "@/db/schema";
 import { revalidatePath } from "next/cache";
 
 export async function createUser(formData: NewUser) {

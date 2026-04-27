@@ -1,5 +1,5 @@
 import PageHeader from "@/src/components/ui/PageHeader";
-import CardRiwayat from "@/src/components/riwayat/CardRiwayat";
+import CardRiwayat from "@/src/features/karyawan/riwayat/components/CardRiwayat";
 
 const dummyRiwayat = [
   {

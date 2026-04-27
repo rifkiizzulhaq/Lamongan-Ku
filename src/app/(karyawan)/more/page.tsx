@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import PageHeader from "@/src/components/ui/PageHeader";
-import TutupWarungModal from "@/src/components/more/TutupWarungModal";
+import TutupWarungModal from "@/src/features/karyawan/more/components/TutupWarungModal";
 import { LuStore, LuLogOut, LuChevronRight } from "react-icons/lu";
 
 const MENU_ITEMS = [

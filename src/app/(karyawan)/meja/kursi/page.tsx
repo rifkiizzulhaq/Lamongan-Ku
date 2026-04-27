@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import PageHeader from "@/src/components/ui/PageHeader";
-import CardKursi from "@/src/components/meja/CardKursi";
+import CardKursi from "@/src/features/karyawan/meja/components/CardKursi";
 import { LuUsers, LuUtensils, LuUser, LuPlus } from "react-icons/lu";
 
 const dummyKursi = [

@@ -1,7 +1,7 @@
 "use client";
 
 import Button from "@/src/components/ui/Button";
-import PaymentModal from "@/src/components/PaymentModal";
+import PaymentModal from "@/src/features/karyawan/pos/components/PaymentModal";
 import Link from "next/link";
 import { useState } from "react";
 import { LuTrash2 } from "react-icons/lu";

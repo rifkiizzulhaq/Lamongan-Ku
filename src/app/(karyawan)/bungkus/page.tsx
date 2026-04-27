@@ -1,5 +1,5 @@
 import Button from "@/src/components/ui/Button";
-import CardBungkus from "@/src/components/bungkus/CardBungkus";
+import CardBungkus from "@/src/features/karyawan/bungkus/components/CardBungkus";
 import Link from "next/link";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { LuPlus } from "react-icons/lu";
