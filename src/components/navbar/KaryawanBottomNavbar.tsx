@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function BottomNavbar() {
+export default function KaryawanBottomNavbar() {
   const pathname = usePathname();
 
   if (pathname === "/") {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import PageHeader from "@/src/components/ui/PageHeader";
 import CardKursi from "@/src/features/karyawan/meja/components/CardKursi";
 import { LuUsers, LuUtensils, LuUser, LuPlus } from "react-icons/lu";
+import Button from "@/src/components/ui/Button";
 
 const dummyKursi = [
   {
@@ -81,7 +82,7 @@ export default function Page() {
             </div>
           )}
 
-          <button
+          <Button
             onClick={() => setOpen((v) => !v)}
             className={`w-12 h-12 rounded-full shadow-lg font-black text-xl flex items-center justify-center transition-all duration-200 active:scale-95 ${
               open
@@ -90,7 +91,7 @@ export default function Page() {
             }`}
           >
             <LuPlus size={24} strokeWidth={3} />
-          </button>
+          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-40 pr-1 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">

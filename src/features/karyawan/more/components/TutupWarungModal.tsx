@@ -1,5 +1,6 @@
 "use client";
 
+import Button from "@/src/components/ui/Button";
 import { useState, ReactNode } from "react";
 import {
   LuSun,
@@ -19,7 +20,7 @@ interface CuacaSlot {
 
 interface SisaItem {
   nama: string;
-  sisa: number;
+  sisa?: number;
 }
 
 const CUACA_OPTIONS: { label: CuacaOption; icon: ReactNode }[] = [
@@ -51,17 +52,18 @@ const JAM_SLOTS = [
 ];
 
 const MENU_AWAL: SisaItem[] = [
-  { nama: "Ayam Goreng", sisa: 0 },
-  { nama: "Ayam Bakar", sisa: 0 },
-  { nama: "Lele Goreng", sisa: 0 },
-  { nama: "Bebek Goreng", sisa: 0 },
-  { nama: "Bebek Jumbo", sisa: 0 },
-  { nama: "Ati Ampela", sisa: 0 },
-  { nama: "Tempe", sisa: 0 },
-  { nama: "Tahu", sisa: 0 },
-  { nama: "Nasi Putih", sisa: 0 },
-  { nama: "Kepalan Ayam", sisa: 0 },
-  { nama: "Kepala Bebek", sisa: 0 },
+  { nama: "Ayam", sisa: 15 },
+  { nama: "Lele", sisa: 8 },
+  { nama: "Bebek", sisa: 5 },
+  { nama: "Nasi Putih" },
+  { nama: "Tempe", sisa: 30 },
+  { nama: "Tahu", sisa: 25 },
+  { nama: "Ati Ampela", sisa: 10 },
+  { nama: "Kepalan Ayam", sisa: 12 },
+  { nama: "Kepala Bebek", sisa: 4 },
+  { nama: "Es Teh Tawar" },
+  { nama: "Es Teh Manis" },
+  { nama: "Sambal" },
 ];
 
 export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
@@ -109,12 +111,12 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
                 {today}
               </p>
             </div>
-            <button
+            <Button
               onClick={onClose}
               className="text-neutral-400 hover:text-neutral-700 dark:hover:text-white transition-colors mt-0.5"
             >
               <LuX size={22} strokeWidth={2.5} />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -141,7 +143,7 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
                   </span>
                   <div className="flex gap-1.5 flex-1">
                     {CUACA_OPTIONS.map((opt) => (
-                      <button
+                      <Button
                         key={opt.label}
                         onClick={() => setCuacaSlot(idx, opt.label)}
                         title={opt.label}
@@ -152,7 +154,7 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
                         }`}
                       >
                         {opt.icon}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -166,7 +168,10 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
             </p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
               {sisa.map((item, idx) => (
-                <div key={item.nama} className="flex items-center justify-between gap-2">
+                <div
+                  key={item.nama}
+                  className="flex items-center justify-between gap-2"
+                >
                   <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 truncate">
                     {item.nama}
                   </span>
@@ -174,7 +179,9 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
                     type="number"
                     min="0"
                     value={item.sisa === 0 ? "" : item.sisa}
-                    onChange={(e) => setSisaItem(idx, parseInt(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setSisaItem(idx, parseInt(e.target.value) || 0)
+                    }
                     placeholder="0"
                     className="w-12 h-7 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-center text-xs font-black rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-orange transition-colors placeholder:text-neutral-400 shrink-0"
                   />
@@ -182,7 +189,6 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           </div>
-
 
           <div>
             <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-3">
@@ -198,13 +204,13 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        <button
+        <Button
           onClick={onClose}
           className="w-full bg-orange hover:bg-orange/90 active:scale-[0.99] text-white font-black uppercase tracking-widest py-5 text-sm transition-all flex items-center justify-center gap-2 shrink-0"
         >
           Kirim Laporan
           <LuSend size={16} strokeWidth={2.5} />
-        </button>
+        </Button>
       </div>
     </div>
   );

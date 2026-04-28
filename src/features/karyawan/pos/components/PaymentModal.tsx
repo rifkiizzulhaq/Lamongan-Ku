@@ -1,5 +1,6 @@
 "use client";
 
+import Button from "@/src/components/ui/Button";
 import { useState } from "react";
 import { LuX, LuCheck } from "react-icons/lu";
 
@@ -69,12 +70,12 @@ export default function PaymentModal({
               {id}
             </p>
           </div>
-          <button
+          <Button
             onClick={onClose}
             className="text-neutral-400 hover:text-white transition-colors"
           >
             <LuX size={22} strokeWidth={2.5} />
-          </button>
+          </Button>
         </div>
 
         <div className="px-6 pt-4 pb-2">
@@ -87,7 +88,7 @@ export default function PaymentModal({
 
           <div className="flex gap-2 mt-4">
             {presets.map((p) => (
-              <button
+              <Button
                 key={p.label}
                 onClick={() => setSelected(p.label)}
                 className={`flex-1 py-2.5 text-xs font-bold uppercase rounded-lg border transition-colors ${
@@ -97,7 +98,7 @@ export default function PaymentModal({
                 }`}
               >
                 {p.label}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -134,18 +135,18 @@ export default function PaymentModal({
         <div className="grid grid-cols-3 gap-px bg-neutral-800 border-t border-neutral-800 mt-2">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "⌫"].map(
             (d) => (
-              <button
+              <Button
                 key={d}
                 onClick={() => (d === "⌫" ? handleDel() : handleDigit(d))}
                 className="bg-neutral-900 hover:bg-neutral-800 active:bg-neutral-700 text-white font-bold text-xl py-4 transition-colors"
               >
                 {d}
-              </button>
+              </Button>
             ),
           )}
         </div>
 
-        <button
+        <Button
           onClick={onClose}
           disabled={kembalian < 0}
           className={`w-full font-black uppercase tracking-widest py-5 text-sm transition-all flex items-center justify-center gap-3 ${
@@ -162,7 +163,7 @@ export default function PaymentModal({
           >
             <LuCheck size={16} strokeWidth={3} />
           </span>
-        </button>
+        </Button>
       </div>
     </div>
   );

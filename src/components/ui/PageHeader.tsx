@@ -1,4 +1,5 @@
 import React from "react";
+import Button from "./Button";
 
 export interface PageHeaderProps {
   title: string | React.ReactNode;
@@ -14,7 +15,7 @@ export default function PageHeader({ title, tag, onTagClick }: PageHeaderProps) 
           <h1 className="text-2xl font-bold text-white dark:text-white uppercase truncate pr-2">
             {title}
           </h1>
-          <button 
+          <Button 
             onClick={onTagClick}
             disabled={!onTagClick}
             className={`flex flex-row-reverse w-32 h-7 bg-white shrink-0 ${onTagClick ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
@@ -22,7 +23,7 @@ export default function PageHeader({ title, tag, onTagClick }: PageHeaderProps) 
             <p className={`font-bold w-30 h-full flex items-center justify-center uppercase text-[10px] tracking-widest text-white transition-colors ${tag === 'Bungkus' ? 'bg-black border border-white' : 'bg-orange'}`}>
               {tag}
             </p>
-          </button>
+          </Button>
         </div>
       </header>
     );

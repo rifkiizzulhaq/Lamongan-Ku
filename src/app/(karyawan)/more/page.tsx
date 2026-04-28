@@ -4,6 +4,7 @@ import { useState } from "react";
 import PageHeader from "@/src/components/ui/PageHeader";
 import TutupWarungModal from "@/src/features/karyawan/more/components/TutupWarungModal";
 import { LuStore, LuLogOut, LuChevronRight } from "react-icons/lu";
+import Button from "@/src/components/ui/Button";
 
 const MENU_ITEMS = [
   {
@@ -32,7 +33,7 @@ export default function Page() {
         <main className="relative max-w-87.5 mx-auto w-full flex flex-col h-full pt-4 px-0">
           <div className="flex flex-col gap-2">
             {MENU_ITEMS.map((item) => (
-              <button
+              <Button
                 key={item.label}
                 onClick={() => item.action === "tutup" && setShowTutup(true)}
                 className="w-full flex items-center gap-4 px-4 py-4 bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-xl shadow-sm hover:border-orange/40 dark:hover:border-orange/40 active:scale-[0.99] transition-all text-left"
@@ -55,7 +56,7 @@ export default function Page() {
                   strokeWidth={2.5}
                   className="text-neutral-300 dark:text-neutral-600 shrink-0"
                 />
-              </button>
+              </Button>
             ))}
           </div>
         </main>
