@@ -1,14 +1,17 @@
-"use client";
+﻿"use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import CardOrdering, {
   dummyOrderData,
 } from "@/src/features/karyawan/pos/components/CardOrdering";
 import Cart from "@/src/features/karyawan/pos/components/Cart";
 import PageHeader from "@/src/components/ui/PageHeader";
 
-export default function Page() {
+function MakanContent() {
   const [isTakeaway, setIsTakeaway] = useState(false);
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") === "update" ? "update" : "create";
 
   return (
     <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
@@ -30,7 +33,15 @@ export default function Page() {
           ))}
         </div>
       </main>
-      <Cart />
+      <Cart mode={mode} />
     </section>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div className="h-screen w-full bg-neutral-800" />}>
+      <MakanContent />
+    </Suspense>
   );
 }

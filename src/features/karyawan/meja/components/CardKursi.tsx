@@ -35,7 +35,7 @@ export default function CardKursi({
           <div className="w-2 h-full bg-orange rounded-l-xl flex items-center justify-center shrink-0"></div>
           <div className="w-full h-full flex flex-col justify-between">
             <Link
-              href="/meja/kursi/makan"
+              href="/meja/kursi/makan?mode=update"
               className="flex flex-col items-center justify-between px-5 py-3 flex-1 overflow-hidden"
             >
               <div className="w-full flex items-center justify-between">

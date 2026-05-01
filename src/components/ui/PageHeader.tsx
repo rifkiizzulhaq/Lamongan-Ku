@@ -7,7 +7,11 @@ export interface PageHeaderProps {
   onTagClick?: () => void;
 }
 
-export default function PageHeader({ title, tag, onTagClick }: PageHeaderProps) {
+export default function PageHeader({
+  title,
+  tag,
+  onTagClick,
+}: PageHeaderProps) {
   if (tag) {
     return (
       <header className="w-full h-16 bg-black p-4 shrink-0 z-10">
@@ -15,15 +19,34 @@ export default function PageHeader({ title, tag, onTagClick }: PageHeaderProps) 
           <h1 className="text-2xl font-bold text-white dark:text-white uppercase truncate pr-2">
             {title}
           </h1>
-          <Button 
-            onClick={onTagClick}
-            disabled={!onTagClick}
-            className={`flex flex-row-reverse w-32 h-7 bg-white shrink-0 ${onTagClick ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
-          >
-            <p className={`font-bold w-30 h-full flex items-center justify-center uppercase text-[10px] tracking-widest text-white transition-colors ${tag === 'Bungkus' ? 'bg-black border border-white' : 'bg-orange'}`}>
+          {onTagClick ? (
+            <Button
+              onClick={onTagClick}
+              className="relative flex items-center w-36 h-8 bg-neutral-800 border border-neutral-700 rounded-full p-1 shrink-0 cursor-pointer active:scale-95 transition-transform"
+            >
+              <div
+                className={`absolute w-[calc(50%-4px)] top-1 bottom-1 rounded-full transition-transform duration-300 ease-in-out ${
+                  tag === "Bungkus"
+                    ? "translate-x-full bg-neutral-600 border border-neutral-500"
+                    : "translate-x-0 bg-orange"
+                }`}
+              />
+              <div className="relative z-10 flex w-full h-full text-[9px] font-bold tracking-widest uppercase text-white pointer-events-none">
+                <div className="flex-1 flex items-center justify-center text-center leading-none">
+                  Makan
+                </div>
+                <div className="flex-1 flex items-center justify-center text-center leading-none">
+                  Bungkus
+                </div>
+              </div>
+            </Button>
+          ) : (
+            <div
+              className={`px-4 h-7 flex items-center justify-center rounded-full text-[10px] font-bold tracking-widest uppercase text-white ${tag === "Bungkus" ? "bg-neutral-800 border border-neutral-700" : "bg-orange"}`}
+            >
               {tag}
-            </p>
-          </Button>
+            </div>
+          )}
         </div>
       </header>
     );

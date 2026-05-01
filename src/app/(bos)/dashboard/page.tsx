@@ -77,15 +77,15 @@ export default function Page() {
         )}
         <div className="w-full mt-4 flex flex-col gap-4">
           <StatCard
-            title="Total Pendapatan"
+            title="Total Pendapatan Hari Ini"
             value="Rp 12.500.000"
             icon={<LuDollarSign size={20} strokeWidth={2.5} />}
             edit={<LuPen size={20} strokeWidth={2.5} />}
-            editHref="/dashboard/edit-pendapatan"
+            editHref="/dashboard/pendapatan"
           />
 
           <StatCard
-            title="Total Pesanan"
+            title="Total Pesanan Hari Ini"
             value="432 Porsi"
             icon={<LuShoppingBag size={20} strokeWidth={2.5} />}
           />

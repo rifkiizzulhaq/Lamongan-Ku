@@ -9,7 +9,7 @@ import Button from "@/src/components/ui/Button";
 
 const dummyKursi = [
   {
-    id: "Kursi 1",
+    id: "Item 1",
     totalPrice: 60000,
     status: "Sedang Makan..",
     items: [
@@ -21,7 +21,7 @@ const dummyKursi = [
     tipe: "rombongan",
   },
   {
-    id: "Kursi 2",
+    id: "Item 2",
     totalPrice: 25000,
     status: "Sedang Makan..",
     items: [
@@ -32,7 +32,7 @@ const dummyKursi = [
     tipe: "sendiri",
   },
   {
-    id: "Kursi 3",
+    id: "Item 3",
     totalPrice: 120000,
     status: "Sedang Makan..",
     items: [
@@ -48,9 +48,17 @@ const dummyKursi = [
 
 const modeOptions = [
   //   { label: "Rombongan", href: "/meja/makan?mode=rombongan", icon: <LuUsers /> },
-  { label: "Rombongan", href: "/meja/kursi/makan", icon: <LuUsers /> },
-  { label: "Makan Bareng", href: "/meja/kursi/makan", icon: <LuUtensils /> },
-  { label: "Sendiri", href: "/meja/kursi/makan", icon: <LuUser /> },
+  {
+    label: "Rombongan",
+    href: "/meja/kursi/makan?mode=create",
+    icon: <LuUsers />,
+  },
+  {
+    label: "Makan Bareng",
+    href: "/meja/kursi/makan?mode=create",
+    icon: <LuUtensils />,
+  },
+  { label: "Sendiri", href: "/meja/kursi/makan?mode=create", icon: <LuUser /> },
 ];
 
 export default function Page() {
@@ -58,7 +66,7 @@ export default function Page() {
 
   return (
     <section className="h-[calc(100dvh-45px)] md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
-      <PageHeader title="Meja 1 > Kursi" tag="Makan di tempat" />
+      <PageHeader title="Meja 1" tag="Makan di tempat" />
       <main className="relative max-w-87.5 mx-auto w-full flex flex-col h-full pt-2">
         <div className="absolute bottom-25 right-0 z-50 flex flex-col items-end gap-2">
           {open && (

@@ -19,21 +19,24 @@ const generateCategories = (openHour: number, closeHour: number) => {
 };
 
 export default function RevenueChart() {
-  const jamBuka = 17; 
-  const jamTutup = 2; 
+  const jamBuka = 17;
+  const jamTutup = 2;
   const categories = useMemo(() => generateCategories(jamBuka, jamTutup), []);
 
-  const dummyPesanan = useMemo(() => [
-    { type: "Makan Sini", qty: 2, created_at: "2026-04-28T17:15:00" },
-    { type: "Makan Sini", qty: 4, created_at: "2026-04-28T17:45:00" },
-    { type: "Bungkus", qty: 3, created_at: "2026-04-28T18:10:00" }, 
-    { type: "Makan Sini", qty: 10, created_at: "2026-04-28T19:30:00" },
-    { type: "Bungkus", qty: 5, created_at: "2026-04-28T19:55:00" },
-    { type: "Makan Sini", qty: 15, created_at: "2026-04-28T20:15:00" }, 
-    { type: "Bungkus", qty: 8, created_at: "2026-04-28T20:45:00" },
-    { type: "Makan Sini", qty: 5, created_at: "2026-04-29T00:15:00" },
-    { type: "Makan Sini", qty: 2, created_at: "2026-04-29T01:30:00" },
-  ], []);
+  const dummyPesanan = useMemo(
+    () => [
+      { type: "Makan Sini", qty: 2, created_at: "2026-04-28T17:15:00" },
+      { type: "Makan Sini", qty: 4, created_at: "2026-04-28T17:45:00" },
+      { type: "Bungkus", qty: 3, created_at: "2026-04-28T18:10:00" },
+      { type: "Makan Sini", qty: 10, created_at: "2026-04-28T19:30:00" },
+      { type: "Bungkus", qty: 5, created_at: "2026-04-28T19:55:00" },
+      { type: "Makan Sini", qty: 15, created_at: "2026-04-28T20:15:00" },
+      { type: "Bungkus", qty: 8, created_at: "2026-04-28T20:45:00" },
+      { type: "Makan Sini", qty: 5, created_at: "2026-04-29T00:15:00" },
+      { type: "Makan Sini", qty: 2, created_at: "2026-04-29T01:30:00" },
+    ],
+    [],
+  );
 
   const series = useMemo(() => {
     const bungkusData = new Array(categories.length).fill(0);
@@ -65,6 +68,7 @@ export default function RevenueChart() {
       type: "bar",
       height: 350,
       toolbar: { show: false },
+      zoom: { enabled: false },
       fontFamily: "inherit",
       foreColor: "#a3a3a3",
     },
@@ -78,16 +82,19 @@ export default function RevenueChart() {
     dataLabels: { enabled: false },
     stroke: { show: true, width: 2, colors: ["transparent"] },
     xaxis: {
-      categories: categories, 
+      categories: categories,
       axisBorder: { show: false },
       axisTicks: { show: false },
       labels: {
         style: { colors: "#a3a3a3", fontSize: "10px" },
-        hideOverlappingLabels: true, 
+        hideOverlappingLabels: true,
       },
     },
     yaxis: {
-      title: { text: "Porsi Terjual", style: { fontWeight: 600, color: "#a3a3a3" } },
+      title: {
+        text: "Porsi Terjual",
+        style: { fontWeight: 600, color: "#a3a3a3" },
+      },
       labels: { style: { colors: "#a3a3a3" } },
     },
     fill: { opacity: 1 },
@@ -121,7 +128,12 @@ export default function RevenueChart() {
       </div>
       <div id="chart" className="w-full">
         {series.length > 0 && (
-          <ReactApexChart options={options} series={series} type="bar" height={320} />
+          <ReactApexChart
+            options={options}
+            series={series}
+            type="bar"
+            height={320}
+          />
         )}
       </div>
     </div>

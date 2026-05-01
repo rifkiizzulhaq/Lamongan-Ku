@@ -1,0 +1,74 @@
+﻿"use client";
+
+import { useState } from "react";
+import PageHeader from "@/src/components/ui/PageHeader";
+import DailyAnalytics from "@/src/features/bos/laporan/components/DailyAnalytics";
+import AggregatedAnalytics from "@/src/features/bos/laporan/components/AggregatedAnalytics";
+import {
+  mockDailyData,
+  mockWeeklyData,
+  mockMonthlyData,
+  mockYearlyData,
+} from "@/src/features/bos/laporan/data/mockData";
+import Button from "@/src/components/ui/Button";
+
+type TabMode = "Harian" | "Mingguan" | "Bulanan" | "Tahunan";
+
+const TABS: TabMode[] = ["Harian", "Mingguan", "Bulanan", "Tahunan"];
+
+export default function LaporanPage() {
+  const [activeTab, setActiveTab] = useState<TabMode>("Harian");
+
+  return (
+    <section className="h-[calc(100dvh-45px)] md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
+      <PageHeader title="Analitik & Laporan" />
+      <main className="relative max-w-87.5 mx-auto w-full flex flex-col h-full pt-2">
+        <div className="w-full pb-2 shrink-0">
+          <div className="flex bg-neutral-100 dark:bg-neutral-900 rounded-xl p-1 overflow-x-auto scrollbar-none">
+            {TABS.map((tab) => (
+              <Button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 min-w-20 py-2 text-xs font-bold rounded-lg transition-all ${
+                  activeTab === tab
+                    ? "bg-white dark:bg-neutral-700 text-black dark:text-white shadow-sm"
+                    : "text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white"
+                }`}
+              >
+                {tab}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <div className="relative w-full flex flex-col h-full overflow-y-auto pb-20 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700">
+          {activeTab === "Harian" && <DailyAnalytics data={mockDailyData} />}
+
+          {activeTab === "Mingguan" && (
+            <AggregatedAnalytics
+              data={mockWeeklyData}
+              titleSuffix="(Mingguan)"
+              intervalName="Hari"
+            />
+          )}
+
+          {activeTab === "Bulanan" && (
+            <AggregatedAnalytics
+              data={mockMonthlyData}
+              titleSuffix="(Bulanan)"
+              intervalName="Minggu"
+            />
+          )}
+
+          {activeTab === "Tahunan" && (
+            <AggregatedAnalytics
+              data={mockYearlyData}
+              titleSuffix="(Tahunan)"
+              intervalName="Bulan"
+            />
+          )}
+        </div>
+      </main>
+      {/* Tabs */}
+    </section>
+  );
+}
