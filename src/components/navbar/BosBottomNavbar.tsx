@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LuLayoutDashboard,
   LuTrendingUp,
-  LuUsers,
+  LuPackage,
   LuSettings,
 } from "react-icons/lu";
 
@@ -24,9 +24,9 @@ export default function BosBottomNavbar() {
       icon: <LuTrendingUp size={24} strokeWidth={2} />,
     },
     {
-      name: "Pegawai",
-      href: "/pegawai",
-      icon: <LuUsers size={24} strokeWidth={2} />,
+      name: "Stock",
+      href: "/stock",
+      icon: <LuPackage size={24} strokeWidth={2} />,
     },
     {
       name: "Toko",

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { LuDollarSign, LuShoppingBag, LuPen, LuCloud } from "react-icons/lu";
+import { LuDollarSign, LuShoppingBag, LuPen, LuNotebook } from "react-icons/lu";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Button from "@/src/components/ui/Button";
 import StatCard from "@/src/features/bos/dashboard/components/StatCard";
 import RevenueChart from "@/src/features/bos/dashboard/components/RevenueChart";
+import SisaBahanDashboardChart from "@/src/features/bos/dashboard/components/SisaBahanDashboardChart";
+import { useWarungStore } from "@/src/store/warungStore";
 
 interface SisaItem {
   nama: string;
@@ -28,7 +29,7 @@ const MENU_AWAL: SisaItem[] = [
 ];
 
 export default function Page() {
-  const [isBuka, setIsBuka] = useState(true);
+  const { isBuka, setIsBuka } = useWarungStore();
 
   return (
     <section className="h-[calc(100dvh-45px)] md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
@@ -96,28 +97,27 @@ export default function Page() {
             edit={<LuPen size={20} strokeWidth={2.5} />}
             editHref="/dashboard/sisa-bahan"
           >
-            <div className="grid grid-cols-2 gap-2 mt-1">
-              {MENU_AWAL.slice(0, 6).map((item) => (
-                <div
-                  key={item.nama}
-                  className="flex items-center justify-between p-2.5 bg-neutral-50 dark:bg-neutral-700/50 rounded-xl border border-neutral-100 dark:border-neutral-700/80"
-                >
-                  <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 truncate">
-                    {item.nama}
-                  </span>
-                  <span className="text-xs font-black text-neutral-800 dark:text-white">
-                    {item.sisa !== undefined ? item.sisa : "N/A"}
-                  </span>
-                </div>
-              ))}
-            </div>
+            <SisaBahanDashboardChart
+              data={MENU_AWAL.filter((v) => v.sisa !== undefined).map((v) => ({
+                nama: v.nama,
+                sisa: v.sisa!,
+              }))}
+            />
           </StatCard>
 
           <StatCard
-            title="Cuaca pada saat penjualan hari Ini"
-            value="Cerah, mendung, hujan"
-            icon={<LuCloud size={20} strokeWidth={2.5} />}
-          />
+            title="Catatan Tutup Warung"
+            icon={<LuNotebook size={20} strokeWidth={2.5} />}
+          >
+            <div className="mt-2 p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-xl border border-neutral-100 dark:border-neutral-700/80">
+              <textarea
+                name="catatan"
+                id="catatan"
+                className="w-full h-full bg-transparent border-none focus:outline-none focus:ring-0"
+                placeholder="Hujan grimis"
+              />
+            </div>
+          </StatCard>
         </div>
         <div className="w-full mt-4">
           <RevenueChart />

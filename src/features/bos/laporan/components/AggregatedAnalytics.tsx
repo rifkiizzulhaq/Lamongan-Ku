@@ -103,17 +103,6 @@ export default function AggregatedAnalytics({
         yAxisFormatter={(val) => val + " Porsi"}
       />
 
-      <OrderTypeChart
-        title="Total Tipe Pesanan"
-        subtitle={`Makan di Tempat vs Bungkus`}
-        currentLabel={data.timeLabel}
-        previousLabel={data.prevTimeLabel}
-        dineInCurrent={data.dineInCurrent}
-        takeawayCurrent={data.takeawayCurrent}
-        dineInPrevious={data.dineInPrevious}
-        takeawayPrevious={data.takeawayPrevious}
-      />
-
       <OrderTypeTimelineChart
         title="Rata-rata Tren Pesanan Per Jam"
         subtitle={`Rata-rata persebaran jam makan pada ${data.timeLabel} vs ${data.prevTimeLabel}`}
@@ -125,6 +114,18 @@ export default function AggregatedAnalytics({
         dineInPreviousTrend={data.dineInPreviousHourlyAvg || []}
         takeawayPreviousTrend={data.takeawayPreviousHourlyAvg || []}
       />
+      
+      <OrderTypeChart
+        title="Total Tipe Pesanan"
+        subtitle={`Makan di Tempat vs Bungkus`}
+        currentLabel={data.timeLabel}
+        previousLabel={data.prevTimeLabel}
+        dineInCurrent={data.dineInCurrent}
+        takeawayCurrent={data.takeawayCurrent}
+        dineInPrevious={data.dineInPrevious}
+        takeawayPrevious={data.takeawayPrevious}
+      />
+
 
       <WeatherSummaryCard
         currentData={data.cuacaCurrent}

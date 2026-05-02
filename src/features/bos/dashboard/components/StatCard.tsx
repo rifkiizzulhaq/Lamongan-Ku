@@ -2,9 +2,9 @@ import { ReactNode } from "react";
 import Link from "next/link";
 
 export interface StatCardProps {
-  title: string;
+  title?: string;
   value?: string | ReactNode;
-  icon: ReactNode;
+  icon?: ReactNode;
   edit?: ReactNode;
   editHref?: string;
   children?: ReactNode;
