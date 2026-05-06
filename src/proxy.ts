@@ -9,14 +9,12 @@ export default async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   try {
-    const response = await fetch(
-      `${request.nextUrl.origin}/api/auth/get-session`,
-      {
-        headers: {
-          cookie: request.headers.get("cookie") || "",
-        },
+    const baseUrl = process.env.BETTER_AUTH_URL ?? request.nextUrl.origin;
+    const response = await fetch(`${baseUrl}/api/auth/get-session`, {
+      headers: {
+        cookie: request.headers.get("cookie") || "",
       },
-    );
+    });
 
     const session = await response.json();
 
