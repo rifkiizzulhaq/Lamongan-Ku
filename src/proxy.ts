@@ -1,22 +1,62 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export default function proxy(request: NextRequest) {
-  // Lakukan pengecekan atau logika middleware (proxy) kamu di sini
-  // Misalnya, pengecekan sesi login sebelum masuk ke /(karyawan)
+const BOS_ROUTES = ["/dashboard", "/laporan", "/stock"];
 
-  return NextResponse.next();
+const KARYAWAN_ROUTES = ["/meja", "/bungkus", "/pos", "/riwayat", "/more"];
+
+export default async function proxy(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  try {
+    const response = await fetch(
+      `${request.nextUrl.origin}/api/auth/get-session`,
+      {
+        headers: {
+          cookie: request.headers.get("cookie") || "",
+        },
+      },
+    );
+
+    const session = await response.json();
+
+    if (path === "/") {
+      if (session && session.user) {
+        const role = session.user.role as string;
+        return NextResponse.redirect(
+          new URL(role === "bos" ? "/dashboard" : "/meja", request.url),
+        );
+      }
+      return NextResponse.next();
+    }
+
+    if (!session || !session.user) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    const role = session.user.role as string;
+
+    if (role === "karyawan" && BOS_ROUTES.some((r) => path.startsWith(r))) {
+      return NextResponse.redirect(new URL("/meja", request.url));
+    }
+
+    if (role === "bos" && KARYAWAN_ROUTES.some((r) => path.startsWith(r))) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  } catch (error) {
+    console.error("Middleware fetch error:", error);
+    if (path !== "/") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+
+  const response = NextResponse.next();
+
+  return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Jalankan proxy pada semua rute KECUALI:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

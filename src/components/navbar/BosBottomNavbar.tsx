@@ -29,7 +29,7 @@ export default function BosBottomNavbar() {
       icon: <LuPackage size={24} strokeWidth={2} />,
     },
     {
-      name: "Toko",
+      name: "Pengaturan",
       href: "/pengaturan",
       icon: <LuSettings size={24} strokeWidth={2} />,
     },

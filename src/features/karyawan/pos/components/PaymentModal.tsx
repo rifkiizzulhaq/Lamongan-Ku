@@ -8,12 +8,14 @@ export interface PaymentModalProps {
   id: string;
   totalPrice: number;
   onClose: () => void;
+  onConfirm?: (received: number, kembalian: number) => void;
 }
 
 export default function PaymentModal({
   id,
   totalPrice,
   onClose,
+  onConfirm,
 }: PaymentModalProps) {
   const [input, setInput] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
@@ -147,7 +149,13 @@ export default function PaymentModal({
         </div>
 
         <Button
-          onClick={onClose}
+          onClick={() => {
+            if (onConfirm) {
+              onConfirm(received, kembalian);
+            } else {
+              onClose();
+            }
+          }}
           disabled={kembalian < 0}
           className={`w-full font-black uppercase tracking-widest py-5 text-sm transition-all flex items-center justify-center gap-3 ${
             kembalian < 0

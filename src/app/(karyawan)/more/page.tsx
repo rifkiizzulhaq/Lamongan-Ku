@@ -5,6 +5,8 @@ import PageHeader from "@/src/components/ui/PageHeader";
 import TutupWarungModal from "@/src/features/karyawan/more/components/TutupWarungModal";
 import { LuStore, LuLogOut, LuChevronRight } from "react-icons/lu";
 import Button from "@/src/components/ui/Button";
+import { signOut } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 const MENU_ITEMS = [
   {
@@ -25,6 +27,21 @@ const MENU_ITEMS = [
 
 export default function Page() {
   const [showTutup, setShowTutup] = useState(false);
+  const router = useRouter();
+
+  const handleAction = async (action: string) => {
+    if (action === "tutup") {
+      setShowTutup(true);
+    } else if (action === "logout") {
+      await signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            router.push("/");
+          },
+        },
+      });
+    }
+  };
 
   return (
     <>
@@ -35,7 +52,7 @@ export default function Page() {
             {MENU_ITEMS.map((item) => (
               <Button
                 key={item.label}
-                onClick={() => item.action === "tutup" && setShowTutup(true)}
+                onClick={() => handleAction(item.action)}
                 className="w-full flex items-center gap-4 px-4 py-4 bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 rounded-xl shadow-sm hover:border-orange/40 dark:hover:border-orange/40 active:scale-[0.99] transition-all text-left"
               >
                 <span className="w-11 h-11 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-xl shrink-0">
