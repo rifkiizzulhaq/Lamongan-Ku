@@ -1,6 +1,6 @@
 "use client";
 
-import { AggregatedData } from "../data/mockData";
+import { AggregatedData } from "@/interfaces/models";
 import TrendLineChart from "./charts/TrendLineChart";
 import ComparisonBarChart from "./charts/ComparisonBarChart";
 import OrderTypeChart from "./charts/OrderTypeChart";

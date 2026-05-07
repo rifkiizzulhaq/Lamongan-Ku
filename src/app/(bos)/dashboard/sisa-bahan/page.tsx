@@ -5,10 +5,7 @@ import PageHeader from "@/src/components/ui/PageHeader";
 import Button from "@/src/components/ui/Button";
 import Link from "next/link";
 
-interface SisaItem {
-  nama: string;
-  sisa?: number;
-}
+import { SisaItem } from "@/interfaces/models";
 
 const MENU_AWAL: SisaItem[] = [
   { nama: "Ayam", sisa: 15 },

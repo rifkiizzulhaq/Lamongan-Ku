@@ -8,10 +8,7 @@ import RevenueChart from "@/src/features/bos/dashboard/components/RevenueChart";
 import SisaBahanDashboardChart from "@/src/features/bos/dashboard/components/SisaBahanDashboardChart";
 import { useWarungStore } from "@/src/store/warungStore";
 
-interface SisaItem {
-  nama: string;
-  sisa?: number;
-}
+import { SisaItem } from "@/interfaces/models";
 
 const MENU_AWAL: SisaItem[] = [
   { nama: "Ayam", sisa: 15 },

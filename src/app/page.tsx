@@ -4,7 +4,6 @@ import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { LuEye, LuEyeOff } from "react-icons/lu";
-
 import Input from "@/src/components/ui/Input";
 import Button from "@/src/components/ui/Button";
 
@@ -32,7 +31,7 @@ export default function Page() {
           if (role === "bos") {
             router.push("/dashboard");
           } else {
-            router.push("/meja");
+            router.push("/bungkus");
           }
           router.refresh();
         },
@@ -100,17 +99,17 @@ export default function Page() {
                 id="password"
                 placeholder="Masukan password"
                 value={password}
-                onchange={(e) => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full text-sm dark:bg-neutral-800 dark:border-2 dark:border-neutral-700 border-2 border-neutral-300 rounded-lg focus:outline-none focus:ring-1 dark:focus:ring-white py-2 pl-2 pr-10 dark:text-white"
               />
-              <button
+              <Button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
               >
                 {showPassword ? <LuEyeOff size={18} /> : <LuEye size={18} />}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

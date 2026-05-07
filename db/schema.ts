@@ -2,13 +2,12 @@ import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
-// table
-
+// tables
 export const stock = pgTable("stock", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   price: integer("price").notNull(),
-  quantity: integer("quantity").notNull(),
+  quantity: integer("quantity"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

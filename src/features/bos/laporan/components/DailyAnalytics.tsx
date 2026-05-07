@@ -1,6 +1,6 @@
 "use client";
 
-import { DailyData } from "../data/mockData";
+import { DailyData } from "@/interfaces/models";
 import TrendLineChart from "./charts/TrendLineChart";
 import OrderTypeChart from "./charts/OrderTypeChart";
 import OrderTypeTimelineChart from "./charts/OrderTypeTimelineChart";

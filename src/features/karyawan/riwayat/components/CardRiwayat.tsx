@@ -1,7 +1,4 @@
-export interface OrderItem {
-  n: string;
-  q: number;
-}
+import { OrderItem } from "@/interfaces/models";
 
 export interface CardRiwayatProps {
   id: string;

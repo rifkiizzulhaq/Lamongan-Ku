@@ -13,15 +13,7 @@ import {
 
 type CuacaOption = "Cerah" | "Mendung" | "Gerimis" | "Hujan";
 
-interface CuacaSlot {
-  jam: string;
-  cuaca: CuacaOption | null;
-}
-
-interface SisaItem {
-  nama: string;
-  sisa?: number;
-}
+import { CuacaSlot, SisaItem } from "@/interfaces/models";
 
 const CUACA_OPTIONS: { label: CuacaOption; icon: ReactNode }[] = [
   {

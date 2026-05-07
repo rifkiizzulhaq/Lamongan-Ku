@@ -4,14 +4,14 @@ import Button from "@/src/components/ui/Button";
 import PaymentModal from "@/src/features/karyawan/pos/components/PaymentModal";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { update, deletes } from "@/src/server/karyawan/bungkus/bungkus.server";
 import { LuTrash2 } from "react-icons/lu";
 
-export interface OrderItem {
-  n: string;
-  q: number;
-}
+import { OrderItem } from "@/interfaces/models";
 
 export interface CardBungkusProps {
+  orderId: string;
   id: string;
   totalPrice: number;
   status: string;
@@ -19,12 +19,16 @@ export interface CardBungkusProps {
 }
 
 export default function CardBungkus({
+  orderId,
   id,
   totalPrice,
   status,
   items,
 }: CardBungkusProps) {
   const [showPayment, setShowPayment] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
 
   return (
     <>
@@ -33,7 +37,7 @@ export default function CardBungkus({
           <div className="w-2 h-full bg-orange rounded-l-xl flex items-center justify-center"></div>
           <div className="w-full h-full flex flex-col justify-between">
             <Link
-              href="/bungkus/ordering?mode=update"
+              href={`/bungkus/ordering?mode=update&orderId=${orderId}`}
               className="flex flex-col items-center justify-between px-5 py-3"
             >
               <div className="w-full flex items-center justify-between">
@@ -68,8 +72,16 @@ export default function CardBungkus({
               </div>
             </Link>
             <div className="flex">
-              <Button className="h-12 w-16 shrink-0 bg-red-500 text-white hover:bg-red-600 dark:bg-red-900 dark:hover:bg-red-700 uppercase font-bold rounded-none text-xs transition-colors mt-auto z-10 relative flex items-center justify-center">
-                <LuTrash2 size={18} strokeWidth={2.5} />
+              <Button 
+                onClick={async () => {
+                  if (isDeleting) return;
+                  setIsDeleting(true);
+                  await deletes(parseInt(orderId, 10));
+                }}
+                disabled={isDeleting}
+                className="h-12 w-16 shrink-0 bg-red-500 text-white hover:bg-red-600 dark:bg-red-900 dark:hover:bg-red-700 uppercase font-bold rounded-none text-xs transition-colors mt-auto z-10 relative flex items-center justify-center disabled:opacity-50"
+              >
+                {isDeleting ? "..." : <LuTrash2 size={18} strokeWidth={2.5} />}
               </Button>
               <Button
                 onClick={() => setShowPayment(true)}
@@ -86,7 +98,16 @@ export default function CardBungkus({
         <PaymentModal
           id={id}
           totalPrice={totalPrice}
+          loading={processing}
           onClose={() => setShowPayment(false)}
+          onConfirm={async () => {
+            setProcessing(true);
+            const numericId = parseInt(orderId, 10);
+            await update(numericId, "selesai");
+            setProcessing(false);
+            setShowPayment(false);
+            router.refresh();
+          }}
         />
       )}
     </>

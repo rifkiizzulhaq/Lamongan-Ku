@@ -2,11 +2,7 @@
 
 import { LuSun, LuCloud, LuCloudRain } from "react-icons/lu";
 
-interface WeatherStats {
-  cerah: number;
-  mendung: number;
-  hujan: number;
-}
+import { WeatherStats } from "@/interfaces/models";
 
 interface Props {
   currentData?: WeatherStats | string[];

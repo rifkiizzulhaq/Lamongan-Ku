@@ -6,10 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { LuTrash2 } from "react-icons/lu";
 
-export interface KursiItem {
-  n: string;
-  q: number;
-}
+import { KursiItem } from "@/interfaces/models";
 
 export interface CardKursiProps {
   id: string;

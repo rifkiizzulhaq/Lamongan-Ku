@@ -1,38 +1,36 @@
-import CardOrdering, {
-  dummyOrderData,
-} from "@/src/features/karyawan/pos/components/CardOrdering";
-import Cart from "@/src/features/karyawan/pos/components/Cart";
 import PageHeader from "@/src/components/ui/PageHeader";
+import BungkusOrderingClient from "@/src/features/karyawan/bungkus/components/BungkusOrderingClient";
+import {
+  getStock,
+  getOrderById,
+} from "@/src/server/karyawan/bungkus/bungkus.server";
 
 interface PageProps {
-  searchParams: Promise<{ mode?: string }>;
+  searchParams: Promise<{ mode?: string; orderId?: string }>;
 }
 
 export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams;
   const isUpdate = params.mode === "update";
-  const mode = isUpdate ? "update" : "create";
+  const orderId = params.orderId ? parseInt(params.orderId) : undefined;
+
+  const [stockList, existingOrder] = await Promise.all([
+    getStock(),
+    isUpdate && orderId ? getOrderById(orderId) : Promise.resolve(null),
+  ]);
 
   return (
     <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
       <PageHeader
-        title={`Bungkus ${isUpdate ? "#02" : "#01"}`}
+        title={isUpdate ? "Update Pesanan" : "Pesanan Baru"}
         tag="ordering"
       />
-      <main className="relative max-w-87.5 mx-auto w-full flex-1 flex flex-col overflow-hidden pt-2">
-        <div className="flex-1 overflow-y-auto grid grid-cols-2 gap-2 pb-5 content-start">
-          {dummyOrderData.map((order, index) => (
-            <CardOrdering
-              key={index}
-              name={order.name}
-              price={order.price}
-              quantity={order.quantity}
-              sisa={order.sisa}
-            />
-          ))}
-        </div>
-      </main>
-      <Cart mode={mode} />
+      <BungkusOrderingClient
+        stockList={stockList}
+        mode={isUpdate ? "update" : "create"}
+        orderId={orderId}
+        initialCart={existingOrder?.cartItems ?? []}
+      />
     </section>
   );
 }

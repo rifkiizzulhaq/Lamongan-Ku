@@ -16,7 +16,7 @@ export const auth = betterAuth({
       role: {
         type: "string",
         defaultValue: "karyawan",
-        input: false, // tidak bisa diatur saat signup, hanya via seeder/admin
+        input: false,
       },
     },
   },

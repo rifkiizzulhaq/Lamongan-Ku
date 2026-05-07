@@ -22,7 +22,7 @@ export default async function proxy(request: NextRequest) {
       if (session && session.user) {
         const role = session.user.role as string;
         return NextResponse.redirect(
-          new URL(role === "bos" ? "/dashboard" : "/meja", request.url),
+          new URL(role === "bos" ? "/dashboard" : "/bungkus", request.url),
         );
       }
       return NextResponse.next();
@@ -35,7 +35,7 @@ export default async function proxy(request: NextRequest) {
     const role = session.user.role as string;
 
     if (role === "karyawan" && BOS_ROUTES.some((r) => path.startsWith(r))) {
-      return NextResponse.redirect(new URL("/meja", request.url));
+      return NextResponse.redirect(new URL("/bungkus", request.url));
     }
 
     if (role === "bos" && KARYAWAN_ROUTES.some((r) => path.startsWith(r))) {
