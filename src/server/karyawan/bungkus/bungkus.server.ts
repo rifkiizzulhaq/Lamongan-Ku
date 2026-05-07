@@ -36,7 +36,6 @@ export async function getAll() {
   }
 }
 
-// Ambil detail satu order untuk mode edit
 export async function getOrderById(orderId: number) {
   try {
     const order = await db.query.orders.findFirst({
@@ -59,7 +58,6 @@ export async function getOrderById(orderId: number) {
   }
 }
 
-// Ganti semua items dalam order yang ada (untuk update)
 export async function updateItems(
   orderId: number,
   items: { stockId: number; quantity: number }[],
@@ -68,7 +66,10 @@ export async function updateItems(
     if (items.length === 0) return { success: false };
 
     const stockData = await db.query.stock.findMany({
-      where: inArray(stock.id, items.map((i) => i.stockId)),
+      where: inArray(
+        stock.id,
+        items.map((i) => i.stockId),
+      ),
     });
 
     let totalPrice = 0;
@@ -76,11 +77,19 @@ export async function updateItems(
       const s = stockData.find((st) => st.id === item.stockId)!;
       const subtotal = s.price * item.quantity;
       totalPrice += subtotal;
-      return { stockId: item.stockId, quantity: item.quantity, pricePerItem: s.price, subtotal, isTakeaway: "true" };
+      return {
+        stockId: item.stockId,
+        quantity: item.quantity,
+        pricePerItem: s.price,
+        subtotal,
+        isTakeaway: "true",
+      };
     });
 
     await db.delete(order_items).where(eq(order_items.orderId, orderId));
-    await db.insert(order_items).values(orderItemValues.map((v) => ({ ...v, orderId })));
+    await db
+      .insert(order_items)
+      .values(orderItemValues.map((v) => ({ ...v, orderId })));
     await db.update(orders).set({ totalPrice }).where(eq(orders.id, orderId));
 
     revalidatePath("/bungkus");
