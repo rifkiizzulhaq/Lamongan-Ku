@@ -65,12 +65,28 @@ export async function updateItems(
   try {
     if (items.length === 0) return { success: false };
 
-    const stockData = await db.query.stock.findMany({
-      where: inArray(
-        stock.id,
-        items.map((i) => i.stockId),
-      ),
+    const oldItems = await db.query.order_items.findMany({
+      where: eq(order_items.orderId, orderId),
     });
+
+    const allStockIds = [
+      ...new Set([
+        ...oldItems.map((i) => i.stockId),
+        ...items.map((i) => i.stockId),
+      ]),
+    ];
+    const stockData = await db.query.stock.findMany({
+      where: inArray(stock.id, allStockIds),
+    });
+
+    const stockDelta: Record<number, number> = {};
+    for (const old of oldItems) {
+      stockDelta[old.stockId] = (stockDelta[old.stockId] ?? 0) + old.quantity;
+    }
+    for (const newItem of items) {
+      stockDelta[newItem.stockId] =
+        (stockDelta[newItem.stockId] ?? 0) - newItem.quantity;
+    }
 
     let totalPrice = 0;
     const orderItemValues = items.map((item) => {
@@ -85,6 +101,17 @@ export async function updateItems(
         isTakeaway: "true",
       };
     });
+
+    for (const [stockIdStr, delta] of Object.entries(stockDelta)) {
+      const stockId = parseInt(stockIdStr);
+      const s = stockData.find((st) => st.id === stockId);
+      if (!s || s.quantity === null) continue;
+      const newQty = Math.max(s.quantity + delta, 0);
+      await db
+        .update(stock)
+        .set({ quantity: newQty })
+        .where(eq(stock.id, stockId));
+    }
 
     await db.delete(order_items).where(eq(order_items.orderId, orderId));
     await db
@@ -169,6 +196,21 @@ export async function update(orderId: number, status: string) {
 
 export async function deletes(orderId: number) {
   try {
+    const oldItems = await db.query.order_items.findMany({
+      where: eq(order_items.orderId, orderId),
+    });
+
+    for (const item of oldItems) {
+      const s = await db.query.stock.findFirst({
+        where: eq(stock.id, item.stockId),
+      });
+      if (!s || s.quantity === null) continue;
+      await db
+        .update(stock)
+        .set({ quantity: s.quantity + item.quantity })
+        .where(eq(stock.id, item.stockId));
+    }
+
     await db.delete(orders).where(eq(orders.id, orderId));
     revalidatePath("/bungkus");
     return { success: true };

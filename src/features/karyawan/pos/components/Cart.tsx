@@ -1,12 +1,14 @@
 import Button from "@/src/components/ui/Button";
 
 import { CartItem } from "@/interfaces/models";
+import { LuLoader } from "react-icons/lu";
 
 export interface CartProps {
   mode?: "create" | "update";
   cart: CartItem[];
   totalPrice: number;
   onSave?: () => void;
+  isPending?: boolean;
 }
 
 export default function Cart({
@@ -14,6 +16,7 @@ export default function Cart({
   cart,
   totalPrice,
   onSave,
+  isPending = false,
 }: CartProps) {
   return (
     <div className="w-full bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 p-5 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-10px_40px_rgba(0,0,0,0.3)] z-50 mt-auto shrink-0">
@@ -34,18 +37,19 @@ export default function Cart({
             {mode === "create" && (
               <Button
                 onClick={onSave}
-                disabled={cart.length === 0}
-                className="w-full bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 font-black py-4 rounded-xl transition-colors shadow-lg shadow-black/20 dark:shadow-white/10 uppercase tracking-widest text-sm"
+                disabled={cart.length === 0 || isPending}
+                className="w-full bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 font-black py-4 rounded-xl transition-colors shadow-lg shadow-black/20 dark:shadow-white/10 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed text-center"
               >
-                Simpan
+                {isPending ? <LuLoader className="animate-spin" /> : "Simpan"}
               </Button>
             )}
             {mode === "update" && (
               <Button
                 onClick={onSave}
-                className="w-full bg-orange text-white hover:bg-orange-600 font-black py-4 rounded-xl transition-colors shadow-lg shadow-orange-500/20 uppercase tracking-widest text-sm"
+                disabled={isPending}
+                className="w-full bg-orange text-white hover:bg-orange-600 font-black py-4 rounded-xl transition-colors shadow-lg shadow-orange-500/20 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Update
+                {isPending ? <LuLoader className="animate-spin" /> : "Update"}
               </Button>
             )}
           </div>

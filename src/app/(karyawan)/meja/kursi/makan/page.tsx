@@ -1,17 +1,28 @@
-﻿"use client";
+"use client";
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import CardOrdering, {
-  dummyOrderData,
-} from "@/src/features/karyawan/pos/components/CardOrdering";
+import CardOrdering from "@/src/features/karyawan/pos/components/CardOrdering";
 import Cart from "@/src/features/karyawan/pos/components/Cart";
 import PageHeader from "@/src/components/ui/PageHeader";
+
+const dummyOrderData = [
+  { name: "Ayam Goreng", price: 15000, quantity: 2, sisa: 10 },
+  { name: "Lele Goreng", price: 12000, quantity: 0, sisa: 5 },
+  { name: "Nasi Putih", price: 5000, quantity: 1 },
+  { name: "Es Teh Manis", price: 4000, quantity: 0 },
+];
 
 function MakanContent() {
   const [isTakeaway, setIsTakeaway] = useState(false);
   const searchParams = useSearchParams();
   const mode = searchParams.get("mode") === "update" ? "update" : "create";
+
+  const dummyCart = [
+    { stockId: 1, name: "Ayam Goreng", price: 15000, quantity: 2 },
+    { stockId: 3, name: "Nasi Putih", price: 5000, quantity: 1 }
+  ];
+  const dummyTotalPrice = 35000;
 
   return (
     <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
@@ -33,7 +44,7 @@ function MakanContent() {
           ))}
         </div>
       </main>
-      <Cart mode={mode} />
+      <Cart mode={mode} cart={dummyCart} totalPrice={dummyTotalPrice} />
     </section>
   );
 }

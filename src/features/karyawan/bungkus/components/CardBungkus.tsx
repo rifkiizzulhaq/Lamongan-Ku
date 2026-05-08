@@ -5,9 +5,9 @@ import PaymentModal from "@/src/features/karyawan/pos/components/PaymentModal";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { update, deletes } from "@/src/server/karyawan/bungkus/bungkus.server";
-import { LuTrash2 } from "react-icons/lu";
-
+import { LuTrash2, LuLoader } from "react-icons/lu";
 import { OrderItem } from "@/interfaces/models";
 
 export interface CardBungkusProps {
@@ -26,9 +26,26 @@ export default function CardBungkus({
   items,
 }: CardBungkusProps) {
   const [showPayment, setShowPayment] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const invalidateAndRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["bungkus"] });
+    router.refresh();
+  };
+
+  const { mutate: hapus, isPending: isDeleting } = useMutation({
+    mutationFn: () => deletes(parseInt(orderId, 10)),
+    onSuccess: invalidateAndRefresh,
+  });
+
+  const { mutate: bayar, isPending: isProcessing } = useMutation({
+    mutationFn: () => update(parseInt(orderId, 10), "selesai"),
+    onSuccess: () => {
+      setShowPayment(false);
+      invalidateAndRefresh();
+    },
+  });
 
   return (
     <>
@@ -72,16 +89,12 @@ export default function CardBungkus({
               </div>
             </Link>
             <div className="flex">
-              <Button 
-                onClick={async () => {
-                  if (isDeleting) return;
-                  setIsDeleting(true);
-                  await deletes(parseInt(orderId, 10));
-                }}
+              <Button
+                onClick={() => hapus()}
                 disabled={isDeleting}
                 className="h-12 w-16 shrink-0 bg-red-500 text-white hover:bg-red-600 dark:bg-red-900 dark:hover:bg-red-700 uppercase font-bold rounded-none text-xs transition-colors mt-auto z-10 relative flex items-center justify-center disabled:opacity-50"
               >
-                {isDeleting ? "..." : <LuTrash2 size={18} strokeWidth={2.5} />}
+                {isDeleting ? <LuLoader className="animate-spin" /> : <LuTrash2 size={18} strokeWidth={2.5} />}
               </Button>
               <Button
                 onClick={() => setShowPayment(true)}
@@ -98,16 +111,9 @@ export default function CardBungkus({
         <PaymentModal
           id={id}
           totalPrice={totalPrice}
-          loading={processing}
+          loading={isProcessing}
           onClose={() => setShowPayment(false)}
-          onConfirm={async () => {
-            setProcessing(true);
-            const numericId = parseInt(orderId, 10);
-            await update(numericId, "selesai");
-            setProcessing(false);
-            setShowPayment(false);
-            router.refresh();
-          }}
+          onConfirm={() => bayar()}
         />
       )}
     </>
