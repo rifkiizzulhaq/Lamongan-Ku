@@ -38,18 +38,26 @@ export default function Cart({
               <Button
                 onClick={onSave}
                 disabled={cart.length === 0 || isPending}
-                className="w-full bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 font-black py-4 rounded-xl transition-colors shadow-lg shadow-black/20 dark:shadow-white/10 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed text-center"
+                className="w-full flex justify-center items-center bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 font-black py-4 rounded-xl transition-colors shadow-lg shadow-black/20 dark:shadow-white/10 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed text-center"
               >
-                {isPending ? <LuLoader className="animate-spin" /> : "Simpan"}
+                {isPending ? (
+                  <LuLoader className="animate-spin text-xl" />
+                ) : (
+                  "Simpan"
+                )}
               </Button>
             )}
             {mode === "update" && (
               <Button
                 onClick={onSave}
                 disabled={isPending}
-                className="w-full bg-orange text-white hover:bg-orange-600 font-black py-4 rounded-xl transition-colors shadow-lg shadow-orange-500/20 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full flex justify-center items-center bg-orange text-white hover:bg-orange-600 font-black py-4 rounded-xl transition-colors shadow-lg shadow-orange-500/20 uppercase tracking-widest text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {isPending ? <LuLoader className="animate-spin" /> : "Update"}
+                {isPending ? (
+                  <LuLoader className="animate-spin text-xl" />
+                ) : (
+                  "Update"
+                )}
               </Button>
             )}
           </div>

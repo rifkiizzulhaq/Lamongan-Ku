@@ -7,6 +7,7 @@ import { LuInfo, LuSave, LuPackagePlus, LuPlus } from "react-icons/lu";
 import { updateQuantities, create } from "@/src/server/bos/stock/stock.server";
 import Input from "@/src/components/ui/Input";
 import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
 
 import { StockFormItem } from "@/interfaces/models";
 
@@ -37,13 +38,38 @@ export default function StockInputForm({ stockList }: StockInputFormProps) {
     stocks();
   }, [stockList]);
 
-  const [saving, setSaving] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [newQty, setNewQty] = useState("");
-  const [addingItem, setAddingItem] = useState(false);
   const router = useRouter();
+
+  const { mutate: simpanStok, isPending: saving } = useMutation({
+    mutationFn: (items: { stockId: number; quantity: number }[]) => updateQuantities(items),
+    onSuccess: (res) => {
+      if (res.success) {
+        alert("Stock berhasil disimpan!");
+      } else {
+        alert("Gagal menyimpan stock, coba lagi.");
+      }
+    },
+  });
+
+  const { mutate: tambahItem, isPending: addingItem } = useMutation({
+    mutationFn: ({ name, price, qty }: { name: string; price: number; qty: number }) =>
+      create(name, price, qty),
+    onSuccess: (res) => {
+      if (res.success) {
+        setNewName("");
+        setNewPrice("");
+        setNewQty("");
+        setShowAddModal(false);
+        router.refresh();
+      } else {
+        alert("Gagal menambah item.");
+      }
+    },
+  });
 
   const formatRupiah = (value: string) => {
     if (!value) return "";
@@ -76,9 +102,8 @@ export default function StockInputForm({ stockList }: StockInputFormProps) {
     setStockInputs((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleSimpan = async () => {
+  const handleSimpan = () => {
     if (!isBuka || saving) return;
-    setSaving(true);
 
     const items = stockList
       .filter(
@@ -92,39 +117,21 @@ export default function StockInputForm({ stockList }: StockInputFormProps) {
 
     if (items.length === 0) {
       alert("Belum ada stock yang diisi.");
-      setSaving(false);
       return;
     }
 
-    const result = await updateQuantities(items);
-    if (result.success) {
-      alert("Stock berhasil disimpan!");
-    } else {
-      alert("Gagal menyimpan stock, coba lagi.");
-    }
-    setSaving(false);
+    simpanStok(items);
   };
 
-  const handleTambahItem = async () => {
+  const handleTambahItem = () => {
     if (!newName.trim()) return;
-    setAddingItem(true);
     const priceValue = newPrice ? parseInt(newPrice) : 0;
     const qtyValue = newQty ? parseInt(newQty) : 0;
-    const result = await create(newName.trim(), priceValue, qtyValue);
-    if (result.success) {
-      setNewName("");
-      setNewPrice("");
-      setNewQty("");
-      setShowAddModal(false);
-      router.refresh();
-    } else {
-      alert("Gagal menambah item.");
-    }
-    setAddingItem(false);
+    tambahItem({ name: newName.trim(), price: priceValue, qty: qtyValue });
   };
 
   return (
-    <div className="flex flex-col gap-5 w-full">
+    <div className="flex flex-col gap-5 w-full shrink-0">
       {!isBuka && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-4 rounded-xl flex gap-3 items-start">
           <LuInfo className="shrink-0 mt-0.5" size={18} />
