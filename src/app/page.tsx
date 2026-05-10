@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import { LuEye, LuEyeOff } from "react-icons/lu";
+import { LuEye, LuEyeOff, LuLoader } from "react-icons/lu";
 import Input from "@/src/components/ui/Input";
 import Button from "@/src/components/ui/Button";
 
@@ -117,9 +117,9 @@ export default function Page() {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full bg-neutral-200 text-black text-sm py-2 rounded-lg hover:bg-neutral-300 focus:outline-none focus:ring-1 focus:ring-white disabled:opacity-50"
+          className="w-full flex justify-center items-center bg-neutral-200 text-black text-sm py-2 rounded-lg hover:bg-neutral-300 focus:outline-none focus:ring-1 focus:ring-white disabled:opacity-50"
         >
-          {loading ? "Memeriksa..." : "Masuk"}
+          {loading ? <LuLoader size={20} className="animate-spin" /> : "Masuk"}
         </Button>
       </form>
     </section>

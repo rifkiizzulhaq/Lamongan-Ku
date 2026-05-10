@@ -41,7 +41,6 @@ export default function BungkusOrderingClient({
     },
     onSuccess: () => {
       router.push("/bungkus");
-      router.refresh();
     },
   });
 

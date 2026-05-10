@@ -3,14 +3,13 @@
 import Link from "next/link";
 
 interface CardMejaProps {
-  id: string;
+  id: number;
+  name: string;
   totalItems: number;
   isActive: boolean;
 }
 
-export default function CardMeja({ id, totalItems, isActive }: CardMejaProps) {
-  const mejaId = id.split("-").slice(0, 2).join(" ");
-
+export default function CardMeja({ id, name, totalItems, isActive }: CardMejaProps) {
   return (
     <>
       <div
@@ -21,11 +20,11 @@ export default function CardMeja({ id, totalItems, isActive }: CardMejaProps) {
         ></div>
         <div className="flex-1 flex flex-col justify-between w-full h-full">
           <Link
-            href="/meja/kursi"
+            href={`/meja/${id}`}
             className="flex flex-col py-3 px-3 w-full h-full"
           >
-            <h2 className="text-neutral-800 dark:text-white text-xl font-black uppercase tracking-wider">
-              {mejaId}
+            <h2 className="text-neutral-800 dark:text-white text-xl font-black uppercase tracking-wider truncate">
+              {name}
             </h2>
             <div className="flex flex-col gap-0.5 mt-auto">
               <div className="flex items-center gap-1.5">

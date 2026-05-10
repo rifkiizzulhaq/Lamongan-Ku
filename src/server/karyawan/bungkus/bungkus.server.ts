@@ -102,22 +102,26 @@ export async function updateItems(
       };
     });
 
-    for (const [stockIdStr, delta] of Object.entries(stockDelta)) {
+    const updatePromises = Object.entries(stockDelta).map(([stockIdStr, delta]) => {
       const stockId = parseInt(stockIdStr);
       const s = stockData.find((st) => st.id === stockId);
-      if (!s || s.quantity === null) continue;
+      if (!s || s.quantity === null) return Promise.resolve();
       const newQty = Math.max(s.quantity + delta, 0);
-      await db
+      return db
         .update(stock)
         .set({ quantity: newQty })
         .where(eq(stock.id, stockId));
-    }
+    });
 
-    await db.delete(order_items).where(eq(order_items.orderId, orderId));
+    await Promise.all([
+      db.delete(order_items).where(eq(order_items.orderId, orderId)),
+      db.update(orders).set({ totalPrice }).where(eq(orders.id, orderId)),
+      ...updatePromises,
+    ]);
+
     await db
       .insert(order_items)
       .values(orderItemValues.map((v) => ({ ...v, orderId })));
-    await db.update(orders).set({ totalPrice }).where(eq(orders.id, orderId));
 
     revalidatePath("/bungkus");
     return { success: true };
@@ -162,19 +166,26 @@ export async function create(items: { stockId: number; quantity: number }[]) {
       .set({ label: `B-${String(newOrder.id).padStart(3, "0")}` })
       .where(eq(orders.id, newOrder.id));
 
-    await db
-      .insert(order_items)
-      .values(orderItemValues.map((v) => ({ ...v, orderId: newOrder.id })));
-
+    const stockDelta: Record<number, number> = {};
     for (const item of items) {
-      const s = stockData.find((st) => st.id === item.stockId);
-      if (!s) continue;
-      const newQty = Math.max((s.quantity ?? 0) - item.quantity, 0);
-      await db
+      stockDelta[item.stockId] = (stockDelta[item.stockId] ?? 0) + item.quantity;
+    }
+
+    const updatePromises = Object.entries(stockDelta).map(([stockIdStr, qty]) => {
+      const stockId = parseInt(stockIdStr);
+      const s = stockData.find((st) => st.id === stockId);
+      if (!s || s.quantity === null) return Promise.resolve();
+      const newQty = Math.max(s.quantity - qty, 0);
+      return db
         .update(stock)
         .set({ quantity: newQty })
-        .where(eq(stock.id, item.stockId));
-    }
+        .where(eq(stock.id, stockId));
+    });
+
+    await Promise.all([
+      db.insert(order_items).values(orderItemValues.map((v) => ({ ...v, orderId: newOrder.id }))),
+      ...updatePromises,
+    ]);
 
     revalidatePath("/bungkus");
     return { success: true };
