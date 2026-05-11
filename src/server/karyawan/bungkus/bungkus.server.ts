@@ -13,17 +13,20 @@ export async function getStock() {
   }
 }
 
-export async function getAll() {
+export async function getAll(page = 1, limitNum = 5) {
   try {
+    const offsetNum = (page - 1) * limitNum;
     const bungkusOrders = await db.query.orders.findMany({
       where: and(eq(orders.orderType, "bungkus"), ne(orders.status, "selesai")),
       orderBy: [orders.createdAt],
+      limit: limitNum,
+      offset: offsetNum,
       with: { items: { with: { stock: true } } },
     });
 
     return bungkusOrders.map((order) => ({
       id: order.id.toString(),
-      label: order.label || `B-${order.id}`,
+      label: order.label || `B - ${order.id}`,
       totalPrice: order.totalPrice,
       status: order.status,
       items: order.items.map((item) => ({
@@ -102,16 +105,18 @@ export async function updateItems(
       };
     });
 
-    const updatePromises = Object.entries(stockDelta).map(([stockIdStr, delta]) => {
-      const stockId = parseInt(stockIdStr);
-      const s = stockData.find((st) => st.id === stockId);
-      if (!s || s.quantity === null) return Promise.resolve();
-      const newQty = Math.max(s.quantity + delta, 0);
-      return db
-        .update(stock)
-        .set({ quantity: newQty })
-        .where(eq(stock.id, stockId));
-    });
+    const updatePromises = Object.entries(stockDelta).map(
+      ([stockIdStr, delta]) => {
+        const stockId = parseInt(stockIdStr);
+        const s = stockData.find((st) => st.id === stockId);
+        if (!s || s.quantity === null) return Promise.resolve();
+        const newQty = Math.max(s.quantity + delta, 0);
+        return db
+          .update(stock)
+          .set({ quantity: newQty })
+          .where(eq(stock.id, stockId));
+      },
+    );
 
     await Promise.all([
       db.delete(order_items).where(eq(order_items.orderId, orderId)),
@@ -168,22 +173,27 @@ export async function create(items: { stockId: number; quantity: number }[]) {
 
     const stockDelta: Record<number, number> = {};
     for (const item of items) {
-      stockDelta[item.stockId] = (stockDelta[item.stockId] ?? 0) + item.quantity;
+      stockDelta[item.stockId] =
+        (stockDelta[item.stockId] ?? 0) + item.quantity;
     }
 
-    const updatePromises = Object.entries(stockDelta).map(([stockIdStr, qty]) => {
-      const stockId = parseInt(stockIdStr);
-      const s = stockData.find((st) => st.id === stockId);
-      if (!s || s.quantity === null) return Promise.resolve();
-      const newQty = Math.max(s.quantity - qty, 0);
-      return db
-        .update(stock)
-        .set({ quantity: newQty })
-        .where(eq(stock.id, stockId));
-    });
+    const updatePromises = Object.entries(stockDelta).map(
+      ([stockIdStr, qty]) => {
+        const stockId = parseInt(stockIdStr);
+        const s = stockData.find((st) => st.id === stockId);
+        if (!s || s.quantity === null) return Promise.resolve();
+        const newQty = Math.max(s.quantity - qty, 0);
+        return db
+          .update(stock)
+          .set({ quantity: newQty })
+          .where(eq(stock.id, stockId));
+      },
+    );
 
     await Promise.all([
-      db.insert(order_items).values(orderItemValues.map((v) => ({ ...v, orderId: newOrder.id }))),
+      db
+        .insert(order_items)
+        .values(orderItemValues.map((v) => ({ ...v, orderId: newOrder.id }))),
       ...updatePromises,
     ]);
 

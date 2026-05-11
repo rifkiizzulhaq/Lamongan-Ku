@@ -1,23 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import PageHeader from "@/src/components/ui/PageHeader";
 import PageHeaderSkeleton from "@/src/components/ui/PageHeaderSkeleton";
 import CardKursi from "@/src/features/karyawan/meja/components/CardKursi";
 import CardKursiSkeleton from "@/src/features/karyawan/meja/components/CardKursiSkeleton";
-import { LuUsers, LuUtensils, LuUser, LuPlus } from "react-icons/lu";
+import { LuUsers, LuUtensils, LuUser, LuPlus, LuLoader } from "react-icons/lu";
 import Button from "@/src/components/ui/Button";
-import { getOrdersByTable, getTableById } from "@/src/server/karyawan/meja/meja.server";
+import {
+  getOrdersByTable,
+  getTableById,
+} from "@/src/server/karyawan/meja/meja.server";
 
 export default function Page() {
   const params = useParams();
-  const tableIdStr = Array.isArray(params?.tableId) ? params.tableId[0] : params?.tableId;
+  const tableIdStr = Array.isArray(params?.tableId)
+    ? params.tableId[0]
+    : params?.tableId;
   const tableId = tableIdStr ? parseInt(tableIdStr, 10) : 0;
 
   const [open, setOpen] = useState(false);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   const { data: table } = useQuery({
     queryKey: ["table", tableId],
@@ -25,11 +31,47 @@ export default function Page() {
     enabled: !!tableId,
   });
 
-  const { data: orders = [], isLoading } = useQuery({
+  const {
+    data: infiniteData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery({
     queryKey: ["table-orders", tableId],
-    queryFn: () => getOrdersByTable(tableId),
+    queryFn: async ({ pageParam = 1 }) =>
+      await getOrdersByTable(tableId, pageParam as number, 5),
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage) return undefined;
+      return lastPage.length === 5 ? allPages.length + 1 : undefined;
+    },
+    initialPageParam: 1,
     enabled: !!tableId,
   });
+
+  const orders = infiniteData ? infiniteData.pages.flatMap((page) => page) : [];
+
+  const handleObserver = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+    },
+    [hasNextPage, isFetchingNextPage, fetchNextPage],
+  );
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(handleObserver, {
+      threshold: 0.1,
+    });
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+    return () => {
+      if (currentTarget) observer.unobserve(currentTarget);
+    };
+  }, [handleObserver]);
 
   const modeOptions = [
     {
@@ -42,10 +84,10 @@ export default function Page() {
       href: `/meja/${tableId}/makan?tipe=Makan Bareng`,
       icon: <LuUtensils />,
     },
-    { 
-      label: "Sendiri", 
-      href: `/meja/${tableId}/makan?tipe=Sendiri`, 
-      icon: <LuUser /> 
+    {
+      label: "Sendiri",
+      href: `/meja/${tableId}/makan?tipe=Sendiri`,
+      icon: <LuUser />,
     },
   ];
 
@@ -111,7 +153,7 @@ export default function Page() {
             orders.map((order, idx) => (
               <CardKursi
                 key={order.id}
-                id={`O-${order.id}`}
+                id={`M - ${order.id}`}
                 tableId={tableId}
                 orderId={order.id}
                 totalPrice={order.totalPrice}
@@ -121,6 +163,20 @@ export default function Page() {
                 tipe={order.tipe}
               />
             ))
+          )}
+
+          {hasNextPage && orders.length > 0 && (
+            <div
+              ref={observerTarget}
+              className="w-full py-4 flex justify-center items-center"
+            >
+              <LuLoader className="animate-spin text-orange text-2xl" />
+            </div>
+          )}
+          {!hasNextPage && orders.length > 0 && (
+            <p className="text-center text-xs text-neutral-400 py-4">
+              Semua antrean meja telah ditampilkan.
+            </p>
           )}
         </div>
       </main>

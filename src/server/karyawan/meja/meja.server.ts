@@ -1,7 +1,13 @@
 "use server";
 
 import { db } from "@/db";
-import { orders, order_items, stock, dining_table, daily_reports } from "@/db/schema";
+import {
+  orders,
+  order_items,
+  stock,
+  dining_table,
+  daily_reports,
+} from "@/db/schema";
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
@@ -11,7 +17,10 @@ export async function getTablesWithOrders() {
       orderBy: [dining_table.createdAt],
       with: {
         orders: {
-          where: and(eq(orders.orderType, "makan"), ne(orders.status, "selesai")),
+          where: and(
+            eq(orders.orderType, "makan"),
+            ne(orders.status, "selesai"),
+          ),
         },
       },
     });
@@ -27,15 +36,22 @@ export async function getTablesWithOrders() {
   }
 }
 
-export async function getOrdersByTable(tableId: number) {
+export async function getOrdersByTable(
+  tableId: number,
+  page = 1,
+  limitNum = 5,
+) {
   try {
+    const offsetNum = (page - 1) * limitNum;
     const activeOrders = await db.query.orders.findMany({
       where: and(
         eq(orders.diningTableId, tableId),
         eq(orders.orderType, "makan"),
-        ne(orders.status, "selesai")
+        ne(orders.status, "selesai"),
       ),
       orderBy: [orders.createdAt],
+      limit: limitNum,
+      offset: offsetNum,
       with: { items: { with: { stock: true } } },
     });
 
@@ -94,15 +110,16 @@ export async function getOrderById(orderId: number) {
 export async function createMakanOrder(
   tableId: number,
   customerType: string,
-  items: { stockId: number; quantity: number; isTakeaway?: boolean }[]
+  items: { stockId: number; quantity: number; isTakeaway?: boolean }[],
 ) {
   try {
-    if (items.length === 0) return { success: false, error: "Keranjang kosong" };
+    if (items.length === 0)
+      return { success: false, error: "Keranjang kosong" };
 
     const stockData = await db.query.stock.findMany({
       where: inArray(
         stock.id,
-        items.map((i) => i.stockId)
+        items.map((i) => i.stockId),
       ),
     });
 
@@ -132,22 +149,27 @@ export async function createMakanOrder(
 
     const stockDelta: Record<number, number> = {};
     for (const item of items) {
-      stockDelta[item.stockId] = (stockDelta[item.stockId] ?? 0) + item.quantity;
+      stockDelta[item.stockId] =
+        (stockDelta[item.stockId] ?? 0) + item.quantity;
     }
 
-    const updatePromises = Object.entries(stockDelta).map(([stockIdStr, qty]) => {
-      const stockId = parseInt(stockIdStr);
-      const s = stockData.find((st) => st.id === stockId);
-      if (!s || s.quantity === null) return Promise.resolve();
-      const newQty = Math.max(s.quantity - qty, 0);
-      return db
-        .update(stock)
-        .set({ quantity: newQty })
-        .where(eq(stock.id, stockId));
-    });
+    const updatePromises = Object.entries(stockDelta).map(
+      ([stockIdStr, qty]) => {
+        const stockId = parseInt(stockIdStr);
+        const s = stockData.find((st) => st.id === stockId);
+        if (!s || s.quantity === null) return Promise.resolve();
+        const newQty = Math.max(s.quantity - qty, 0);
+        return db
+          .update(stock)
+          .set({ quantity: newQty })
+          .where(eq(stock.id, stockId));
+      },
+    );
 
     await Promise.all([
-      db.insert(order_items).values(orderItemValues.map((v) => ({ ...v, orderId: newOrder.id }))),
+      db
+        .insert(order_items)
+        .values(orderItemValues.map((v) => ({ ...v, orderId: newOrder.id }))),
       ...updatePromises,
     ]);
 
@@ -162,10 +184,11 @@ export async function createMakanOrder(
 
 export async function updateMakanItems(
   orderId: number,
-  items: { stockId: number; quantity: number; isTakeaway?: boolean }[]
+  items: { stockId: number; quantity: number; isTakeaway?: boolean }[],
 ) {
   try {
-    if (items.length === 0) return { success: false, error: "Keranjang kosong" };
+    if (items.length === 0)
+      return { success: false, error: "Keranjang kosong" };
 
     const orderInfo = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
@@ -209,23 +232,25 @@ export async function updateMakanItems(
       };
     });
 
-    const updatePromises = Object.entries(stockDelta).map(([stockIdStr, delta]) => {
-      const stockId = parseInt(stockIdStr);
-      const s = stockData.find((st) => st.id === stockId);
-      if (!s || s.quantity === null) return Promise.resolve();
-      const newQty = Math.max(s.quantity + delta, 0);
-      return db
-        .update(stock)
-        .set({ quantity: newQty })
-        .where(eq(stock.id, stockId));
-    });
+    const updatePromises = Object.entries(stockDelta).map(
+      ([stockIdStr, delta]) => {
+        const stockId = parseInt(stockIdStr);
+        const s = stockData.find((st) => st.id === stockId);
+        if (!s || s.quantity === null) return Promise.resolve();
+        const newQty = Math.max(s.quantity + delta, 0);
+        return db
+          .update(stock)
+          .set({ quantity: newQty })
+          .where(eq(stock.id, stockId));
+      },
+    );
 
     await Promise.all([
       db.delete(order_items).where(eq(order_items.orderId, orderId)),
       db.update(orders).set({ totalPrice }).where(eq(orders.id, orderId)),
       ...updatePromises,
     ]);
-    
+
     await db
       .insert(order_items)
       .values(orderItemValues.map((v) => ({ ...v, orderId })));
@@ -254,7 +279,7 @@ export async function deleteMakanOrder(orderId: number) {
     const stockData = await db.query.stock.findMany({
       where: inArray(
         stock.id,
-        oldItems.map((i) => i.stockId)
+        oldItems.map((i) => i.stockId),
       ),
     });
 
@@ -263,27 +288,29 @@ export async function deleteMakanOrder(orderId: number) {
       stockDelta[old.stockId] = (stockDelta[old.stockId] ?? 0) + old.quantity;
     }
 
-    const restorePromises = Object.entries(stockDelta).map(([stockIdStr, qty]) => {
-      const stockId = parseInt(stockIdStr);
-      const s = stockData.find((st) => st.id === stockId);
-      if (!s || s.quantity === null) return Promise.resolve();
-      const newQty = s.quantity + qty;
-      return db
-        .update(stock)
-        .set({ quantity: newQty })
-        .where(eq(stock.id, stockId));
-    });
+    const restorePromises = Object.entries(stockDelta).map(
+      ([stockIdStr, qty]) => {
+        const stockId = parseInt(stockIdStr);
+        const s = stockData.find((st) => st.id === stockId);
+        if (!s || s.quantity === null) return Promise.resolve();
+        const newQty = s.quantity + qty;
+        return db
+          .update(stock)
+          .set({ quantity: newQty })
+          .where(eq(stock.id, stockId));
+      },
+    );
 
     await Promise.all([
       db.delete(orders).where(eq(orders.id, orderId)),
       ...restorePromises,
     ]);
-    
+
     if (orderInfo?.diningTableId) {
       revalidatePath(`/meja/${orderInfo.diningTableId}`);
     }
     revalidatePath("/meja");
-    
+
     return { success: true };
   } catch (error) {
     console.error("Error deleting makan order:", error);
@@ -298,7 +325,10 @@ export async function payMakanOrder(orderId: number) {
     });
     if (!order) return { success: false };
 
-    await db.update(orders).set({ status: "selesai" }).where(eq(orders.id, orderId));
+    await db
+      .update(orders)
+      .set({ status: "selesai" })
+      .where(eq(orders.id, orderId));
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -326,7 +356,7 @@ export async function payMakanOrder(orderId: number) {
     }
     revalidatePath("/meja");
     revalidatePath("/dashboard");
-    
+
     return { success: true };
   } catch (error) {
     console.error("Error paying makan order:", error);

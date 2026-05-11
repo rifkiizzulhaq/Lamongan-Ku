@@ -1,4 +1,4 @@
-import KaryawanBottomNavbar from "@/src/components/navbar/KaryawanBottomNavbar";
+import KaryawanBottomNavbarWrapper from "@/src/components/navbar/KaryawanBottomNavbarWrapper";
 
 export default function KaryawanLayout({
   children,
@@ -8,7 +8,7 @@ export default function KaryawanLayout({
   return (
     <>
       <main className="grow">{children}</main>
-      <KaryawanBottomNavbar />
+      <KaryawanBottomNavbarWrapper />
     </>
   );
 }

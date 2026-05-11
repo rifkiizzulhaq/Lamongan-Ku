@@ -1,12 +1,20 @@
 import Button from "@/src/components/ui/Button";
-import CardBungkus from "@/src/features/karyawan/bungkus/components/CardBungkus";
+import BungkusClient from "@/src/features/karyawan/bungkus/components/BungkusClient";
 import Link from "next/link";
 import PageHeader from "@/src/components/ui/PageHeader";
 import { LuPlus } from "react-icons/lu";
 import { getAll } from "@/src/server/karyawan/bungkus/bungkus.server";
 
 export default async function Page() {
-  const antrean = await getAll();
+  const antrean = await getAll(1, 5);
+
+  const initialData = antrean.map((a) => ({
+    orderId: a.id,
+    id: a.label,
+    totalPrice: a.totalPrice,
+    status: a.status,
+    items: a.items,
+  }));
 
   return (
     <section className="h-[calc(100dvh-45px)] md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
@@ -21,24 +29,7 @@ export default async function Page() {
           </Link>
         </div>
 
-        <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-30 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
-          {antrean.length === 0 ? (
-            <p className="text-center text-neutral-400 dark:text-neutral-600 text-sm mt-10">
-              Belum ada pesanan bungkus.
-            </p>
-          ) : (
-            antrean.map((pesanan) => (
-              <CardBungkus
-                key={pesanan.id}
-                orderId={pesanan.id}
-                id={pesanan.label}
-                totalPrice={pesanan.totalPrice}
-                status={pesanan.status}
-                items={pesanan.items}
-              />
-            ))
-          )}
-        </div>
+        <BungkusClient initialData={initialData} />
       </main>
     </section>
   );

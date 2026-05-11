@@ -11,6 +11,7 @@ export interface CartItem {
 export interface OrderItem {
   n: string;
   q: number;
+  isTakeaway?: boolean;
 }
 
 export interface KursiItem {
