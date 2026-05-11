@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useNotificationStore } from "@/src/store/notificationStore";
 
 interface CardMejaProps {
   id: number;
@@ -9,21 +10,36 @@ interface CardMejaProps {
   isActive: boolean;
 }
 
-export default function CardMeja({ id, name, totalItems, isActive }: CardMejaProps) {
+export default function CardMeja({
+  id,
+  name,
+  totalItems,
+  isActive,
+}: CardMejaProps) {
+  const { newMejaIds } = useNotificationStore();
+  const hasNewNotification = newMejaIds.includes(id);
+
   return (
     <>
       <div
-        className={`w-[calc(50%-0.5rem)] h-28 flex bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm transition-colors cursor-pointer group ${isActive ? "hover:border-orange-400 dark:hover:border-orange-500/50" : "hover:border-hijau dark:hover:border-hijau/50"}`}
+        className={`w-[calc(50%-0.5rem)] h-28 flex bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm transition-colors cursor-pointer group relative ${isActive ? "hover:border-orange-400 dark:hover:border-orange-500/50" : "hover:border-hijau dark:hover:border-hijau/50"}`}
       >
+        {hasNewNotification && (
+          <span className="absolute top-2 right-2 flex h-3 w-3 z-10">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white dark:border-neutral-800"></span>
+          </span>
+        )}
         <div
           className={`w-2 h-full shrink-0 ${isActive ? "bg-orange" : "bg-hijau"}`}
         ></div>
         <div className="flex-1 flex flex-col justify-between w-full h-full">
           <Link
             href={`/meja/${id}`}
+            onClick={() => useNotificationStore.getState().clearNewMejaId(id)}
             className="flex flex-col py-3 px-3 w-full h-full"
           >
-            <h2 className="text-neutral-800 dark:text-white text-xl font-black uppercase tracking-wider truncate">
+            <h2 className="text-neutral-800 dark:text-white text-xl font-black uppercase tracking-wider truncate pr-4">
               {name}
             </h2>
             <div className="flex flex-col gap-0.5 mt-auto">

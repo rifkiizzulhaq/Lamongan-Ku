@@ -1,4 +1,3 @@
-// Skeleton mengikuti struktur visual CardOrdering
 export default function CardOrderingSkeleton() {
   return (
     <div className="w-full h-30 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm animate-pulse">

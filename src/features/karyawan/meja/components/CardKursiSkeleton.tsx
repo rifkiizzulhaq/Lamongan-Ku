@@ -1,4 +1,3 @@
-// Skeleton mengikuti struktur visual CardKursi
 export default function CardKursiSkeleton() {
   return (
     <div className="w-full h-60 bg-white dark:bg-neutral-700 rounded-xl border border-neutral-300 dark:border-neutral-600 flex items-center justify-between shadow-sm animate-pulse overflow-hidden">

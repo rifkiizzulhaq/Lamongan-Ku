@@ -31,7 +31,6 @@ export default function CardRiwayat({
           </p>
         </div>
 
-        {/* Tanggal + badge bungkus */}
         <div className="flex items-center gap-2 mt-1 mb-3">
           <p className="text-[13px] font-semibold text-neutral-500 dark:text-neutral-300">
             {date}
@@ -43,7 +42,6 @@ export default function CardRiwayat({
           )}
         </div>
 
-        {/* Daftar item */}
         <div
           className={`w-full flex flex-wrap content-start gap-2 bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800 rounded-lg p-2.5 ${
             items.length > 5

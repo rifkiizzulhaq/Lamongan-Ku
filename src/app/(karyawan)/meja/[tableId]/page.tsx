@@ -14,6 +14,8 @@ import {
   getOrdersByTable,
   getTableById,
 } from "@/src/server/karyawan/meja/meja.server";
+import { useSupabaseRealtime } from "@/src/hooks/useSupabaseRealtime";
+import { useNotificationStore } from "@/src/store/notificationStore";
 
 export default function Page() {
   const params = useParams();
@@ -21,6 +23,13 @@ export default function Page() {
     ? params.tableId[0]
     : params?.tableId;
   const tableId = tableIdStr ? parseInt(tableIdStr, 10) : 0;
+
+  useSupabaseRealtime("orders", ["table-orders", "tables-karyawan"]);
+
+  const clearNewMejaId = useNotificationStore((s) => s.clearNewMejaId);
+  useEffect(() => {
+    if (tableId) clearNewMejaId(tableId);
+  }, [tableId, clearNewMejaId]);
 
   const [open, setOpen] = useState(false);
   const observerTarget = useRef<HTMLDivElement>(null);
@@ -47,6 +56,7 @@ export default function Page() {
     },
     initialPageParam: 1,
     enabled: !!tableId,
+    staleTime: 0,
   });
 
   const orders = infiniteData ? infiniteData.pages.flatMap((page) => page) : [];

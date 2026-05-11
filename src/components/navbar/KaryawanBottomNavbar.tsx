@@ -2,9 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { useGlobalNotifications } from "@/src/hooks/useGlobalNotifications";
+import { useNotificationStore } from "@/src/store/notificationStore";
 
 export default function KaryawanBottomNavbar() {
   const pathname = usePathname();
+  useGlobalNotifications();
+
+  const { hasNewBungkus, hasNewMeja, setHasNewBungkus, setHasNewMeja } =
+    useNotificationStore();
+
+  useEffect(() => {
+    if (pathname === "/bungkus") {
+      setHasNewBungkus(false);
+    }
+    if (pathname.startsWith("/meja")) {
+      setHasNewMeja(false);
+    }
+  }, [pathname, setHasNewBungkus, setHasNewMeja]);
 
   if (pathname === "/") {
     return null;
@@ -14,6 +30,7 @@ export default function KaryawanBottomNavbar() {
     {
       name: "Bungkus",
       href: "/bungkus",
+      hasNotification: hasNewBungkus,
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -35,6 +52,7 @@ export default function KaryawanBottomNavbar() {
     {
       name: "Meja",
       href: "/meja",
+      hasNotification: hasNewMeja,
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -57,6 +75,7 @@ export default function KaryawanBottomNavbar() {
     {
       name: "Riwayat",
       href: "/riwayat",
+      hasNotification: false,
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -78,6 +97,7 @@ export default function KaryawanBottomNavbar() {
     {
       name: "Lainnya",
       href: "/more",
+      hasNotification: false,
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -107,16 +127,22 @@ export default function KaryawanBottomNavbar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 group ${
+              className={`inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 group relative ${
                 isActive ? "bg-neutral-800 text-white" : "text-gray-500"
               }`}
             >
               <div
-                className={`mb-1 group-hover:text-blue-600 transition-colors ${
+                className={`mb-1 relative group-hover:text-blue-600 transition-colors ${
                   isActive ? "text-white" : "text-gray-500"
                 }`}
               >
                 {item.icon}
+                {item.hasNotification && (
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-white dark:border-neutral-800"></span>
+                  </span>
+                )}
               </div>
               <span className="text-xs">{item.name}</span>
             </Link>

@@ -6,8 +6,11 @@ import CardMejaSkeleton from "@/src/features/karyawan/meja/components/CardMejaSk
 import PageHeader from "@/src/components/ui/PageHeader";
 import PageHeaderSkeleton from "@/src/components/ui/PageHeaderSkeleton";
 import { getTablesWithOrders } from "@/src/server/karyawan/meja/meja.server";
+import { useSupabaseRealtime } from "@/src/hooks/useSupabaseRealtime";
 
 export default function Meja() {
+  useSupabaseRealtime("orders", ["tables-karyawan"]);
+
   const { data: tables = [], isLoading } = useQuery({
     queryKey: ["tables-karyawan"],
     queryFn: () => getTablesWithOrders(),
