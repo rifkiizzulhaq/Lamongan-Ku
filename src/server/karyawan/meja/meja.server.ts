@@ -8,11 +8,14 @@ import {
   dining_table,
   daily_reports,
 } from "@/db/schema";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, eq, inArray, ne, gte, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { checkIfReportedToday } from "../more/more.server";
+import { getShiftWaktu } from "@/src/utils/date";
 
 export async function getTablesWithOrders() {
   try {
+    const { startOfDay, endOfDay } = getShiftWaktu();
     const allTables = await db.query.dining_table.findMany({
       orderBy: [dining_table.createdAt],
       with: {
@@ -20,6 +23,8 @@ export async function getTablesWithOrders() {
           where: and(
             eq(orders.orderType, "makan"),
             ne(orders.status, "selesai"),
+            gte(orders.createdAt, startOfDay),
+            lte(orders.createdAt, endOfDay),
           ),
         },
       },
@@ -42,12 +47,15 @@ export async function getOrdersByTable(
   limitNum = 5,
 ) {
   try {
+    const { startOfDay, endOfDay } = getShiftWaktu();
     const offsetNum = (page - 1) * limitNum;
     const activeOrders = await db.query.orders.findMany({
       where: and(
         eq(orders.diningTableId, tableId),
         eq(orders.orderType, "makan"),
         ne(orders.status, "selesai"),
+        gte(orders.createdAt, startOfDay),
+        lte(orders.createdAt, endOfDay),
       ),
       orderBy: [orders.createdAt],
       limit: limitNum,
@@ -113,6 +121,15 @@ export async function createMakanOrder(
   items: { stockId: number; quantity: number; isTakeaway?: boolean }[],
 ) {
   try {
+    const isClosed = await checkIfReportedToday();
+    if (isClosed) {
+      return {
+        success: false,
+        error:
+          "Warung sudah tutup! Tidak bisa membuat pesanan baru hingga shift berikutnya.",
+      };
+    }
+
     if (items.length === 0)
       return { success: false, error: "Keranjang kosong" };
 
@@ -330,14 +347,17 @@ export async function payMakanOrder(orderId: number) {
       .set({ status: "selesai" })
       .where(eq(orders.id, orderId));
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const { startOfDay, endOfDay } = getShiftWaktu();
 
     let currentReport = await db.query.daily_reports.findFirst({
+      where: and(
+        gte(daily_reports.createdAt, startOfDay),
+        lte(daily_reports.createdAt, endOfDay),
+      ),
       orderBy: (reports, { desc }) => [desc(reports.createdAt)],
     });
 
-    if (!currentReport || currentReport.createdAt < today) {
+    if (!currentReport) {
       const [newReport] = await db
         .insert(daily_reports)
         .values({ systemRevenue: 0, actualRevenue: 0 })

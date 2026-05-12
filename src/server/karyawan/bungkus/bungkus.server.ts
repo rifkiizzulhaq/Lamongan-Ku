@@ -2,8 +2,10 @@
 
 import { db } from "@/db";
 import { orders, order_items, stock } from "@/db/schema";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, eq, inArray, ne, gte, lte, count } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { checkIfReportedToday } from "../more/more.server";
+import { getShiftWaktu } from "@/src/utils/date";
 
 export async function getStock() {
   try {
@@ -15,9 +17,15 @@ export async function getStock() {
 
 export async function getAll(page = 1, limitNum = 5) {
   try {
+    const { startOfDay, endOfDay } = getShiftWaktu();
     const offsetNum = (page - 1) * limitNum;
     const bungkusOrders = await db.query.orders.findMany({
-      where: and(eq(orders.orderType, "bungkus"), ne(orders.status, "selesai")),
+      where: and(
+        eq(orders.orderType, "bungkus"),
+        ne(orders.status, "selesai"),
+        gte(orders.createdAt, startOfDay),
+        lte(orders.createdAt, endOfDay),
+      ),
       orderBy: [orders.createdAt],
       limit: limitNum,
       offset: offsetNum,
@@ -138,6 +146,15 @@ export async function updateItems(
 
 export async function create(items: { stockId: number; quantity: number }[]) {
   try {
+    const isClosed = await checkIfReportedToday();
+    if (isClosed) {
+      return {
+        success: false,
+        error:
+          "Warung sudah tutup! Tidak bisa membuat pesanan baru hingga shift berikutnya.",
+      };
+    }
+
     if (items.length === 0) return { success: false };
 
     const stockData = await db.query.stock.findMany({
@@ -161,15 +178,29 @@ export async function create(items: { stockId: number; quantity: number }[]) {
       };
     });
 
+    const { startOfDay, endOfDay } = getShiftWaktu();
+
+    const todayOrdersCount = await db
+      .select({ val: count() })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.orderType, "bungkus"),
+          gte(orders.createdAt, startOfDay),
+          lte(orders.createdAt, endOfDay),
+        ),
+      );
+
+    const dailySequence = (todayOrdersCount[0]?.val ?? 0) + 1;
+
     const [newOrder] = await db
       .insert(orders)
-      .values({ orderType: "bungkus", label: null, totalPrice })
+      .values({
+        orderType: "bungkus",
+        label: `B-${String(dailySequence).padStart(3, "0")}`,
+        totalPrice,
+      })
       .returning();
-
-    await db
-      .update(orders)
-      .set({ label: `B-${String(newOrder.id).padStart(3, "0")}` })
-      .where(eq(orders.id, newOrder.id));
 
     const stockDelta: Record<number, number> = {};
     for (const item of items) {

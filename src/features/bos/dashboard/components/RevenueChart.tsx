@@ -2,93 +2,72 @@
 
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { getRevenueChartData } from "@/src/server/bos/dashboard/dashboard.server";
+import { useSupabaseRealtime } from "@/src/hooks/useSupabaseRealtime";
+import { LuLoader } from "react-icons/lu";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
 });
 
-const generateCategories = (openHour: number, closeHour: number) => {
-  const categories = [];
-  let current = openHour;
-  while (true) {
-    categories.push(`${current.toString().padStart(2, "0")}:00`);
-    if (current === closeHour) break;
-    current = (current + 1) % 24;
-  }
-  return categories;
-};
-
 export default function RevenueChart() {
-  const jamBuka = 17;
-  const jamTutup = 2;
-  const categories = useMemo(() => generateCategories(jamBuka, jamTutup), []);
+  useSupabaseRealtime("orders", ["revenue-chart"]);
+  useSupabaseRealtime("order_items", ["revenue-chart"]);
 
-  const dummyPesanan = useMemo(
-    () => [
-      { type: "Makan Sini", qty: 2, created_at: "2026-04-28T17:15:00" },
-      { type: "Makan Sini", qty: 4, created_at: "2026-04-28T17:45:00" },
-      { type: "Bungkus", qty: 3, created_at: "2026-04-28T18:10:00" },
-      { type: "Makan Sini", qty: 10, created_at: "2026-04-28T19:30:00" },
-      { type: "Bungkus", qty: 5, created_at: "2026-04-28T19:55:00" },
-      { type: "Makan Sini", qty: 15, created_at: "2026-04-28T20:15:00" },
-      { type: "Bungkus", qty: 8, created_at: "2026-04-28T20:45:00" },
-      { type: "Makan Sini", qty: 5, created_at: "2026-04-29T00:15:00" },
-      { type: "Makan Sini", qty: 2, created_at: "2026-04-29T01:30:00" },
-    ],
-    [],
-  );
+  const { data: chartData = [], isLoading: isLoadingChart } = useQuery({
+    queryKey: ["revenue-chart"],
+    queryFn: async () => await getRevenueChartData(),
+  });
 
   const series = useMemo(() => {
-    const bungkusData = new Array(categories.length).fill(0);
-    const makanSiniData = new Array(categories.length).fill(0);
+    const bungkusPoints = chartData
+      .filter((p) => p.type === "Bungkus")
+      .map((p) => [new Date(p.created_at).getTime(), p.qty]);
 
-    dummyPesanan.forEach((pesanan) => {
-      const jam = new Date(pesanan.created_at).getHours();
-      const labelJam = `${jam.toString().padStart(2, "0")}:00`;
-
-      const index = categories.indexOf(labelJam);
-
-      if (index !== -1) {
-        if (pesanan.type === "Bungkus") {
-          bungkusData[index] += pesanan.qty;
-        } else {
-          makanSiniData[index] += pesanan.qty;
-        }
-      }
-    });
+    const makanSiniPoints = chartData
+      .filter((p) => p.type === "Makan Sini")
+      .map((p) => [new Date(p.created_at).getTime(), p.qty]);
 
     return [
-      { name: "Bungkus", data: bungkusData },
-      { name: "Makan Sini", data: makanSiniData },
+      { name: "Bungkus", data: bungkusPoints.sort((a, b) => a[0] - b[0]) },
+      { name: "Makan Sini", data: makanSiniPoints.sort((a, b) => a[0] - b[0]) },
     ];
-  }, [categories, dummyPesanan]);
+  }, [chartData]);
 
   const options: ApexCharts.ApexOptions = {
     chart: {
-      type: "bar",
+      type: "area",
       height: 350,
       toolbar: { show: false },
       zoom: { enabled: false },
       fontFamily: "inherit",
       foreColor: "#a3a3a3",
-    },
-    plotOptions: {
-      bar: {
-        horizontal: false,
-        columnWidth: "50%",
-        borderRadius: 4,
+      animations: {
+        enabled: true,
+        speed: 800,
       },
     },
     dataLabels: { enabled: false },
-    stroke: { show: true, width: 2, colors: ["transparent"] },
+    stroke: { curve: "smooth", width: 3 },
+    fill: {
+      type: "gradient",
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.45,
+        opacityTo: 0.05,
+        stops: [20, 100],
+      },
+    },
     xaxis: {
-      categories: categories,
+      type: "datetime",
+      labels: {
+        datetimeUTC: false,
+        style: { colors: "#a3a3a3", fontSize: "10px" },
+        format: "HH:mm",
+      },
       axisBorder: { show: false },
       axisTicks: { show: false },
-      labels: {
-        style: { colors: "#a3a3a3", fontSize: "10px" },
-        hideOverlappingLabels: true,
-      },
     },
     yaxis: {
       title: {
@@ -97,16 +76,16 @@ export default function RevenueChart() {
       },
       labels: { style: { colors: "#a3a3a3" } },
     },
-    fill: { opacity: 1 },
     tooltip: {
       theme: "dark",
+      x: { format: "HH:mm" },
       y: { formatter: (val) => val + " Porsi" },
     },
     colors: ["#f97316", "#2563eb"],
     legend: {
       position: "top",
       horizontalAlign: "left",
-      labels: { colors: "#fffff" },
+      labels: { colors: "#ffffff" },
     },
     grid: {
       borderColor: "#404040",
@@ -122,18 +101,32 @@ export default function RevenueChart() {
             Statistik Penjualan
           </h3>
           <p className="text-xs dark:text-neutral-400 text-neutral-700 font-medium">
-            Perbandingan Porsi Terjual Harian (per Jam)
+            Aliran Porsi Terjual Real-time (Berdasarkan Waktu Pesanan)
           </p>
         </div>
       </div>
-      <div id="chart" className="w-full">
-        {series.length > 0 && (
+      <div
+        id="chart"
+        className="w-full min-h-80 flex items-center justify-center"
+      >
+        {isLoadingChart ? (
+          <div className="flex flex-col items-center gap-2">
+            <LuLoader className="animate-spin text-orange" size={30} />
+            <p className="text-xs text-neutral-500 font-medium">
+              Memuat Statistik...
+            </p>
+          </div>
+        ) : chartData.length > 0 ? (
           <ReactApexChart
             options={options}
             series={series}
-            type="bar"
+            type="area"
             height={320}
           />
+        ) : (
+          <div className="text-neutral-500 text-sm font-medium py-10">
+            Belum ada data penjualan hari ini
+          </div>
         )}
       </div>
     </div>

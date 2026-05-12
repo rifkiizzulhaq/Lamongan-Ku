@@ -1,6 +1,15 @@
 "use client";
 
-import { LuDollarSign, LuShoppingBag, LuPen, LuNotebook } from "react-icons/lu";
+import { useQuery } from "@tanstack/react-query";
+import { useSupabaseRealtime } from "@/src/hooks/useSupabaseRealtime";
+import { getDashboardStats } from "@/src/server/bos/dashboard/dashboard.server";
+import {
+  LuDollarSign,
+  LuShoppingBag,
+  LuPen,
+  LuNotebook,
+  LuLoader,
+} from "react-icons/lu";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Button from "@/src/components/ui/Button";
 import StatCard from "@/src/features/bos/dashboard/components/StatCard";
@@ -8,25 +17,32 @@ import RevenueChart from "@/src/features/bos/dashboard/components/RevenueChart";
 import SisaBahanDashboardChart from "@/src/features/bos/dashboard/components/SisaBahanDashboardChart";
 import { useWarungStore } from "@/src/store/warungStore";
 
-import { SisaItem } from "@/interfaces/models";
-
-const MENU_AWAL: SisaItem[] = [
-  { nama: "Ayam", sisa: 15 },
-  { nama: "Lele", sisa: 8 },
-  { nama: "Bebek", sisa: 5 },
-  { nama: "Nasi Putih" },
-  { nama: "Tempe", sisa: 30 },
-  { nama: "Tahu", sisa: 25 },
-  { nama: "Ati Ampela", sisa: 10 },
-  { nama: "Kepalan Ayam", sisa: 12 },
-  { nama: "Kepala Bebek", sisa: 4 },
-  { nama: "Es Teh Tawar" },
-  { nama: "Es Teh Manis" },
-  { nama: "Sambal" },
-];
-
 export default function Page() {
   const { isBuka, setIsBuka } = useWarungStore();
+
+  useSupabaseRealtime("orders", ["dashboard-stats", "revenue-chart"]);
+  useSupabaseRealtime("order_items", ["dashboard-stats", "revenue-chart"]);
+  useSupabaseRealtime("stock", ["dashboard-stats"]);
+  useSupabaseRealtime("daily_reports", ["dashboard-stats"]);
+
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: async () => await getDashboardStats(),
+  });
+
+  if (isLoading || !stats) {
+    return (
+      <div className="h-screen flex items-center justify-center dark:bg-neutral-800">
+        <LuLoader className="animate-spin text-orange" size={40} />
+      </div>
+    );
+  }
+
+  const formattedPendapatan = new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(stats.pendapatan);
 
   return (
     <section className="h-[calc(100dvh-45px)] md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
@@ -73,10 +89,10 @@ export default function Page() {
             </Button>
           </div>
         )}
-        <div className="w-full mt-4 flex flex-col gap-4">
+        <div className="w-full mt-4 flex flex-col gap-4 md:px-0">
           <StatCard
             title="Total Pendapatan Hari Ini"
-            value="Rp 12.500.000"
+            value={formattedPendapatan}
             icon={<LuDollarSign size={20} strokeWidth={2.5} />}
             edit={<LuPen size={20} strokeWidth={2.5} />}
             editHref="/dashboard/pendapatan"
@@ -84,9 +100,34 @@ export default function Page() {
 
           <StatCard
             title="Total Pesanan Hari Ini"
-            value="432 Porsi"
+            value={`${stats.pesananCount} Transaksi`}
             icon={<LuShoppingBag size={20} strokeWidth={2.5} />}
           />
+
+          {stats?.weathers && stats.weathers.length > 0 && (
+            <StatCard
+              title="Log Cuaca Hari Ini"
+              icon={<LuPen size={20} strokeWidth={2.5} />}
+            >
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {stats.weathers.map(
+                  (w: { id: number; timeRange: string; weather: string }) => (
+                    <div
+                      key={w.id}
+                      className="flex justify-between items-center bg-neutral-50 dark:bg-neutral-900/40 p-2 rounded-lg border border-neutral-100 dark:border-neutral-700/50"
+                    >
+                      <span className="text-[10px] font-bold text-neutral-500">
+                        {w.timeRange}
+                      </span>
+                      <span className="text-[10px] font-black text-orange uppercase tracking-wider">
+                        {w.weather}
+                      </span>
+                    </div>
+                  ),
+                )}
+              </div>
+            </StatCard>
+          )}
 
           <StatCard
             title="Sisa Bahan Baku Hari Ini"
@@ -95,10 +136,15 @@ export default function Page() {
             editHref="/dashboard/sisa-bahan"
           >
             <SisaBahanDashboardChart
-              data={MENU_AWAL.filter((v) => v.sisa !== undefined).map((v) => ({
-                nama: v.nama,
-                sisa: v.sisa!,
-              }))}
+              data={stats.sisaBahan
+                .filter(
+                  (v: { nama: string; sisa: number | null }) =>
+                    v.sisa !== undefined && v.sisa !== null,
+                )
+                .map((v: { nama: string; sisa: number | null }) => ({
+                  nama: v.nama,
+                  sisa: v.sisa as number,
+                }))}
             />
           </StatCard>
 
@@ -107,12 +153,9 @@ export default function Page() {
             icon={<LuNotebook size={20} strokeWidth={2.5} />}
           >
             <div className="mt-2 p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-xl border border-neutral-100 dark:border-neutral-700/80">
-              <textarea
-                name="catatan"
-                id="catatan"
-                className="w-full h-full bg-transparent border-none focus:outline-none focus:ring-0"
-                placeholder="Hujan grimis"
-              />
+              <p className="text-sm text-neutral-600 dark:text-neutral-300 min-h-12 italic">
+                {stats.note || "Belum ada catatan tutup warung."}
+              </p>
             </div>
           </StatCard>
         </div>

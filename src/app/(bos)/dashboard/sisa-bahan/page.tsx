@@ -1,82 +1,157 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Button from "@/src/components/ui/Button";
 import Link from "next/link";
+import { LuLoader, LuPackage, LuSave } from "react-icons/lu";
+import {
+  getDashboardStats,
+  updateStockInventory,
+} from "@/src/server/bos/dashboard/dashboard.server";
 
-import { SisaItem } from "@/interfaces/models";
-
-const MENU_AWAL: SisaItem[] = [
-  { nama: "Ayam", sisa: 15 },
-  { nama: "Lele", sisa: 8 },
-  { nama: "Bebek", sisa: 5 },
-  { nama: "Nasi Putih" },
-  { nama: "Tempe", sisa: 30 },
-  { nama: "Tahu", sisa: 25 },
-  { nama: "Ati Ampela", sisa: 10 },
-  { nama: "Kepalan Ayam", sisa: 12 },
-  { nama: "Kepala Bebek", sisa: 4 },
-  { nama: "Es Teh Tawar" },
-  { nama: "Es Teh Manis" },
-  { nama: "Sambal" },
-];
+interface SisaItemLocal {
+  stockId: number;
+  nama: string;
+  sisa: number;
+}
 
 export default function SisaBahanPage() {
-  const [sisa, setSisa] = useState<SisaItem[]>(
-    MENU_AWAL.map((m) => ({ ...m })),
-  );
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [items, setItems] = useState<SisaItemLocal[]>([]);
 
-  const setSisaItem = (idx: number, val: number) => {
-    setSisa((prev) =>
-      prev.map((m, i) => (i === idx ? { ...m, sisa: Math.max(0, val) } : m)),
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: async () => await getDashboardStats(),
+  });
+
+  useEffect(() => {
+    const Stats = () => {
+      if (stats?.sisaBahan) {
+        setItems(
+          stats.sisaBahan.map(
+            (s: { id: number; nama: string; sisa: number | null }) => ({
+              stockId: s.id,
+              nama: s.nama,
+              sisa: s.sisa ?? 0,
+            }),
+          ),
+        );
+      }
+    };
+    Stats();
+  }, [stats]);
+
+  const { mutate: simpan, isPending } = useMutation({
+    mutationFn: (payload: { stockId: number; sisa: number }[]) =>
+      updateStockInventory(payload),
+    onSuccess: (res: { success: boolean; error?: string }) => {
+      if (res.success) {
+        queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+        router.push("/dashboard");
+      } else {
+        alert(res.error);
+      }
+    },
+  });
+
+  const updateItemQty = (idx: number, val: number) => {
+    setItems((prev) =>
+      prev.map((item, i) =>
+        i === idx ? { ...item, sisa: Math.max(0, val) } : item,
+      ),
     );
   };
 
+  if (isLoading || items.length === 0) {
+    return (
+      <div className="h-screen flex items-center justify-center dark:bg-neutral-800">
+        <LuLoader className="animate-spin text-orange" size={40} />
+      </div>
+    );
+  }
+
   return (
     <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
-      <PageHeader title="Sisa Bahan Baku" />
-      <main className="relative max-w-87.5 mx-auto w-full flex-1 flex flex-col overflow-y-auto pt-4 pb-8">
-        <div className="flex flex-col p-5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-600 rounded-2xl shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] w-full">
-          <p className="text-xs font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-4">
-            Sisa Menu Hari Ini
-          </p>
+      <PageHeader title="Koreksi Stok" />
+      <main className="relative max-w-87.5 mx-auto w-full flex-1 flex flex-col overflow-y-auto pt-4 pb-8 px-4">
+        <div className="flex flex-col p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl shadow-sm w-full">
+          <div className="flex items-center gap-3 mb-6 border-b border-neutral-100 dark:border-neutral-800 pb-4">
+            <div className="w-10 h-10 bg-orange/10 rounded-xl flex items-center justify-center text-orange">
+              <LuPackage size={20} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                Data Stok Fisik
+              </p>
+              <h3 className="text-sm font-black dark:text-white">
+                Sesuaikan Sisa Bahan
+              </h3>
+            </div>
+          </div>
 
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            {sisa.map((item, idx) => (
+          <div className="grid grid-cols-1 gap-y-1">
+            {items.map((item, idx) => (
               <div
-                key={item.nama}
-                className="flex items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-800 pb-2"
+                key={item.stockId}
+                className="flex items-center justify-between gap-4 py-3 border-b border-neutral-50 dark:border-neutral-800/50 last:border-0"
               >
-                <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 truncate">
+                <span className="text-sm font-bold text-neutral-700 dark:text-neutral-300">
                   {item.nama}
                 </span>
-                <input
-                  type="number"
-                  min="0"
-                  value={item.sisa === 0 ? "" : item.sisa}
-                  onChange={(e) =>
-                    setSisaItem(idx, parseInt(e.target.value) || 0)
-                  }
-                  placeholder="0"
-                  className="w-14 h-8 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-center text-sm font-black rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-orange transition-colors placeholder:text-neutral-400 shrink-0"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    value={item.sisa === 0 ? "" : item.sisa}
+                    onChange={(e) =>
+                      updateItemQty(idx, parseInt(e.target.value) || 0)
+                    }
+                    placeholder="0"
+                    className="w-16 h-10 bg-neutral-100 dark:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-700 text-center text-base font-black rounded-xl text-neutral-900 dark:text-white focus:outline-none focus:border-orange transition-all placeholder:text-neutral-400 shrink-0"
+                  />
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase">
+                    Porsi
+                  </span>
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-8 flex w-full justify-between gap-3">
+          <div className="mt-8 flex w-full gap-3">
             <Link
               href="/dashboard"
-              className="flex items-center justify-center bg-neutral-200 dark:bg-neutral-900 hover:bg-neutral-300 dark:hover:bg-neutral-700 text-neutral-800 dark:text-white flex-1 py-3.5 rounded-xl font-bold transition-all"
+              className="flex-1 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-bold py-4 rounded-2xl hover:bg-neutral-200 transition-colors"
             >
               Batal
             </Link>
-            <Button className="bg-orange hover:bg-orange-600 text-white flex-1 py-3.5 rounded-xl font-bold shadow-md shadow-orange/20 transition-all">
-              Simpan Data
+            <Button
+              onClick={() =>
+                simpan(items.map((i) => ({ stockId: i.stockId, sisa: i.sisa })))
+              }
+              disabled={isPending}
+              className="flex-2 bg-orange hover:bg-orange-600 text-white font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              {isPending ? (
+                <LuLoader className="animate-spin" />
+              ) : (
+                <>
+                  <LuSave size={18} />
+                  Simpan Stok
+                </>
+              )}
             </Button>
           </div>
         </div>
+
+        <p className="mt-6 text-center text-[10px] text-neutral-400 font-medium px-6">
+          * Perubahan ini akan langsung mengupdate jumlah stok di aplikasi
+          Karyawan secara real-time.
+        </p>
       </main>
     </section>
   );

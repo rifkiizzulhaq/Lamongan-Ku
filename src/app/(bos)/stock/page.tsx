@@ -1,7 +1,10 @@
 import PageHeader from "@/src/components/ui/PageHeader";
 import StockInputForm from "@/src/features/bos/stock/components/StockInputForm";
 import TableInputForm from "@/src/features/bos/stock/components/TableInputForm";
-import { getAll, getYesterdaySnapshot } from "@/src/server/bos/stock/stock.server";
+import {
+  getAll,
+  getYesterdaySnapshot,
+} from "@/src/server/bos/stock/stock.server";
 import { getAllTables } from "@/src/server/bos/table/table.server";
 
 export default async function Page() {

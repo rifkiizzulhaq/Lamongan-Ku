@@ -12,16 +12,17 @@ async function resetData() {
 
   try {
     const tables = [
+      "account",
+      "daily_reports",
+      "daily_stock_snapshots",
+      "dining_table",
       "order_items",
       "orders",
-      "daily_stock_snapshots",
-      "weather_logs",
-      "daily_reports",
-      "stock",
-      "account",
       "session",
-      "verification",
+      "stock",
       "user",
+      "verification",
+      "weather_logs",
     ];
 
     const rows = await sql<{ tablename: string }[]>`

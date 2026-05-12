@@ -25,6 +25,7 @@ export function useGlobalNotifications() {
             id?: number;
             order_type?: string;
             dining_table_id?: number;
+            status?: string;
           };
           const oldRow = payload.old as {
             id?: number;
@@ -42,7 +43,9 @@ export function useGlobalNotifications() {
           }
 
           if (isUpdate && orderId && !recentlyInsertedIds.has(orderId)) {
-            useNotificationStore.getState().addUnseenUpdatedOrder(orderId);
+            if (newRow?.status !== "selesai") {
+              useNotificationStore.getState().addUnseenUpdatedOrder(orderId);
+            }
           }
           if (orderType === "bungkus") {
             if (currentPath !== "/bungkus") {

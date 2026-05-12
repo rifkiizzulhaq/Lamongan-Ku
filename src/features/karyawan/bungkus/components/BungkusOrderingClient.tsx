@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import CardOrdering from "@/src/features/karyawan/pos/components/CardOrdering";
 import Cart from "@/src/features/karyawan/pos/components/Cart";
 import { CartItem } from "@/interfaces/models";
@@ -10,6 +10,7 @@ import {
   create,
   updateItems,
 } from "@/src/server/karyawan/bungkus/bungkus.server";
+import { checkIfReportedToday } from "@/src/server/karyawan/more/more.server";
 import type { Stock } from "@/db/schema";
 
 interface Props {
@@ -27,6 +28,11 @@ export default function BungkusOrderingClient({
 }: Props) {
   const [cart, setCart] = useState<CartItem[]>(initialCart);
   const router = useRouter();
+
+  const { data: isClosed = false } = useQuery({
+    queryKey: ["check-reported-today"],
+    queryFn: () => checkIfReportedToday(),
+  });
 
   const specialZeroStockItems = ["nasi", "teh manis", "sambal"];
   const isSpecialMenu = (name: string) =>
@@ -124,6 +130,7 @@ export default function BungkusOrderingClient({
         totalPrice={totalPrice}
         onSave={handleSave}
         isPending={isPending}
+        isClosed={isClosed}
       />
     </>
   );

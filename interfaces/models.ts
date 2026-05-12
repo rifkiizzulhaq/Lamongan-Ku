@@ -28,6 +28,7 @@ export interface CuacaSlot {
 export interface SisaItem {
   nama: string;
   sisa?: number;
+  stockId?: number;
 }
 
 export interface StockFormItem {

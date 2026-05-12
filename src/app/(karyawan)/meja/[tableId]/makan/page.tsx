@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import CardOrdering from "@/src/features/karyawan/pos/components/CardOrdering";
@@ -12,6 +12,7 @@ import {
   createMakanOrder,
   updateMakanItems,
 } from "@/src/server/karyawan/meja/meja.server";
+import { checkIfReportedToday } from "@/src/server/karyawan/more/more.server";
 import { CartItem } from "@/interfaces/models";
 import type { Stock } from "@/db/schema";
 import PageHeaderSkeleton from "@/src/components/ui/PageHeaderSkeleton";
@@ -34,6 +35,11 @@ function MakanContent() {
   const [isTakeaway, setIsTakeaway] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [initialCartLoaded, setInitialCartLoaded] = useState(false);
+
+  const { data: isClosed = false } = useQuery({
+    queryKey: ["check-reported-today"],
+    queryFn: () => checkIfReportedToday(),
+  });
 
   const { data: stockList = [], isLoading: isLoadingStock } = useQuery({
     queryKey: ["stock-list"],
@@ -239,6 +245,7 @@ function MakanContent() {
         totalPrice={totalPrice}
         onSave={handleSave}
         isPending={isPending}
+        isClosed={isClosed}
       />
     </section>
   );

@@ -49,12 +49,10 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
     })),
   activateHighlight: (orderId) => {
     set((state) => {
-      // 1. Bersihkan timer lama jika ada agar tidak bentrok (timer refresh)
       if (state.highlightTimeouts[orderId]) {
         clearTimeout(state.highlightTimeouts[orderId]);
       }
 
-      // 2. Set timer baru 10 detik
       const newTimeout = setTimeout(() => {
         set((s) => ({
           highlightedOrders: s.highlightedOrders.filter((id) => id !== orderId),

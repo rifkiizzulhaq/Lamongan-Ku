@@ -4,15 +4,18 @@ import { supabase } from "@/lib/supabase";
 
 export function useSupabaseRealtime(table: string, queryKeys: string[]) {
   const queryClient = useQueryClient();
+  const queryKeysString = JSON.stringify(queryKeys);
 
   useEffect(() => {
+    const keys = JSON.parse(queryKeysString);
+    const uniqueChannelId = `realtime-${table}-${Math.random().toString(36).substring(2, 9)}`;
     const channel = supabase
-      .channel(`realtime-${table}`)
+      .channel(uniqueChannelId)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: table },
         () => {
-          queryKeys.forEach((key) => {
+          keys.forEach((key: string) => {
             queryClient.invalidateQueries({ queryKey: [key] });
           });
         },
@@ -22,5 +25,5 @@ export function useSupabaseRealtime(table: string, queryKeys: string[]) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [table, queryKeys, queryClient]);
+  }, [table, queryKeysString, queryClient]);
 }

@@ -9,11 +9,17 @@ import {
   LuCloudLightning,
   LuX,
   LuSend,
+  LuLoader,
 } from "react-icons/lu";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import {
+  saveClosingReport,
+  checkIfReportedToday,
+} from "@/src/server/karyawan/more/more.server";
+import { CuacaSlot, SisaItem } from "@/interfaces/models";
+import type { Stock } from "@/db/schema";
 
 type CuacaOption = "Cerah" | "Mendung" | "Gerimis" | "Hujan";
-
-import { CuacaSlot, SisaItem } from "@/interfaces/models";
 
 const CUACA_OPTIONS: { label: CuacaOption; icon: ReactNode }[] = [
   {
@@ -35,35 +41,49 @@ const CUACA_OPTIONS: { label: CuacaOption; icon: ReactNode }[] = [
 ];
 
 const JAM_SLOTS = [
-  "15:00-16:00",
-  "16:00-17:00",
   "17:00-18:00",
   "18:00-19:00",
   "19:00-20:00",
   "20:00-21:00",
+  "21:00-22:00",
+  "22:00-23:00",
+  "23:00-00:00",
+  "00:00-01:00",
+  "01:00-02:00",
 ];
 
-const MENU_AWAL: SisaItem[] = [
-  { nama: "Ayam", sisa: 15 },
-  { nama: "Lele", sisa: 8 },
-  { nama: "Bebek", sisa: 5 },
-  { nama: "Nasi Putih" },
-  { nama: "Tempe", sisa: 30 },
-  { nama: "Tahu", sisa: 25 },
-  { nama: "Ati Ampela", sisa: 10 },
-  { nama: "Kepalan Ayam", sisa: 12 },
-  { nama: "Kepala Bebek", sisa: 4 },
-  { nama: "Es Teh Tawar" },
-  { nama: "Es Teh Manis" },
-  { nama: "Sambal" },
-];
+const EXCLUDED_ITEMS = ["sambal", "teh manis", "nasi"];
 
-export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
+const OWNER_PHONE = "6285156630893";
+
+export default function TutupWarungModal({
+  onClose,
+  stockList,
+}: {
+  onClose: () => void;
+  stockList: Stock[];
+}) {
+  const queryClient = useQueryClient();
+  const { data: isAlreadyReported, isLoading: isCheckingReport } = useQuery({
+    queryKey: ["check-reported-today"],
+    queryFn: () => checkIfReportedToday(),
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
   const [slots, setSlots] = useState<CuacaSlot[]>(
     JAM_SLOTS.map((jam) => ({ jam, cuaca: null })),
   );
-  const [sisa, setSisa] = useState<SisaItem[]>(
-    MENU_AWAL.map((m) => ({ ...m })),
+  const [sisa, setSisa] = useState<SisaItem[]>(() =>
+    stockList
+      .filter(
+        (s) => !EXCLUDED_ITEMS.some((ex) => s.name.toLowerCase().includes(ex)),
+      )
+      .map((s) => ({
+        nama: s.name,
+        sisa: s.quantity ?? 0,
+        stockId: s.id,
+      })),
   );
   const [catatan, setCatatan] = useState("");
 
@@ -74,6 +94,43 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
       year: "numeric",
     })
     .toUpperCase();
+
+  const { mutate: kirim, isPending } = useMutation({
+    mutationFn: async () => {
+      const missingWeather = slots.find((s) => s.cuaca === null);
+      if (missingWeather) {
+        throw new Error(`Cuaca pada jam ${missingWeather.jam} wajib diisi!`);
+      }
+
+      const res = await saveClosingReport({
+        note: catatan,
+        weatherSlots: slots,
+        stockSnapshots: sisa.map((s) => ({
+          stockId: s.stockId!,
+          sisa: s.sisa ?? 0,
+        })),
+      });
+
+      if (!res.success) throw new Error(res.error);
+      return res;
+    },
+    onSuccess: () => {
+      const waText = `*LAPORAN STOK HARIAN*\nTanggal: ${today}\n\n${sisa
+        .map((s) => `- ${s.nama}: ${s.sisa ?? 0}`)
+        .join("\n")}\n\nCatatan: ${catatan || "-"}`;
+
+      const waUrl = `https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(waText)}`;
+      window.open(waUrl, "_blank");
+
+      queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+      queryClient.invalidateQueries({ queryKey: ["check-reported-today"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      onClose();
+    },
+    onError: (err: Error) => {
+      alert(err.message || "Gagal mengirim laporan");
+    },
+  });
 
   const setCuacaSlot = (idx: number, cuaca: CuacaOption) => {
     setSlots((prev) => prev.map((s, i) => (i === idx ? { ...s, cuaca } : s)));
@@ -115,7 +172,7 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-7 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700">
           <div>
             <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-3">
-              Cuaca Per Jam
+              Cuaca Per Jam (17:00 - 02:00)
             </p>
             <div className="flex gap-3 my-3 flex-wrap">
               {CUACA_OPTIONS.map((o) => (
@@ -156,7 +213,7 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
 
           <div>
             <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-2">
-              Sisa Menu Hari Ini
+              Sisa Menu Hari Ini (Fisik)
             </p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
               {sisa.map((item, idx) => (
@@ -197,11 +254,20 @@ export default function TutupWarungModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <Button
-          onClick={onClose}
-          className="w-full bg-orange hover:bg-orange/90 active:scale-[0.99] text-white font-black uppercase tracking-widest py-5 text-sm transition-all flex items-center justify-center gap-2 shrink-0"
+          onClick={() => kirim()}
+          disabled={isPending || isCheckingReport || !!isAlreadyReported}
+          className="w-full bg-orange hover:bg-orange/90 active:scale-[0.99] text-white font-black uppercase tracking-widest py-5 text-sm transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50 disabled:bg-neutral-400"
         >
-          Kirim Laporan
-          <LuSend size={16} strokeWidth={2.5} />
+          {isPending || isCheckingReport ? (
+            <LuLoader className="animate-spin" size={20} />
+          ) : isAlreadyReported ? (
+            "Laporan Sudah Terkirim"
+          ) : (
+            <>
+              Kirim Laporan
+              <LuSend size={16} strokeWidth={2.5} />
+            </>
+          )}
         </Button>
       </div>
     </div>

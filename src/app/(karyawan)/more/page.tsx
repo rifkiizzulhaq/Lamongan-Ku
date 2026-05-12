@@ -7,6 +7,8 @@ import { LuStore, LuLogOut, LuChevronRight } from "react-icons/lu";
 import Button from "@/src/components/ui/Button";
 import { signOut } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { getStock } from "@/src/server/karyawan/bungkus/bungkus.server";
 
 const MENU_ITEMS = [
   {
@@ -28,6 +30,11 @@ const MENU_ITEMS = [
 export default function Page() {
   const [showTutup, setShowTutup] = useState(false);
   const router = useRouter();
+
+  const { data: stockList = [] } = useQuery({
+    queryKey: ["stock-list"],
+    queryFn: () => getStock(),
+  });
 
   const handleAction = async (action: string) => {
     if (action === "tutup") {
@@ -79,7 +86,12 @@ export default function Page() {
         </main>
       </section>
 
-      {showTutup && <TutupWarungModal onClose={() => setShowTutup(false)} />}
+      {showTutup && (
+        <TutupWarungModal
+          onClose={() => setShowTutup(false)}
+          stockList={stockList}
+        />
+      )}
     </>
   );
 }
