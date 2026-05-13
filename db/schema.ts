@@ -73,6 +73,13 @@ export const daily_stock_snapshots = pgTable("daily_stock_snapshots", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const shop_status = pgTable("shop_status", {
+  id: serial("id").primaryKey(),
+  isBuka: integer("is_buka").notNull().default(1),
+  reason: text("reason"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relasi ORM
 export const stockRelations = relations(stock, ({ many }) => ({
   orderItems: many(order_items),
@@ -148,3 +155,6 @@ export type NewWeatherLog = InferInsertModel<typeof weather_logs>;
 
 export type DailyStockSnapshot = InferSelectModel<typeof daily_stock_snapshots>;
 export type NewDailyStockSnapshot = InferInsertModel<typeof daily_stock_snapshots>;
+
+export type ShopStatus = InferSelectModel<typeof shop_status>;
+export type NewShopStatus = InferInsertModel<typeof shop_status>;

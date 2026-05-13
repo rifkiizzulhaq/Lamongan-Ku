@@ -7,14 +7,47 @@ import {
   stock,
   daily_reports,
   daily_stock_snapshots,
+  shop_status,
 } from "@/db/schema";
 import { gte, lte, and, sql, eq } from "drizzle-orm";
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { getShiftWaktu } from "@/src/utils/date";
 
+export async function getShopStatus() {
+  noStore();
+  const status = await db.query.shop_status.findFirst();
+  if (!status) {
+    const [newStatus] = await db.insert(shop_status).values({ isBuka: 1 }).returning();
+    return newStatus;
+  }
+  return status;
+}
+
+export async function updateShopStatus(isBuka: boolean, reason?: string) {
+  try {
+    const current = await getShopStatus();
+    await db
+      .update(shop_status)
+      .set({ 
+        isBuka: isBuka ? 1 : 0, 
+        reason: isBuka ? null : (reason || null),
+        updatedAt: new Date()
+      })
+      .where(eq(shop_status.id, current.id));
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating shop status:", error);
+    return { success: false, error: "Gagal memperbarui status warung" };
+  }
+}
+
+
 export async function getDashboardStats() {
   noStore();
   const { startOfDay, endOfDay } = getShiftWaktu();
+  const shopStatus = await getShopStatus();
 
   try {
     const todayOrders = await db
@@ -78,6 +111,7 @@ export async function getDashboardStats() {
       note: report?.note || null,
       weathers: report?.weathers || [],
       isClosed: isClosed,
+      shopStatus,
     };
   } catch (error) {
     console.error("Dashboard Stats Error:", error);

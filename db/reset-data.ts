@@ -20,6 +20,7 @@ async function resetData() {
       "orders",
       "session",
       "stock",
+      "shop_status",
       "user",
       "verification",
       "weather_logs",

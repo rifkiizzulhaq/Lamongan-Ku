@@ -13,10 +13,19 @@ import { StockFormItem } from "@/interfaces/models";
 
 interface StockInputFormProps {
   stockList: StockFormItem[];
+  isBuka: boolean;
 }
 
-export default function StockInputForm({ stockList }: StockInputFormProps) {
-  const { isBuka } = useWarungStore();
+export default function StockInputForm({
+  stockList,
+  isBuka: initialIsBuka,
+}: StockInputFormProps) {
+  const { isBuka, setIsBuka } = useWarungStore();
+
+  useEffect(() => {
+    setIsBuka(initialIsBuka);
+  }, [initialIsBuka, setIsBuka]);
+
   const [useSisaKemarin, setUseSisaKemarin] = useState(false);
   const [stockInputs, setStockInputs] = useState<Record<number, string>>({});
 
@@ -45,7 +54,8 @@ export default function StockInputForm({ stockList }: StockInputFormProps) {
   const router = useRouter();
 
   const { mutate: simpanStok, isPending: saving } = useMutation({
-    mutationFn: (items: { stockId: number; quantity: number }[]) => updateQuantities(items),
+    mutationFn: (items: { stockId: number; quantity: number }[]) =>
+      updateQuantities(items),
     onSuccess: (res) => {
       if (res.success) {
         alert("Stock berhasil disimpan!");
@@ -56,8 +66,15 @@ export default function StockInputForm({ stockList }: StockInputFormProps) {
   });
 
   const { mutate: tambahItem, isPending: addingItem } = useMutation({
-    mutationFn: ({ name, price, qty }: { name: string; price: number; qty: number }) =>
-      create(name, price, qty),
+    mutationFn: ({
+      name,
+      price,
+      qty,
+    }: {
+      name: string;
+      price: number;
+      qty: number;
+    }) => create(name, price, qty),
     onSuccess: (res) => {
       if (res.success) {
         setNewName("");
@@ -85,17 +102,21 @@ export default function StockInputForm({ stockList }: StockInputFormProps) {
     const newValue = !useSisaKemarin;
     setUseSisaKemarin(newValue);
 
-    if (newValue) {
-      const newInputs: Record<number, string> = {};
-      stockList.forEach((item) => {
-        if (item.sisaKemarin > 0) {
-          newInputs[item.id] = item.sisaKemarin.toString();
-        }
-      });
-      setStockInputs(newInputs);
-    } else {
-      setStockInputs({});
-    }
+    const newInputs: Record<number, string> = {};
+    stockList.forEach((item) => {
+      if (newValue) {
+        // Jika diaktifkan, prioritaskan sisa kemarin jika > 0
+        newInputs[item.id] = item.sisaKemarin > 0 
+          ? item.sisaKemarin.toString() 
+          : (item.quantity?.toString() || "");
+      } else {
+        // Jika dimatikan, kembalikan ke nilai quantity asli dari database
+        newInputs[item.id] = item.quantity !== null && item.quantity > 0 
+          ? item.quantity.toString() 
+          : "";
+      }
+    });
+    setStockInputs(newInputs);
   };
 
   const handleInputChange = (id: number, value: string) => {

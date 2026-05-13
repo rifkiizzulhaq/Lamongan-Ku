@@ -1,5 +1,5 @@
-import SkeletonCardBos from "@/src/components/ui/SkeletonCardBos";
+import SkeletonRoot from "@/src/components/ui/SkeletonRoot";
 
 export default function Loading() {
-  return <SkeletonCardBos />;
+  return <SkeletonRoot />;
 }

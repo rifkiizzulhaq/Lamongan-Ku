@@ -4,8 +4,19 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Button from "@/src/components/ui/Button";
 import Input from "@/src/components/ui/Input";
-import { LuPlus, LuTrash2, LuPencil, LuSave, LuX, LuLoader } from "react-icons/lu";
-import { createTable, updateTable, deleteTable } from "@/src/server/bos/table/table.server";
+import {
+  LuPlus,
+  LuTrash2,
+  LuPencil,
+  LuSave,
+  LuX,
+  LuLoader,
+} from "react-icons/lu";
+import {
+  createTable,
+  updateTable,
+  deleteTable,
+} from "@/src/server/bos/table/table.server";
 import { useWarungStore } from "@/src/store/warungStore";
 
 export interface TableItem {
@@ -44,7 +55,8 @@ export default function TableInputForm({ tables }: TableInputFormProps) {
   });
 
   const { mutate: editTable, isPending: isEditing } = useMutation({
-    mutationFn: ({ id, name }: { id: number; name: string }) => updateTable(id, name),
+    mutationFn: ({ id, name }: { id: number; name: string }) =>
+      updateTable(id, name),
     onSuccess: (res) => {
       if (res.success) {
         setEditingTableId(null);

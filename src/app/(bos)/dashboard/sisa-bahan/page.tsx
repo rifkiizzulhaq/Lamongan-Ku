@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Button from "@/src/components/ui/Button";
 import Link from "next/link";
-import { LuLoader, LuPackage, LuSave, LuTriangle } from "react-icons/lu";
+import { LuLoader, LuPackage, LuSave } from "react-icons/lu";
 import {
   getDashboardStats,
   updateStockInventory,
 } from "@/src/server/bos/dashboard/dashboard.server";
+import LockedPage from "@/src/components/ui/LockedPage";
 
 interface SisaItemLocal {
   stockId: number;
@@ -78,30 +79,16 @@ export default function SisaBahanPage() {
     );
   }
 
-  if (!stats.isClosed) {
+  if (stats.shopStatus?.isBuka === 0 || !stats.isClosed) {
     return (
-      <section className="h-[calc(100dvh-45px)] w-full dark:bg-neutral-800 flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-3xl flex items-center justify-center text-amber-500 mb-6 border-2 border-amber-100 dark:border-amber-800/50">
-          <LuTriangle size={40} strokeWidth={2.5} className="animate-pulse" />
-        </div>
-        <h2 className="text-xl font-black text-neutral-900 dark:text-white mb-2">
-          Halaman Masih Terkunci
-        </h2>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-8 max-w-64">
-          Anda baru bisa melakukan koreksi sisa bahan setelah karyawan mengirim
-          <span className="font-bold text-orange">
-            {" "}
-            Laporan Tutup Warung
-          </span>{" "}
-          hari ini.
-        </p>
-        <Link
-          href="/dashboard"
-          className="bg-neutral-100 dark:bg-neutral-700 text-neutral-900 dark:text-white font-bold px-8 py-3 rounded-2xl hover:bg-neutral-200 transition-all"
-        >
-          Kembali ke Dashboard
-        </Link>
-      </section>
+      <LockedPage 
+        type={stats.shopStatus?.isBuka === 0 ? "holiday" : "locked"} 
+        customMessage={
+          stats.shopStatus?.isBuka === 0 
+            ? "Anda tidak bisa melakukan koreksi stok karena status warung saat ini sedang LIBUR."
+            : undefined
+        }
+      />
     );
   }
 
