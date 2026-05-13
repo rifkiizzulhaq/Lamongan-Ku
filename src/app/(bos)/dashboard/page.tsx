@@ -7,6 +7,7 @@ import {
   LuDollarSign,
   LuShoppingBag,
   LuPen,
+  LuCloud,
   LuNotebook,
   LuLoader,
 } from "react-icons/lu";
@@ -42,7 +43,11 @@ export default function Page() {
     style: "currency",
     currency: "IDR",
     minimumFractionDigits: 0,
-  }).format(stats.pendapatan);
+  }).format(
+    stats.isClosed
+      ? stats.pendapatanFisik || stats.pendapatan || 0
+      : stats.pendapatan || 0,
+  );
 
   return (
     <section className="h-[calc(100dvh-45px)] md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
@@ -91,11 +96,17 @@ export default function Page() {
         )}
         <div className="w-full mt-4 flex flex-col gap-4 md:px-0">
           <StatCard
-            title="Total Pendapatan Hari Ini"
+            title={
+              stats.isClosed
+                ? "Total Uang Fisik (Cash)"
+                : "Total Pendapatan Hari Ini"
+            }
             value={formattedPendapatan}
             icon={<LuDollarSign size={20} strokeWidth={2.5} />}
-            edit={<LuPen size={20} strokeWidth={2.5} />}
-            editHref="/dashboard/pendapatan"
+            edit={
+              stats.isClosed ? <LuPen size={20} strokeWidth={2.5} /> : undefined
+            }
+            editHref={stats.isClosed ? "/dashboard/pendapatan" : undefined}
           />
 
           <StatCard
@@ -104,11 +115,49 @@ export default function Page() {
             icon={<LuShoppingBag size={20} strokeWidth={2.5} />}
           />
 
-          {stats?.weathers && stats.weathers.length > 0 && (
-            <StatCard
-              title="Log Cuaca Hari Ini"
-              icon={<LuPen size={20} strokeWidth={2.5} />}
-            >
+          <StatCard
+            title="Sisa Bahan Baku Hari Ini"
+            icon={<LuShoppingBag size={20} strokeWidth={2.5} />}
+            edit={
+              stats.isClosed ? <LuPen size={20} strokeWidth={2.5} /> : undefined
+            }
+            editHref={stats.isClosed ? "/dashboard/sisa-bahan" : undefined}
+          >
+            {stats.sisaBahan && stats.sisaBahan.length > 0 ? (
+              <SisaBahanDashboardChart
+                data={stats.sisaBahan
+                  .filter(
+                    (v: { nama: string; sisa: number | null }) =>
+                      v.sisa !== undefined && v.sisa !== null,
+                  )
+                  .map((v: { nama: string; sisa: number | null }) => ({
+                    nama: v.nama,
+                    sisa: v.sisa as number,
+                  }))}
+              />
+            ) : (
+              <p className="text-xs text-neutral-400 mt-2">
+                Tidak ada data stok tersedia.
+              </p>
+            )}
+          </StatCard>
+
+          <StatCard
+            title="Catatan Tutup Warung"
+            icon={<LuNotebook size={20} strokeWidth={2.5} />}
+          >
+            <div className="mt-2 p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-xl border border-neutral-100 dark:border-neutral-700/80">
+              <p className="text-sm text-neutral-600 dark:text-neutral-300 min-h-12 italic">
+                {stats.note || "Belum ada catatan tutup warung."}
+              </p>
+            </div>
+          </StatCard>
+
+          <StatCard
+            title="Log Cuaca Hari Ini"
+            icon={<LuCloud size={20} strokeWidth={2.5} />}
+          >
+            {stats.weathers && stats.weathers.length > 0 ? (
               <div className="grid grid-cols-2 gap-2 mt-2">
                 {stats.weathers.map(
                   (w: { id: number; timeRange: string; weather: string }) => (
@@ -126,37 +175,11 @@ export default function Page() {
                   ),
                 )}
               </div>
-            </StatCard>
-          )}
-
-          <StatCard
-            title="Sisa Bahan Baku Hari Ini"
-            icon={<LuShoppingBag size={20} strokeWidth={2.5} />}
-            edit={<LuPen size={20} strokeWidth={2.5} />}
-            editHref="/dashboard/sisa-bahan"
-          >
-            <SisaBahanDashboardChart
-              data={stats.sisaBahan
-                .filter(
-                  (v: { nama: string; sisa: number | null }) =>
-                    v.sisa !== undefined && v.sisa !== null,
-                )
-                .map((v: { nama: string; sisa: number | null }) => ({
-                  nama: v.nama,
-                  sisa: v.sisa as number,
-                }))}
-            />
-          </StatCard>
-
-          <StatCard
-            title="Catatan Tutup Warung"
-            icon={<LuNotebook size={20} strokeWidth={2.5} />}
-          >
-            <div className="mt-2 p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-xl border border-neutral-100 dark:border-neutral-700/80">
-              <p className="text-sm text-neutral-600 dark:text-neutral-300 min-h-12 italic">
-                {stats.note || "Belum ada catatan tutup warung."}
+            ) : (
+              <p className="text-xs text-neutral-400 mt-2">
+                Belum ada log cuaca untuk hari ini.
               </p>
-            </div>
+            )}
           </StatCard>
         </div>
         <div className="w-full mt-4">

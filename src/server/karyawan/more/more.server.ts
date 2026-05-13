@@ -113,7 +113,7 @@ export async function saveClosingReport(payload: ClosingReportPayload) {
       for (const item of payload.stockSnapshots) {
         await db
           .update(stock)
-          .set({ quantity: item.sisa })
+          .set({ quantity: 0 })
           .where(eq(stock.id, item.stockId));
       }
     }

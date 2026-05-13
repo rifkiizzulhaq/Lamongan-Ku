@@ -21,75 +21,112 @@ export default function RevenueChart() {
   });
 
   const series = useMemo(() => {
-    const bungkusPoints = chartData
-      .filter((p) => p.type === "Bungkus")
-      .map((p) => [new Date(p.created_at).getTime(), p.qty]);
+    const sortedData = [...chartData].sort(
+      (a, b) =>
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    );
 
-    const makanSiniPoints = chartData
-      .filter((p) => p.type === "Makan Sini")
-      .map((p) => [new Date(p.created_at).getTime(), p.qty]);
+    if (sortedData.length === 0) return [];
+
+    const bungkusMap: Record<string, number> = {};
+    const makanSiniMap: Record<string, number> = {};
+
+    sortedData.forEach((p) => {
+      const timeStr = new Date(p.created_at).toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+
+      if (p.type === "Bungkus") {
+        bungkusMap[timeStr] = (bungkusMap[timeStr] || 0) + p.qty;
+      } else {
+        makanSiniMap[timeStr] = (makanSiniMap[timeStr] || 0) + p.qty;
+      }
+    });
+
+    const allTimes = Array.from(
+      new Set([...Object.keys(bungkusMap), ...Object.keys(makanSiniMap)]),
+    ).sort();
 
     return [
-      { name: "Bungkus", data: bungkusPoints.sort((a, b) => a[0] - b[0]) },
-      { name: "Makan Sini", data: makanSiniPoints.sort((a, b) => a[0] - b[0]) },
+      {
+        name: "Bungkus",
+        data: allTimes.map((t) => ({ x: t, y: bungkusMap[t] || 0 })),
+      },
+      {
+        name: "Makan Sini",
+        data: allTimes.map((t) => ({ x: t, y: makanSiniMap[t] || 0 })),
+      },
     ];
   }, [chartData]);
 
   const options: ApexCharts.ApexOptions = {
     chart: {
-      type: "area",
+      type: "bar",
       height: 350,
+      stacked: true,
       toolbar: { show: false },
       zoom: { enabled: false },
       fontFamily: "inherit",
       foreColor: "#a3a3a3",
-      animations: {
-        enabled: true,
-        speed: 800,
+    },
+    plotOptions: {
+      bar: {
+        columnWidth: "40%",
+        borderRadius: 4,
+        dataLabels: { position: "top" },
       },
     },
-    dataLabels: { enabled: false },
-    stroke: { curve: "smooth", width: 3 },
-    fill: {
-      type: "gradient",
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.45,
-        opacityTo: 0.05,
-        stops: [20, 100],
+    dataLabels: {
+      enabled: true,
+      formatter: (val) => (Number(val) === 0 ? "" : val),
+      offsetY: -20,
+      style: {
+        fontSize: "10px",
+        fontWeight: "900",
+        colors: ["#f97316", "#2563eb"],
       },
     },
     xaxis: {
-      type: "datetime",
+      type: "category",
       labels: {
-        datetimeUTC: false,
-        style: { colors: "#a3a3a3", fontSize: "10px" },
-        format: "HH:mm",
+        style: { colors: "#a3a3a3", fontSize: "9px", fontWeight: 700 },
+        rotate: -45,
+        rotateAlways: true,
+        hideOverlappingLabels: true,
+        trim: true,
       },
       axisBorder: { show: false },
       axisTicks: { show: false },
+      tooltip: { enabled: false },
     },
     yaxis: {
       title: {
-        text: "Porsi Terjual",
-        style: { fontWeight: 600, color: "#a3a3a3" },
+        text: "Porsi",
+        style: { fontWeight: 800, color: "#f97316" },
       },
-      labels: { style: { colors: "#a3a3a3" } },
+      labels: {
+        style: { colors: "#a3a3a3" },
+        formatter: (val) => val.toFixed(0),
+      },
     },
     tooltip: {
       theme: "dark",
-      x: { format: "HH:mm" },
+      shared: true,
+      intersect: false,
       y: { formatter: (val) => val + " Porsi" },
     },
     colors: ["#f97316", "#2563eb"],
     legend: {
       position: "top",
       horizontalAlign: "left",
-      labels: { colors: "#ffffff" },
+      labels: { colors: "#a3a3a3" },
     },
     grid: {
-      borderColor: "#404040",
+      borderColor: "#333333",
       strokeDashArray: 4,
+      padding: { left: 10, right: 10 },
     },
   };
 
@@ -101,33 +138,38 @@ export default function RevenueChart() {
             Statistik Penjualan
           </h3>
           <p className="text-xs dark:text-neutral-400 text-neutral-700 font-medium">
-            Aliran Porsi Terjual Real-time (Berdasarkan Waktu Pesanan)
+            Volume Porsi Per Pesanan (Real-time)
           </p>
         </div>
       </div>
-      <div
-        id="chart"
-        className="w-full min-h-80 flex items-center justify-center"
-      >
-        {isLoadingChart ? (
-          <div className="flex flex-col items-center gap-2">
-            <LuLoader className="animate-spin text-orange" size={30} />
-            <p className="text-xs text-neutral-500 font-medium">
-              Memuat Statistik...
-            </p>
-          </div>
-        ) : chartData.length > 0 ? (
-          <ReactApexChart
-            options={options}
-            series={series}
-            type="area"
-            height={320}
-          />
-        ) : (
-          <div className="text-neutral-500 text-sm font-medium py-10">
-            Belum ada data penjualan hari ini
-          </div>
-        )}
+      <div className="w-full overflow-x-auto pb-4 custom-scrollbar">
+        <div
+          className="min-h-80"
+          style={{
+            minWidth:
+              chartData.length > 8 ? `${chartData.length * 50}px` : "100%",
+          }}
+        >
+          {isLoadingChart ? (
+            <div className="h-80 flex flex-col items-center justify-center gap-2">
+              <LuLoader className="animate-spin text-orange" size={30} />
+              <p className="text-xs text-neutral-500 font-medium">
+                Memuat Statistik...
+              </p>
+            </div>
+          ) : chartData.length > 0 ? (
+            <ReactApexChart
+              options={options}
+              series={series}
+              type="bar"
+              height={320}
+            />
+          ) : (
+            <div className="h-80 flex items-center justify-center text-neutral-500 text-sm font-medium">
+              Belum ada data penjualan hari ini
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

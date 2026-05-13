@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Button from "@/src/components/ui/Button";
 import Link from "next/link";
-import { LuLoader, LuPackage, LuSave } from "react-icons/lu";
+import { LuLoader, LuPackage, LuSave, LuTriangle } from "react-icons/lu";
 import {
   getDashboardStats,
   updateStockInventory,
@@ -26,6 +26,9 @@ export default function SisaBahanPage() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => await getDashboardStats(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
@@ -67,10 +70,45 @@ export default function SisaBahanPage() {
     );
   };
 
-  if (isLoading || items.length === 0) {
+  if (isLoading || !stats) {
     return (
       <div className="h-screen flex items-center justify-center dark:bg-neutral-800">
         <LuLoader className="animate-spin text-orange" size={40} />
+      </div>
+    );
+  }
+
+  if (!stats.isClosed) {
+    return (
+      <section className="h-[calc(100dvh-45px)] w-full dark:bg-neutral-800 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-3xl flex items-center justify-center text-amber-500 mb-6 border-2 border-amber-100 dark:border-amber-800/50">
+          <LuTriangle size={40} strokeWidth={2.5} className="animate-pulse" />
+        </div>
+        <h2 className="text-xl font-black text-neutral-900 dark:text-white mb-2">
+          Halaman Masih Terkunci
+        </h2>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-8 max-w-64">
+          Anda baru bisa melakukan koreksi sisa bahan setelah karyawan mengirim
+          <span className="font-bold text-orange">
+            {" "}
+            Laporan Tutup Warung
+          </span>{" "}
+          hari ini.
+        </p>
+        <Link
+          href="/dashboard"
+          className="bg-neutral-100 dark:bg-neutral-700 text-neutral-900 dark:text-white font-bold px-8 py-3 rounded-2xl hover:bg-neutral-200 transition-all"
+        >
+          Kembali ke Dashboard
+        </Link>
+      </section>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="h-screen flex items-center justify-center dark:bg-neutral-800">
+        <p className="text-neutral-500">Data stok tidak tersedia.</p>
       </div>
     );
   }
@@ -130,9 +168,26 @@ export default function SisaBahanPage() {
               Batal
             </Link>
             <Button
-              onClick={() =>
-                simpan(items.map((i) => ({ stockId: i.stockId, sisa: i.sisa })))
-              }
+              onClick={() => {
+                const changedItems = items.filter((item) => {
+                  const original = stats.sisaBahan.find(
+                    (s) => s.id === item.stockId,
+                  );
+                  return original && item.sisa !== (original.sisa ?? 0);
+                });
+
+                if (changedItems.length === 0) {
+                  router.push("/dashboard");
+                  return;
+                }
+
+                simpan(
+                  changedItems.map((i) => ({
+                    stockId: i.stockId,
+                    sisa: i.sisa,
+                  })),
+                );
+              }}
               disabled={isPending}
               className="flex-2 bg-orange hover:bg-orange-600 text-white font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
             >

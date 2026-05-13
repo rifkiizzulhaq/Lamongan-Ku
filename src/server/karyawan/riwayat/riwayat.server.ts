@@ -2,25 +2,37 @@
 
 import { db } from "@/db";
 import { orders } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, gte, lte, and } from "drizzle-orm";
+import { getShiftWaktu } from "@/src/utils/date";
 
-export async function getHistory(page: number = 1, limitNum: number = 5) {
-  const result = await db.query.orders.findMany({
-    where: eq(orders.status, "selesai"),
+export async function getHistory(page: number = 1, limitNum: number = 10) {
+  const { startOfDay, endOfDay } = getShiftWaktu();
+
+  const todayOrders = await db.query.orders.findMany({
+    where: and(
+      eq(orders.status, "selesai"),
+      gte(orders.createdAt, startOfDay),
+      lte(orders.createdAt, endOfDay),
+    ),
     with: {
       items: {
         with: {
           stock: true,
         },
       },
-      diningTable: true,
     },
-    orderBy: [desc(orders.createdAt)],
-    limit: limitNum,
-    offset: (page - 1) * limitNum,
+    orderBy: [orders.createdAt],
   });
 
-  return result.map((order) => {
+  const totalToday = todayOrders.length;
+
+  const result = [...todayOrders]
+    .reverse()
+    .slice((page - 1) * limitNum, page * limitNum);
+
+  return result.map((order, index) => {
+    const sequenceNumber = totalToday - ((page - 1) * limitNum + index);
+
     const date = new Intl.DateTimeFormat("id-ID", {
       day: "2-digit",
       month: "short",
@@ -32,12 +44,14 @@ export async function getHistory(page: number = 1, limitNum: number = 5) {
       .replace(/\./g, ":");
 
     let titleId = "";
+    const displayNum = sequenceNumber.toString().padStart(2, "0");
+
     if (order.orderType === "bungkus") {
-      titleId = `Bungkus #${order.id.toString().padStart(2, "0")}`;
+      titleId = `Bungkus #${displayNum}`;
     } else {
-      titleId = order.diningTable
-        ? `${order.diningTable.name.replace("meja-", "Meja ")} - Item #${order.id.toString().padStart(2, "0")}`
-        : `Order #${order.id.toString().padStart(2, "0")}`;
+      titleId = order.diningTableId
+        ? `Meja ${order.diningTableId} - Item #${displayNum}`
+        : `Order #${displayNum}`;
     }
 
     return {

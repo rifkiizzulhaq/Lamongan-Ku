@@ -114,6 +114,20 @@ export const weatherLogsRelations = relations(weather_logs, ({ one }) => ({
   }),
 }));
 
+export const dailyStockSnapshotsRelations = relations(
+  daily_stock_snapshots,
+  ({ one }) => ({
+    dailyReport: one(daily_reports, {
+      fields: [daily_stock_snapshots.reportId],
+      references: [daily_reports.id],
+    }),
+    stock: one(stock, {
+      fields: [daily_stock_snapshots.stockId],
+      references: [stock.id],
+    }),
+  }),
+);
+
 export type Stock = InferSelectModel<typeof stock>;
 export type NewStock = InferInsertModel<typeof stock>;
 

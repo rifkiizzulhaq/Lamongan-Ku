@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Button from "@/src/components/ui/Button";
@@ -18,10 +18,33 @@ export default function Page() {
   const queryClient = useQueryClient();
   const [uangFisik, setUangFisik] = useState<string>("");
 
+  const formatIDR = (val: number) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(val);
+
+  const handleUangFisikChange = (value: string) => {
+    setUangFisik(value.replace(/\D/g, ""));
+  };
+
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => await getDashboardStats(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnWindowFocus: true,
   });
+
+  useEffect(() => {
+    const UangFisiks = () => {
+      if (stats?.pendapatanFisik && uangFisik === "") {
+        setUangFisik(stats.pendapatanFisik.toString());
+      }
+    };
+    UangFisiks();
+  }, [stats, uangFisik]);
 
   const { mutate: simpan, isPending } = useMutation({
     mutationFn: (val: number) => saveActualRevenue(val),
@@ -43,16 +66,36 @@ export default function Page() {
     );
   }
 
+  if (!stats.isClosed) {
+    return (
+      <section className="h-[calc(100dvh-45px)] w-full dark:bg-neutral-800 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-amber-50 dark:bg-amber-900/20 rounded-3xl flex items-center justify-center text-amber-500 mb-6 border-2 border-amber-100 dark:border-amber-800/50">
+          <LuTriangle size={40} strokeWidth={2.5} className="animate-pulse" />
+        </div>
+        <h2 className="text-xl font-black text-neutral-900 dark:text-white mb-2">
+          Halaman Masih Terkunci
+        </h2>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-8 max-w-64">
+          Anda baru bisa menginput uang fisik setelah karyawan mengirim
+          <span className="font-bold text-orange">
+            {" "}
+            Laporan Tutup Warung
+          </span>{" "}
+          hari ini.
+        </p>
+        <Link
+          href="/dashboard"
+          className="bg-neutral-100 dark:bg-neutral-700 text-neutral-900 dark:text-white font-bold px-8 py-3 rounded-2xl hover:bg-neutral-200 transition-all"
+        >
+          Kembali ke Dashboard
+        </Link>
+      </section>
+    );
+  }
+
   const systemRevenue = stats.pendapatan || 0;
   const physicalCash = parseInt(uangFisik) || 0;
   const selisih = physicalCash - systemRevenue;
-
-  const formatIDR = (val: number) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(val);
 
   return (
     <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
@@ -90,10 +133,11 @@ export default function Page() {
               </span>
               <Input
                 id="pendapatan"
-                type="number"
-                value={uangFisik}
-                onChange={(e) => setUangFisik(e.target.value)}
-                placeholder="0"
+                type="text"
+                inputMode="numeric"
+                value={uangFisik ? formatIDR(Number(uangFisik)) : ""}
+                onChange={(e) => handleUangFisikChange(e.target.value)}
+                placeholder="Rp 0"
                 className="w-full pl-12 pr-4 py-4 bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 rounded-2xl text-xl font-black text-neutral-900 dark:text-white focus:outline-none focus:border-orange transition-all placeholder:text-neutral-300"
               />
             </div>
