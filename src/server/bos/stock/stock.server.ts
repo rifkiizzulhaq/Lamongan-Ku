@@ -39,7 +39,7 @@ export async function updateQuantities(
     for (const item of items) {
       await db
         .update(stock)
-        .set({ quantity: item.quantity })
+        .set({ quantity: item.quantity, updatedAt: new Date() })
         .where(eq(stock.id, item.stockId));
     }
     revalidatePath("/stock");

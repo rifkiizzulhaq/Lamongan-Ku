@@ -12,12 +12,16 @@ import {
 import { gte, lte, and, sql, eq } from "drizzle-orm";
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { getShiftWaktu } from "@/src/utils/date";
+import { checkAndRunAutoClose } from "@/src/server/bos/laporan/laporan.server";
 
 export async function getShopStatus() {
   noStore();
   const status = await db.query.shop_status.findFirst();
   if (!status) {
-    const [newStatus] = await db.insert(shop_status).values({ isBuka: 1 }).returning();
+    const [newStatus] = await db
+      .insert(shop_status)
+      .values({ isBuka: 1 })
+      .returning();
     return newStatus;
   }
   return status;
@@ -28,10 +32,10 @@ export async function updateShopStatus(isBuka: boolean, reason?: string) {
     const current = await getShopStatus();
     await db
       .update(shop_status)
-      .set({ 
-        isBuka: isBuka ? 1 : 0, 
-        reason: isBuka ? null : (reason || null),
-        updatedAt: new Date()
+      .set({
+        isBuka: isBuka ? 1 : 0,
+        reason: isBuka ? null : reason || null,
+        updatedAt: new Date(),
       })
       .where(eq(shop_status.id, current.id));
 
@@ -43,9 +47,9 @@ export async function updateShopStatus(isBuka: boolean, reason?: string) {
   }
 }
 
-
 export async function getDashboardStats() {
   noStore();
+  await checkAndRunAutoClose();
   const { startOfDay, endOfDay } = getShiftWaktu();
   const shopStatus = await getShopStatus();
 

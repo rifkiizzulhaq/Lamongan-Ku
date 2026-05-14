@@ -52,7 +52,7 @@ export default function SisaBahanDashboardChart({ data }: Props) {
         style: { colors: "#737373", fontWeight: 600, fontSize: "11px" },
       },
     },
-    colors: ["#f97316"], // Orange
+    colors: ["#f97316"],
     tooltip: {
       theme: "dark",
       y: { formatter: (val) => val + " Porsi" },
@@ -68,9 +68,14 @@ export default function SisaBahanDashboardChart({ data }: Props) {
   const chartHeight = Math.max(200, data.length * 40 + 50);
 
   return (
-    <div className="w-full mt-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 max-h-[300px] -ml-2">
+    <div className="w-full mt-2 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 max-h-75 -ml-2">
       <div style={{ height: chartHeight }}>
-        <ReactApexChart options={options} series={series} type="bar" height="100%" />
+        <ReactApexChart
+          options={options}
+          series={series}
+          type="bar"
+          height="100%"
+        />
       </div>
     </div>
   );

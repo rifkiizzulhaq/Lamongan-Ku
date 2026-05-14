@@ -8,6 +8,8 @@ import OrderTypeTimelineChart from "./charts/OrderTypeTimelineChart";
 import SisaBahanChart from "./charts/SisaBahanChart";
 import WeatherSummaryCard from "./WeatherSummaryCard";
 
+import SummaryCards from "./SummaryCards";
+
 interface Props {
   data: AggregatedData;
   titleSuffix: string;
@@ -21,30 +23,12 @@ export default function AggregatedAnalytics({
 }: Props) {
   return (
     <div className="flex flex-col gap-5 pb-6">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 rounded-xl">
-          <p className="text-[10px] uppercase font-black tracking-widest text-neutral-400">
-            Total Pendapatan
-          </p>
-          <p className="text-xl font-black text-neutral-800 dark:text-white mt-1">
-            Rp {(data.totalRevenueCurrent / 1000000).toFixed(1)} Jt
-          </p>
-          <p className="text-xs font-bold mt-1 text-neutral-500">
-            vs Rp {(data.totalRevenuePrevious / 1000000).toFixed(1)} Jt
-          </p>
-        </div>
-        <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 rounded-xl">
-          <p className="text-[10px] uppercase font-black tracking-widest text-neutral-400">
-            Total Porsi
-          </p>
-          <p className="text-xl font-black text-neutral-800 dark:text-white mt-1">
-            {(data.totalPortionCurrent / 1000).toFixed(1)}k Porsi
-          </p>
-          <p className="text-xs font-bold mt-1 text-neutral-500">
-            vs {(data.totalPortionPrevious / 1000).toFixed(1)}k Porsi
-          </p>
-        </div>
-      </div>
+      <SummaryCards
+        currentRevenue={data.totalRevenueCurrent}
+        previousRevenue={data.totalRevenuePrevious}
+        currentPortion={data.totalPortionCurrent}
+        previousPortion={data.totalPortionPrevious}
+      />
 
       {(data.totalLiburCurrent! > 0 || data.totalLiburPrevious! > 0) && (
         <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 rounded-xl">
@@ -90,6 +74,14 @@ export default function AggregatedAnalytics({
         previousData={data.revenuePreviousTrend}
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
+        weatherCurrentTrend={data.weatherCurrentTrend}
+        weatherPreviousTrend={data.weatherPreviousTrend}
+        weatherLogsCurrentTrend={data.weatherLogsCurrentTrend}
+        weatherLogsPreviousTrend={data.weatherLogsPreviousTrend}
+        isLiburCurrentTrend={data.isLiburCurrentTrend}
+        isLiburPreviousTrend={data.isLiburPreviousTrend}
+        alasanLiburCurrentTrend={data.alasanLiburCurrentTrend}
+        alasanLiburPreviousTrend={data.alasanLiburPreviousTrend}
       />
 
       <ComparisonBarChart
@@ -101,6 +93,14 @@ export default function AggregatedAnalytics({
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
         yAxisFormatter={(val) => val + " Porsi"}
+        weatherCurrentTrend={data.weatherCurrentTrend}
+        weatherPreviousTrend={data.weatherPreviousTrend}
+        weatherLogsCurrentTrend={data.weatherLogsCurrentTrend}
+        weatherLogsPreviousTrend={data.weatherLogsPreviousTrend}
+        isLiburCurrentTrend={data.isLiburCurrentTrend}
+        isLiburPreviousTrend={data.isLiburPreviousTrend}
+        alasanLiburCurrentTrend={data.alasanLiburCurrentTrend}
+        alasanLiburPreviousTrend={data.alasanLiburPreviousTrend}
       />
 
       <OrderTypeTimelineChart
@@ -114,7 +114,7 @@ export default function AggregatedAnalytics({
         dineInPreviousTrend={data.dineInPreviousHourlyAvg || []}
         takeawayPreviousTrend={data.takeawayPreviousHourlyAvg || []}
       />
-      
+
       <OrderTypeChart
         title="Total Tipe Pesanan"
         subtitle={`Makan di Tempat vs Bungkus`}
@@ -125,7 +125,6 @@ export default function AggregatedAnalytics({
         dineInPrevious={data.dineInPrevious}
         takeawayPrevious={data.takeawayPrevious}
       />
-
 
       <WeatherSummaryCard
         currentData={data.cuacaCurrent}

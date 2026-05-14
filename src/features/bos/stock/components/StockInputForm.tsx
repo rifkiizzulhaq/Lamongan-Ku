@@ -106,14 +106,16 @@ export default function StockInputForm({
     stockList.forEach((item) => {
       if (newValue) {
         // Jika diaktifkan, prioritaskan sisa kemarin jika > 0
-        newInputs[item.id] = item.sisaKemarin > 0 
-          ? item.sisaKemarin.toString() 
-          : (item.quantity?.toString() || "");
+        newInputs[item.id] =
+          item.sisaKemarin > 0
+            ? item.sisaKemarin.toString()
+            : item.quantity?.toString() || "";
       } else {
         // Jika dimatikan, kembalikan ke nilai quantity asli dari database
-        newInputs[item.id] = item.quantity !== null && item.quantity > 0 
-          ? item.quantity.toString() 
-          : "";
+        newInputs[item.id] =
+          item.quantity !== null && item.quantity > 0
+            ? item.quantity.toString()
+            : "";
       }
     });
     setStockInputs(newInputs);

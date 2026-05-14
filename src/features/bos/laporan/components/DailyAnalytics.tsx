@@ -6,6 +6,7 @@ import OrderTypeChart from "./charts/OrderTypeChart";
 import OrderTypeTimelineChart from "./charts/OrderTypeTimelineChart";
 import SisaBahanChart from "./charts/SisaBahanChart";
 import WeatherSummaryCard from "./WeatherSummaryCard";
+import SummaryCards from "./SummaryCards";
 import { LuInfo } from "react-icons/lu";
 
 interface Props {
@@ -43,30 +44,12 @@ export default function DailyAnalytics({ data }: Props) {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 rounded-xl">
-          <p className="text-[10px] uppercase font-black tracking-widest text-neutral-400">
-            Total Pendapatan
-          </p>
-          <p className="text-xl font-black text-neutral-800 dark:text-white mt-1">
-            Rp {(data.totalRevenueCurrent / 1000000).toFixed(2)} Jt
-          </p>
-          <p className="text-xs font-bold mt-1 text-neutral-500">
-            vs Rp {(data.totalRevenuePrevious / 1000000).toFixed(2)} Jt
-          </p>
-        </div>
-        <div className="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 rounded-xl">
-          <p className="text-[10px] uppercase font-black tracking-widest text-neutral-400">
-            Total Porsi
-          </p>
-          <p className="text-xl font-black text-neutral-800 dark:text-white mt-1">
-            {data.portionCurrent} Porsi
-          </p>
-          <p className="text-xs font-bold mt-1 text-neutral-500">
-            vs {data.portionPrevious} Porsi
-          </p>
-        </div>
-      </div>
+      <SummaryCards
+        currentRevenue={data.totalRevenueCurrent}
+        previousRevenue={data.totalRevenuePrevious}
+        currentPortion={data.portionCurrent}
+        previousPortion={data.portionPrevious}
+      />
 
       <TrendLineChart
         title="Pendapatan (Harian)"

@@ -9,6 +9,7 @@ export const stock = pgTable("stock", {
   price: integer("price").notNull(),
   quantity: integer("quantity"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const dining_table = pgTable("dining_table", {
@@ -154,7 +155,9 @@ export type WeatherLog = InferSelectModel<typeof weather_logs>;
 export type NewWeatherLog = InferInsertModel<typeof weather_logs>;
 
 export type DailyStockSnapshot = InferSelectModel<typeof daily_stock_snapshots>;
-export type NewDailyStockSnapshot = InferInsertModel<typeof daily_stock_snapshots>;
+export type NewDailyStockSnapshot = InferInsertModel<
+  typeof daily_stock_snapshots
+>;
 
 export type ShopStatus = InferSelectModel<typeof shop_status>;
 export type NewShopStatus = InferInsertModel<typeof shop_status>;

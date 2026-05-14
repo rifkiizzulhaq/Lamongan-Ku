@@ -71,8 +71,33 @@ export default function TutupWarungModal({
     refetchOnMount: "always",
   });
 
-  const [slots, setSlots] = useState<CuacaSlot[]>(
-    JAM_SLOTS.map((jam) => ({ jam, cuaca: null })),
+  const getFilteredSlots = () => {
+    const now = new Date();
+    const wibStr = now.toLocaleString("en-US", {
+      timeZone: "Asia/Jakarta",
+      hour: "numeric",
+      hour12: false,
+    });
+    const currentHour = parseInt(wibStr);
+
+    let absCurrent = currentHour;
+    if (currentHour >= 0 && currentHour <= 16) {
+      absCurrent = currentHour + 24;
+    }
+
+    return JAM_SLOTS.filter((jam) => {
+      const startHourStr = jam.split(":")[0];
+      const startHour = parseInt(startHourStr);
+      let absStart = startHour;
+      if (startHour >= 0 && startHour <= 16) {
+        absStart = startHour + 24;
+      }
+      return absStart <= absCurrent;
+    });
+  };
+
+  const [slots, setSlots] = useState<CuacaSlot[]>(() =>
+    getFilteredSlots().map((jam) => ({ jam, cuaca: null })),
   );
   const [sisa, setSisa] = useState<SisaItem[]>(() =>
     stockList

@@ -15,6 +15,14 @@ interface Props {
   currentLabel: string;
   previousLabel: string;
   yAxisFormatter?: (val: number) => string;
+  weatherCurrentTrend?: string[];
+  weatherPreviousTrend?: string[];
+  weatherLogsCurrentTrend?: { timeRange: string; weather: string }[][];
+  weatherLogsPreviousTrend?: { timeRange: string; weather: string }[][];
+  isLiburCurrentTrend?: boolean[];
+  isLiburPreviousTrend?: boolean[];
+  alasanLiburCurrentTrend?: string[];
+  alasanLiburPreviousTrend?: string[];
 }
 
 export default function TrendLineChart({
@@ -26,6 +34,14 @@ export default function TrendLineChart({
   currentLabel,
   previousLabel,
   yAxisFormatter = (val) => val.toString(),
+  weatherCurrentTrend,
+  weatherPreviousTrend,
+  weatherLogsCurrentTrend,
+  weatherLogsPreviousTrend,
+  isLiburCurrentTrend,
+  isLiburPreviousTrend,
+  alasanLiburCurrentTrend,
+  alasanLiburPreviousTrend,
 }: Props) {
   const series = [
     { name: currentLabel, data: currentData },
@@ -78,7 +94,103 @@ export default function TrendLineChart({
     dataLabels: { enabled: false },
     tooltip: {
       theme: "dark",
-      y: { formatter: yAxisFormatter },
+      custom: function ({ series, dataPointIndex, w }: { series: number[][]; dataPointIndex: number; w: { globals: { labels: string[] } } }) {
+        const valCurrent = series[0][dataPointIndex];
+        const valPrevious = series[1][dataPointIndex];
+        const label = w.globals.labels[dataPointIndex];
+
+        const wCurr = weatherCurrentTrend?.[dataPointIndex] || "";
+        const wPrev = weatherPreviousTrend?.[dataPointIndex] || "";
+
+        const liburCurr = isLiburCurrentTrend?.[dataPointIndex];
+        const alasanCurr = alasanLiburCurrentTrend?.[dataPointIndex] || "";
+        const liburPrev = isLiburPreviousTrend?.[dataPointIndex];
+        const alasanPrev = alasanLiburPreviousTrend?.[dataPointIndex] || "";
+
+        const wLogsCurr = weatherLogsCurrentTrend?.[dataPointIndex] || [];
+        const wLogsPrev = weatherLogsPreviousTrend?.[dataPointIndex] || [];
+
+        const formatW = (w: string) => {
+          if (!w) return "-";
+          if (w.toLowerCase() === "hujan") return "🌧️ Hujan";
+          if (w.toLowerCase() === "mendung") return "☁️ Mendung";
+          return "☀️ Cerah";
+        };
+
+        const renderWeatherSequence = (
+          logs: { timeRange: string; weather: string }[],
+          dom: string,
+        ) => {
+          if (logs.length === 0) return formatW(dom);
+          const grouped = [];
+          let current = {
+            weather: logs[0].weather,
+            start: logs[0].timeRange.split("-")[0],
+            end: logs[0].timeRange.split("-")[1],
+          };
+          for (let i = 1; i < logs.length; i++) {
+            if (logs[i].weather === current.weather) {
+              current.end = logs[i].timeRange.split("-")[1];
+            } else {
+              grouped.push(current);
+              current = {
+                weather: logs[i].weather,
+                start: logs[i].timeRange.split("-")[0],
+                end: logs[i].timeRange.split("-")[1],
+              };
+            }
+          }
+          grouped.push(current);
+
+          return (
+            "<div style='display:flex; flex-wrap:wrap; gap:4px; margin-top:2px;'>" +
+            grouped
+              .map((g) => {
+                let icon = "☀️";
+                if (g.weather.toLowerCase().includes("hujan")) icon = "🌧️";
+                else if (g.weather.toLowerCase().includes("gerimis"))
+                  icon = "🌦️";
+                else if (g.weather.toLowerCase().includes("mendung"))
+                  icon = "☁️";
+                return `<span style="background:#262626; padding:1px 4px; border-radius:4px; font-size:10px; border:1px solid #404040;">${icon} ${g.start}-${g.end}</span>`;
+              })
+              .join("") +
+            "</div>"
+          );
+        };
+
+        return `
+          <div style="padding: 12px; font-family: inherit; background: #171717; color: white; border: 1px solid #404040; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+            <div style="font-weight: 900; font-size: 13px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #404040;">
+              📅 ${label}
+            </div>
+            
+            <div style="margin-bottom: 10px;">
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #f97316;"></span>
+                <span style="font-weight: 800; font-size: 12px;">${currentLabel}:</span>
+                <span style="font-weight: bold; font-size: 12px; color: #f97316;">${yAxisFormatter(valCurrent)}</span>
+              </div>
+              <div style="font-size: 11px; color: #a3a3a3; padding-left: 16px;">
+                Cuaca: ${renderWeatherSequence(wLogsCurr, wCurr)}
+                <div style="margin-top: 4px;">Status: ${liburCurr ? `⛔ Tutup <span style="font-size: 10px; color: #f87171;">(${alasanCurr})</span>` : "🟢 Buka"}</div>
+              </div>
+            </div>
+            
+            <div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #737373;"></span>
+                <span style="font-weight: 800; font-size: 12px;">${previousLabel}:</span>
+                <span style="font-weight: bold; font-size: 12px; color: #d4d4d4;">${yAxisFormatter(valPrevious)}</span>
+              </div>
+              <div style="font-size: 11px; color: #a3a3a3; padding-left: 16px;">
+                Cuaca: ${renderWeatherSequence(wLogsPrev, wPrev)}
+                <div style="margin-top: 4px;">Status: ${liburPrev ? `⛔ Tutup <span style="font-size: 10px; color: #f87171;">(${alasanPrev})</span>` : "🟢 Buka"}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      },
     },
     legend: {
       position: "top",

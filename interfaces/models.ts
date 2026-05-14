@@ -90,6 +90,15 @@ export interface AggregatedData {
   portionCurrentTrend: number[];
   portionPreviousTrend: number[];
 
+  weatherCurrentTrend?: string[];
+  weatherPreviousTrend?: string[];
+  weatherLogsCurrentTrend?: { timeRange: string; weather: string }[][];
+  weatherLogsPreviousTrend?: { timeRange: string; weather: string }[][];
+  isLiburCurrentTrend?: boolean[];
+  isLiburPreviousTrend?: boolean[];
+  alasanLiburCurrentTrend?: string[];
+  alasanLiburPreviousTrend?: string[];
+
   totalRevenueCurrent: number;
   totalRevenuePrevious: number;
 

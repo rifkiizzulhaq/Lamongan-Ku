@@ -15,8 +15,9 @@ export async function getAllTables() {
 
 export async function createTable(name: string) {
   try {
-    if (!name.trim()) return { success: false, error: "Nama meja tidak boleh kosong" };
-    
+    if (!name.trim())
+      return { success: false, error: "Nama meja tidak boleh kosong" };
+
     await db.insert(dining_table).values({ name: name.trim() });
     revalidatePath("/stock");
     return { success: true };
@@ -28,9 +29,13 @@ export async function createTable(name: string) {
 
 export async function updateTable(id: number, name: string) {
   try {
-    if (!name.trim()) return { success: false, error: "Nama meja tidak boleh kosong" };
+    if (!name.trim())
+      return { success: false, error: "Nama meja tidak boleh kosong" };
 
-    await db.update(dining_table).set({ name: name.trim() }).where(eq(dining_table.id, id));
+    await db
+      .update(dining_table)
+      .set({ name: name.trim() })
+      .where(eq(dining_table.id, id));
     revalidatePath("/stock");
     return { success: true };
   } catch (error) {
