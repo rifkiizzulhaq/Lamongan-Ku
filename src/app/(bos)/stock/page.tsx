@@ -19,9 +19,9 @@ export default async function Page() {
 
   if (shopStatus.isBuka === 0) {
     return (
-      <LockedPage 
-        type="holiday" 
-        customMessage="Halaman input stok harian dikunci karena status warung saat ini sedang LIBUR." 
+      <LockedPage
+        type="holiday"
+        customMessage="Halaman input stok harian dikunci karena status warung saat ini sedang LIBUR."
       />
     );
   }
@@ -39,9 +39,10 @@ export default async function Page() {
       <PageHeader title="Input Stock Harian" />
       <main className="relative max-w-87.5 mx-auto w-full flex flex-col h-full pt-2 sm:px-0">
         <div className="relative w-full flex flex-col h-full overflow-y-auto pb-24 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700">
-          <StockInputForm 
-            stockList={stockFormItems} 
-            isBuka={shopStatus.isBuka === 1} 
+          <StockInputForm
+            stockList={stockFormItems}
+            isBuka={shopStatus.isBuka === 1}
+            hasYesterdayData={stockFormItems.some((s) => s.sisaKemarin > 0)}
           />
           <TableInputForm tables={tables} />
         </div>

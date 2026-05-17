@@ -81,10 +81,10 @@ export default function SisaBahanPage() {
 
   if (stats.shopStatus?.isBuka === 0 || !stats.isClosed) {
     return (
-      <LockedPage 
-        type={stats.shopStatus?.isBuka === 0 ? "holiday" : "locked"} 
+      <LockedPage
+        type={stats.shopStatus?.isBuka === 0 ? "holiday" : "locked"}
         customMessage={
-          stats.shopStatus?.isBuka === 0 
+          stats.shopStatus?.isBuka === 0
             ? "Anda tidak bisa melakukan koreksi stok karena status warung saat ini sedang LIBUR."
             : undefined
         }
@@ -103,7 +103,7 @@ export default function SisaBahanPage() {
   return (
     <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
       <PageHeader title="Koreksi Stok" />
-      <main className="relative max-w-87.5 mx-auto w-full flex-1 flex flex-col overflow-y-auto pt-4 pb-8 px-4">
+      <main className="relative max-w-87.5 mx-auto w-full flex-1 flex flex-col overflow-y-auto pt-4 pb-10">
         <div className="flex flex-col p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl shadow-sm w-full">
           <div className="flex items-center gap-3 mb-6 border-b border-neutral-100 dark:border-neutral-800 pb-4">
             <div className="w-10 h-10 bg-orange/10 rounded-xl flex items-center justify-center text-orange">
@@ -150,7 +150,7 @@ export default function SisaBahanPage() {
           <div className="mt-8 flex w-full gap-3">
             <Link
               href="/dashboard"
-              className="flex-1 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-bold py-4 rounded-2xl hover:bg-neutral-200 transition-colors"
+              className="flex-1 flex items-center justify-center bg-neutral-100 dark:bg-neutral-100 text-neutral-800 dark:text-neutral-800 font-bold py-4 rounded-2xl hover:bg-neutral-200 transition-colors"
             >
               Batal
             </Link>
@@ -176,24 +176,19 @@ export default function SisaBahanPage() {
                 );
               }}
               disabled={isPending}
-              className="flex-2 bg-orange hover:bg-orange-600 text-white font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+              className="flex-1 bg-orange hover:bg-orange-600 text-white font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
               {isPending ? (
                 <LuLoader className="animate-spin" />
               ) : (
                 <>
                   <LuSave size={18} />
-                  Simpan Stok
+                  Simpan
                 </>
               )}
             </Button>
           </div>
         </div>
-
-        <p className="mt-6 text-center text-[10px] text-neutral-400 font-medium px-6">
-          * Perubahan ini akan langsung mengupdate jumlah stok di aplikasi
-          Karyawan secara real-time.
-        </p>
       </main>
     </section>
   );

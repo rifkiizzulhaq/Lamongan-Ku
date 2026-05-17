@@ -7,7 +7,13 @@ import Button from "@/src/components/ui/Button";
 import Input from "@/src/components/ui/Input";
 import PageHeader from "@/src/components/ui/PageHeader";
 import Link from "next/link";
-import { LuDollarSign, LuLoader, LuCheck, LuTriangle } from "react-icons/lu";
+import {
+  LuDollarSign,
+  LuLoader,
+  LuCheck,
+  LuTriangle,
+  LuSave,
+} from "react-icons/lu";
 import {
   getDashboardStats,
   saveActualRevenue,
@@ -69,10 +75,10 @@ export default function Page() {
 
   if (stats.shopStatus?.isBuka === 0 || !stats.isClosed) {
     return (
-      <LockedPage 
-        type={stats.shopStatus?.isBuka === 0 ? "holiday" : "locked"} 
+      <LockedPage
+        type={stats.shopStatus?.isBuka === 0 ? "holiday" : "locked"}
         customMessage={
-          stats.shopStatus?.isBuka === 0 
+          stats.shopStatus?.isBuka === 0
             ? "Anda tidak bisa menginput uang fisik karena status warung saat ini sedang LIBUR."
             : undefined
         }
@@ -87,7 +93,7 @@ export default function Page() {
   return (
     <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
       <PageHeader title="Input Uang Fisik" />
-      <main className="relative max-w-87.5 mx-auto w-full flex-1 flex flex-col overflow-hidden pt-4 px-4">
+      <main className="relative max-w-87.5 mx-auto w-full flex-1 flex flex-col overflow-hidden pt-4">
         <div className="flex flex-col p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl shadow-sm w-full mb-6">
           <div className="flex justify-between items-start mb-4">
             <div className="w-12 h-12 bg-orange/10 border border-orange/20 rounded-2xl flex items-center justify-center text-orange">
@@ -141,7 +147,7 @@ export default function Page() {
           >
             <div className="flex flex-col p-4 flex-1">
               <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">
-                Selisih / Varian
+                Selisih
               </p>
               <div className="flex items-center gap-2">
                 <h2
@@ -169,19 +175,22 @@ export default function Page() {
           <div className="mt-4 flex w-full gap-3">
             <Link
               href="/dashboard"
-              className="flex-1 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-bold py-4 rounded-2xl hover:bg-neutral-200 transition-colors"
+              className="flex-1 flex items-center justify-center bg-neutral-100 dark:bg-neutral-100 text-neutral-800 dark:text-neutral-800 font-bold py-4 rounded-2xl hover:bg-neutral-200 transition-colors"
             >
               Batal
             </Link>
             <Button
               onClick={() => simpan(physicalCash)}
               disabled={isPending || !uangFisik}
-              className="flex-2 bg-orange hover:bg-orange-600 text-white font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 bg-orange hover:bg-orange-600 text-white font-black uppercase tracking-widest py-4 rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50"
             >
               {isPending ? (
                 <LuLoader className="animate-spin mx-auto" />
               ) : (
-                "Simpan Laporan"
+                <>
+                  <LuSave size={18} />
+                  Simpan
+                </>
               )}
             </Button>
           </div>

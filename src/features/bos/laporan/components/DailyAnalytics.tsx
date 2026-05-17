@@ -14,6 +14,8 @@ interface Props {
 }
 
 export default function DailyAnalytics({ data }: Props) {
+  const showComparison =
+    data.totalRevenuePrevious > 0 || data.portionPrevious > 0;
   return (
     <div className="flex flex-col gap-5 pb-6">
       {data.isLiburCurrent && (
@@ -59,6 +61,16 @@ export default function DailyAnalytics({ data }: Props) {
         previousData={data.revenuePrevious}
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
+        showComparison={showComparison}
+        weatherCurrentTrend={data.cuacaCurrent}
+        weatherPreviousTrend={data.cuacaPrevious}
+        yAxisFormatter={(val) =>
+          new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0,
+          }).format(val)
+        }
       />
 
       <OrderTypeTimelineChart
@@ -67,6 +79,7 @@ export default function DailyAnalytics({ data }: Props) {
         labels={data.revenueLabels}
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
+        showComparison={showComparison}
         dineInTrend={data.dineInTrend || []}
         takeawayTrend={data.takeawayTrend || []}
         dineInPreviousTrend={data.dineInPreviousTrend || []}
@@ -78,6 +91,7 @@ export default function DailyAnalytics({ data }: Props) {
         subtitle={`Makan di Tempat vs Bungkus pada ${data.timeLabel} vs ${data.prevTimeLabel}`}
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
+        showComparison={showComparison}
         dineInCurrent={data.dineInCurrent}
         takeawayCurrent={data.takeawayCurrent}
         dineInPrevious={data.dineInPrevious}
@@ -85,10 +99,13 @@ export default function DailyAnalytics({ data }: Props) {
       />
 
       <WeatherSummaryCard
-        currentData={data.cuacaCurrent}
-        previousData={data.cuacaPrevious}
+        currentData={data.cuacaCurrentStats}
+        previousData={data.cuacaPreviousStats}
+        currentLogs={data.weatherLogsCurrent}
+        previousLogs={data.weatherLogsPrevious}
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
+        showComparison={showComparison}
         isDaily={true}
       />
 
@@ -96,6 +113,7 @@ export default function DailyAnalytics({ data }: Props) {
         data={data.sisaBahan}
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
+        showComparison={showComparison}
       />
     </div>
   );

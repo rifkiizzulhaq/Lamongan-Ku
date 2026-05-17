@@ -41,7 +41,7 @@ export function getShiftDate(date: Date | string | number): Date {
 export function matchWeather(time: string, logs: WeatherLog[]): string {
   if (logs.length === 0) return "Cerah";
   const found = logs.find((w) => {
-    const parts = w.timeRange.split(" - ");
+    const parts = w.timeRange.split("-").map((p) => p.trim());
     if (parts.length !== 2) return false;
     const getVal = (t: string) => {
       const [h, min] = t.split(":").map(Number);

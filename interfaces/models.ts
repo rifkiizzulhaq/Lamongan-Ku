@@ -43,6 +43,8 @@ export interface SisaBahanData {
   nama: string;
   sisaCurrent: number;
   sisaPrevious: number;
+  stockAwalCurrent?: number;
+  stockAwalPrevious?: number;
 }
 
 export interface DailyData {
@@ -74,8 +76,24 @@ export interface DailyData {
   dineInPreviousTrend?: number[];
   takeawayPreviousTrend?: number[];
 
-  cuacaCurrent?: { cerah: number; mendung: number; hujan: number } | string[];
-  cuacaPrevious?: { cerah: number; mendung: number; hujan: number } | string[];
+  cuacaCurrent: string[];
+  cuacaPrevious: string[];
+
+  cuacaCurrentStats?: {
+    cerah: number;
+    mendung: number;
+    gerimis: number;
+    hujan: number;
+  };
+  cuacaPreviousStats?: {
+    cerah: number;
+    mendung: number;
+    gerimis: number;
+    hujan: number;
+  };
+
+  weatherLogsCurrent?: { timeRange: string; weather: string }[];
+  weatherLogsPrevious?: { timeRange: string; weather: string }[];
 
   sisaBahan: SisaBahanData[];
 }
@@ -115,8 +133,37 @@ export interface AggregatedData {
   totalLiburPrevious?: number;
   alasanLiburPreviousList?: string[];
 
-  cuacaCurrent?: { cerah: number; mendung: number; hujan: number };
-  cuacaPrevious?: { cerah: number; mendung: number; hujan: number };
+  cuacaCurrent?: {
+    cerah: number;
+    mendung: number;
+    gerimis: number;
+    hujan: number;
+  };
+  cuacaPrevious?: {
+    cerah: number;
+    mendung: number;
+    gerimis: number;
+    hujan: number;
+  };
+
+  cuacaCurrentBreakdown?: {
+    label: string;
+    dominant: string;
+    cerah: number;
+    mendung: number;
+    gerimis: number;
+    hujan: number;
+    logs?: { timeRange: string; weather: string }[];
+  }[];
+  cuacaPreviousBreakdown?: {
+    label: string;
+    dominant: string;
+    cerah: number;
+    mendung: number;
+    gerimis: number;
+    hujan: number;
+    logs?: { timeRange: string; weather: string }[];
+  }[];
 
   hourlyLabels?: string[];
   dineInHourlyAvg?: number[];
@@ -130,6 +177,7 @@ export interface AggregatedData {
 export interface WeatherStats {
   cerah: number;
   mendung: number;
+  gerimis: number;
   hujan: number;
 }
 

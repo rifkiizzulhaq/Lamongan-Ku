@@ -58,6 +58,14 @@ export async function saveClosingReport(payload: ClosingReportPayload) {
       ),
     });
 
+    const shiftOrders = await db.query.orders.findMany({
+      where: and(
+        gte(orders.createdAt, startOfDay),
+        lte(orders.createdAt, endOfDay),
+      ),
+    });
+    const totalRev = shiftOrders.reduce((acc, o) => acc + o.totalPrice, 0);
+
     let reportId: number;
 
     if (existing) {
@@ -74,7 +82,11 @@ export async function saveClosingReport(payload: ClosingReportPayload) {
 
       await db
         .update(daily_reports)
-        .set({ note: payload.note || null })
+        .set({
+          note: payload.note || null,
+          systemRevenue: totalRev,
+          actualRevenue: totalRev,
+        })
         .where(eq(daily_reports.id, existing.id));
       reportId = existing.id;
     } else {
@@ -82,8 +94,8 @@ export async function saveClosingReport(payload: ClosingReportPayload) {
         .insert(daily_reports)
         .values({
           note: payload.note || null,
-          systemRevenue: 0,
-          actualRevenue: 0,
+          systemRevenue: totalRev,
+          actualRevenue: totalRev,
         })
         .returning();
       reportId = newReport.id;

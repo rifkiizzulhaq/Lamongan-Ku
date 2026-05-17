@@ -78,10 +78,7 @@ function aggregate({
   labelFormat,
   rangeCurrentEnd,
 }: AggregateParams) {
-  const totalRevenue = reports.reduce(
-    (acc, r) => acc + (r.actualRevenue || 0),
-    0,
-  );
+  const totalRevenue = orderList.reduce((acc, o) => acc + o.totalPrice, 0);
   const totalPortion = orderList.length;
 
   const isLibur = (r: DailyReport) => {
@@ -101,11 +98,12 @@ function aggregate({
   const totalLibur = liburReports.length;
   const alasanLibur = liburReports.map((r) => r.note ?? "Libur");
 
-  const cuaca = { cerah: 0, mendung: 0, hujan: 0 };
+  const cuaca = { cerah: 0, mendung: 0, gerimis: 0, hujan: 0 };
   weatherLogs.forEach((w) => {
     const l = w.weather.toLowerCase();
     if (l.includes("cerah")) cuaca.cerah++;
     else if (l.includes("hujan")) cuaca.hujan++;
+    else if (l.includes("gerimis")) cuaca.gerimis++;
     else cuaca.mendung++;
   });
 
@@ -121,6 +119,15 @@ function aggregate({
   const weatherLogsTrend: { timeRange: string; weather: string }[][] = [];
   const isLiburTrend: boolean[] = [];
   const alasanLiburTrend: string[] = [];
+  const cuacaBreakdown: {
+    label: string;
+    dominant: string;
+    cerah: number;
+    mendung: number;
+    gerimis: number;
+    hujan: number;
+    logs?: { timeRange: string; weather: string }[];
+  }[] = [];
 
   const shiftTarget = new Date(rangeCurrentEnd.getTime() - 24 * 60 * 60 * 1000);
 
@@ -140,10 +147,6 @@ function aggregate({
           sd.getFullYear() === wib.getFullYear()
         );
       });
-      revenueTrend.push(
-        monthReports.reduce((acc, r) => acc + (r.actualRevenue || 0), 0),
-      );
-
       const monthOrders = orderList.filter((o) => {
         const sd = getShiftDate(o.createdAt);
         return (
@@ -151,6 +154,8 @@ function aggregate({
           sd.getFullYear() === wib.getFullYear()
         );
       });
+
+      revenueTrend.push(monthOrders.reduce((acc, o) => acc + o.totalPrice, 0));
       portionTrend.push(monthOrders.length);
 
       const monthLiburs = monthReports.filter(isLibur);
@@ -165,8 +170,27 @@ function aggregate({
       const mWLogs = weatherLogs.filter((w) =>
         monthReports.some((r) => r.id === w.reportId),
       );
-      weatherTrend.push(dominantWeather(mWLogs));
+      const dom = dominantWeather(mWLogs);
+      weatherTrend.push(dom);
       weatherLogsTrend.push([]);
+
+      const mCuaca = { cerah: 0, mendung: 0, gerimis: 0, hujan: 0 };
+      mWLogs.forEach((w) => {
+        const l = w.weather.toLowerCase();
+        if (l.includes("cerah")) mCuaca.cerah++;
+        else if (l.includes("hujan")) mCuaca.hujan++;
+        else if (l.includes("gerimis")) mCuaca.gerimis++;
+        else mCuaca.mendung++;
+      });
+      cuacaBreakdown.push({
+        label: labels[labels.length - 1],
+        dominant: dom,
+        ...mCuaca,
+        logs: mWLogs.map((w) => ({
+          timeRange: w.timeRange,
+          weather: w.weather,
+        })),
+      });
     }
   } else {
     for (let i = days - 1; i >= 0; i--) {
@@ -183,17 +207,19 @@ function aggregate({
         );
       });
 
-      revenueTrend.push(reportForDay?.actualRevenue ?? 0);
-
       const y = dWib.getFullYear();
       const m = String(dWib.getMonth() + 1).padStart(2, "0");
       const dStr = String(dWib.getDate()).padStart(2, "0");
       const start = new Date(`${y}-${m}-${dStr}T15:00:00+07:00`);
       const end = new Date(start.getTime() + 11 * 60 * 60 * 1000);
 
-      const portions = orderList.filter(
+      const ordersForDay = orderList.filter(
         (o) => o.createdAt >= start && o.createdAt <= end,
-      ).length;
+      );
+      // Use order-based revenue — never trust actualRevenue in DB (may be 0)
+      revenueTrend.push(ordersForDay.reduce((acc, o) => acc + o.totalPrice, 0));
+
+      const portions = ordersForDay.length;
       portionTrend.push(portions);
 
       const isDayLibur = !portions && reportForDay && !!reportForDay.note;
@@ -202,13 +228,40 @@ function aggregate({
 
       if (reportForDay) {
         const wLogs = weatherLogs.filter((w) => w.reportId === reportForDay.id);
-        weatherTrend.push(wLogs.length > 0 ? dominantWeather(wLogs) : "Cerah");
+        const dom = wLogs.length > 0 ? dominantWeather(wLogs) : "";
+        weatherTrend.push(dom);
         weatherLogsTrend.push(
           wLogs.map((w) => ({ timeRange: w.timeRange, weather: w.weather })),
         );
+        const dCuaca = { cerah: 0, mendung: 0, gerimis: 0, hujan: 0 };
+        wLogs.forEach((w) => {
+          const l = w.weather.toLowerCase();
+          if (l.includes("cerah")) dCuaca.cerah++;
+          else if (l.includes("hujan")) dCuaca.hujan++;
+          else if (l.includes("gerimis")) dCuaca.gerimis++;
+          else dCuaca.mendung++;
+        });
+        cuacaBreakdown.push({
+          label: labels[labels.length - 1],
+          dominant: dom,
+          ...dCuaca,
+          logs: wLogs.map((w) => ({
+            timeRange: w.timeRange,
+            weather: w.weather,
+          })),
+        });
       } else {
         weatherTrend.push("");
         weatherLogsTrend.push([]);
+        cuacaBreakdown.push({
+          label: labels[labels.length - 1],
+          dominant: "",
+          cerah: 0,
+          mendung: 0,
+          gerimis: 0,
+          hujan: 0,
+          logs: [],
+        });
       }
     }
   }
@@ -228,6 +281,7 @@ function aggregate({
     dineIn: dInTotal,
     takeaway: totalPortion - dInTotal,
     cuaca,
+    cuacaBreakdown,
   };
 }
 
@@ -353,21 +407,32 @@ export async function getAggregatedAnalytics(
   const excludedItems = ["teh manis", "nasi", "sambal"];
   const sisaBahan = stockList
     .filter((s) => !excludedItems.includes(s.name.toLowerCase()))
-    .map((s) => ({
-      nama: s.name,
-      sisaCurrent: Math.round(
-        snapsCurr
-          .filter((x) => x.stockId === s.id)
-          .reduce((acc, x) => acc + x.sisaQuantity, 0) /
-          Math.max(reportsCurr.length, 1),
-      ),
-      sisaPrevious: Math.round(
-        snapsPrev
-          .filter((x) => x.stockId === s.id)
-          .reduce((acc, x) => acc + x.sisaQuantity, 0) /
-          Math.max(reportsPrev.length, 1),
-      ),
-    }));
+    .map((s) => {
+      const snapsCurrForItem = snapsCurr.filter((x) => x.stockId === s.id);
+      const snapsPrevForItem = snapsPrev.filter((x) => x.stockId === s.id);
+
+      snapsCurrForItem.sort(
+        (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt),
+      );
+      snapsPrevForItem.sort(
+        (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt),
+      );
+
+      const stockAwalCurrent = snapsCurrForItem[0]?.sisaQuantity;
+      const sisaCurrent =
+        snapsCurrForItem[snapsCurrForItem.length - 1]?.sisaQuantity ?? 0;
+      const stockAwalPrevious = snapsPrevForItem[0]?.sisaQuantity;
+      const sisaPrevious =
+        snapsPrevForItem[snapsPrevForItem.length - 1]?.sisaQuantity ?? 0;
+
+      return {
+        nama: s.name,
+        sisaCurrent,
+        sisaPrevious,
+        stockAwalCurrent,
+        stockAwalPrevious,
+      };
+    });
 
   return {
     timeLabel:
@@ -409,6 +474,8 @@ export async function getAggregatedAnalytics(
     alasanLiburPreviousList: prevAgg.alasanLibur,
     cuacaCurrent: currAgg.cuaca,
     cuacaPrevious: prevAgg.cuaca,
+    cuacaCurrentBreakdown: currAgg.cuacaBreakdown,
+    cuacaPreviousBreakdown: prevAgg.cuacaBreakdown,
     hourlyLabels: currHourly.labels,
     dineInHourlyAvg: currHourly.dineIn,
     takeawayHourlyAvg: currHourly.takeaway,

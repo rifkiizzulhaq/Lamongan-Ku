@@ -3,8 +3,20 @@
 import { useState, useEffect } from "react";
 import { useWarungStore } from "@/src/store/warungStore";
 import Button from "@/src/components/ui/Button";
-import { LuInfo, LuSave, LuPackagePlus, LuPlus } from "react-icons/lu";
-import { updateQuantities, create } from "@/src/server/bos/stock/stock.server";
+import {
+  LuInfo,
+  LuSave,
+  LuPackagePlus,
+  LuPlus,
+  LuLoader,
+  LuTrash2,
+  LuTriangleAlert,
+} from "react-icons/lu";
+import {
+  updateQuantities,
+  create,
+  deletes,
+} from "@/src/server/bos/stock/stock.server";
 import Input from "@/src/components/ui/Input";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
@@ -14,11 +26,13 @@ import { StockFormItem } from "@/interfaces/models";
 interface StockInputFormProps {
   stockList: StockFormItem[];
   isBuka: boolean;
+  hasYesterdayData: boolean;
 }
 
 export default function StockInputForm({
   stockList,
   isBuka: initialIsBuka,
+  hasYesterdayData,
 }: StockInputFormProps) {
   const { isBuka, setIsBuka } = useWarungStore();
 
@@ -51,6 +65,10 @@ export default function StockInputForm({
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [newQty, setNewQty] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: number;
+    nama: string;
+  } | null>(null);
   const router = useRouter();
 
   const { mutate: simpanStok, isPending: saving } = useMutation({
@@ -88,6 +106,18 @@ export default function StockInputForm({
     },
   });
 
+  const { mutate: hapusItem, isPending: deleting } = useMutation({
+    mutationFn: (id: number) => deletes(id),
+    onSuccess: (res) => {
+      if (res.success) {
+        setDeleteTarget(null);
+        router.refresh();
+      } else {
+        alert("Gagal menghapus item.");
+      }
+    },
+  });
+
   const formatRupiah = (value: string) => {
     if (!value) return "";
     const numeric = value.replace(/\D/g, "");
@@ -105,13 +135,11 @@ export default function StockInputForm({
     const newInputs: Record<number, string> = {};
     stockList.forEach((item) => {
       if (newValue) {
-        // Jika diaktifkan, prioritaskan sisa kemarin jika > 0
         newInputs[item.id] =
           item.sisaKemarin > 0
             ? item.sisaKemarin.toString()
             : item.quantity?.toString() || "";
       } else {
-        // Jika dimatikan, kembalikan ke nilai quantity asli dari database
         newInputs[item.id] =
           item.quantity !== null && item.quantity > 0
             ? item.quantity.toString()
@@ -175,21 +203,28 @@ export default function StockInputForm({
               Gunakan Sisa Kemarin
             </h3>
             <p className="text-xs text-neutral-500">
-              Otomatis isi stock berdasarkan sisa bahan hari sebelumnya
+              {hasYesterdayData
+                ? "Otomatis isi stock berdasarkan sisa bahan hari sebelumnya"
+                : "Belum ada data sisa kemarin. Tersedia setelah tutup warung pertama."}
             </p>
           </div>
           <Button
             onClick={handleToggleSisaKemarin}
-            disabled={!isBuka}
-            className={`relative w-12 h-6 rounded-full transition-colors duration-300 ease-in-out focus:outline-none shrink-0 border-2 disabled:opacity-50 ${
-              useSisaKemarin
+            disabled={!isBuka || !hasYesterdayData}
+            title={
+              !hasYesterdayData ? "Data sisa kemarin belum tersedia" : undefined
+            }
+            className={`relative w-12 h-6 rounded-full transition-colors duration-300 ease-in-out focus:outline-none shrink-0 border-2 disabled:opacity-40 disabled:cursor-not-allowed ${
+              useSisaKemarin && hasYesterdayData
                 ? "bg-hijau border-hijau"
                 : "bg-neutral-200 dark:bg-neutral-700 border-neutral-200 dark:border-neutral-700"
             }`}
           >
             <div
               className={`absolute top-0.5 left-0.5 bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ease-in-out ${
-                useSisaKemarin ? "translate-x-6" : "translate-x-0"
+                useSisaKemarin && hasYesterdayData
+                  ? "translate-x-6"
+                  : "translate-x-0"
               }`}
             />
           </Button>
@@ -233,20 +268,32 @@ export default function StockInputForm({
           ) : (
             stockList.map((item) => (
               <div key={item.id} className="flex flex-col gap-1.5">
-                <label
-                  htmlFor={`stock-${item.id}`}
-                  className="text-sm font-bold text-neutral-700 dark:text-neutral-300"
-                >
-                  {item.nama}
-                  {useSisaKemarin && item.sisaKemarin > 0 && (
-                    <span className="ml-2 text-[10px] text-orange bg-orange/10 px-2 py-0.5 rounded-full">
-                      Sisa: {item.sisaKemarin}
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor={`stock-${item.id}`}
+                    className="text-sm font-bold text-neutral-700 dark:text-neutral-300"
+                  >
+                    {item.nama}
+                    {useSisaKemarin && item.sisaKemarin > 0 && (
+                      <span className="ml-2 text-[10px] text-orange bg-orange/10 px-2 py-0.5 rounded-full">
+                        Sisa: {item.sisaKemarin}
+                      </span>
+                    )}
+                    <span className="ml-2 text-[10px] text-neutral-400">
+                      Rp {item.price.toLocaleString("id-ID")}
                     </span>
-                  )}
-                  <span className="ml-2 text-[10px] text-neutral-400">
-                    Rp {item.price.toLocaleString("id-ID")}
-                  </span>
-                </label>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDeleteTarget({ id: item.id, nama: item.nama })
+                    }
+                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+                    title="Hapus item ini"
+                  >
+                    <LuTrash2 size={14} />
+                  </button>
+                </div>
                 <Input
                   id={`stock-${item.id}`}
                   type="number"
@@ -268,7 +315,11 @@ export default function StockInputForm({
           className="mt-2 w-full flex items-center justify-center gap-2 bg-hijau hover:bg-emerald-600 disabled:bg-neutral-300 disabled:dark:bg-neutral-700 disabled:text-neutral-500 text-white font-bold py-3 rounded-xl transition-colors duration-300"
         >
           <LuSave size={18} />
-          {saving ? "Menyimpan..." : "Simpan Stock"}
+          {saving ? (
+            <LuLoader className="animate-spin" size={16} />
+          ) : (
+            "Simpan Stock"
+          )}
         </Button>
       </div>
 
@@ -336,7 +387,65 @@ export default function StockInputForm({
                 disabled={addingItem || !newName}
                 className="flex-1 py-3 rounded-xl bg-orange text-white font-bold text-sm hover:bg-orange-600 disabled:opacity-50"
               >
-                {addingItem ? "Menyimpan..." : "Simpan"}
+                {addingItem ? (
+                  <LuLoader className="animate-spin" size={16} />
+                ) : (
+                  "Simpan"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => !deleting && setDeleteTarget(null)}
+          />
+          <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl p-6 flex flex-col gap-4 z-10 animate-in slide-in-from-bottom-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                <LuTriangleAlert size={20} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="font-black text-base text-neutral-800 dark:text-white">
+                  Hapus Item Stock?
+                </h3>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Item{" "}
+                  <span className="font-bold text-neutral-700 dark:text-neutral-300">
+                    &quot;{deleteTarget.nama}&quot;
+                  </span>{" "}
+                  akan dihapus permanen.
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-xl p-3">
+              Tindakan ini tidak dapat dibatalkan. Data historis yang sudah
+              tercatat tidak akan terpengaruh.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 font-bold text-sm disabled:opacity-50"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={() => hapusItem(deleteTarget.id)}
+                disabled={deleting}
+                className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <LuLoader className="animate-spin" size={16} />
+                ) : (
+                  <>
+                    <LuTrash2 size={14} /> Hapus
+                  </>
+                )}
               </Button>
             </div>
           </div>

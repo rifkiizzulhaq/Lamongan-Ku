@@ -41,79 +41,129 @@ export async function getDailyAnalytics(): Promise<DailyData> {
 
   const currentRange = getRange(reportDate);
   const previousRange = getRange(prevReportDate);
+  const yesterdayRange = getRange(
+    new Date(targetDate.getTime() - 1 * 24 * 60 * 60 * 1000),
+  );
+  const prevYesterdayRange = getRange(
+    new Date(targetDate.getTime() - 8 * 24 * 60 * 60 * 1000),
+  );
 
-  const [ordersCurr, ordersPrev, reportCurr, reportPrev, stockList] =
-    await Promise.all([
-      db
-        .select()
-        .from(orders)
-        .where(
-          and(
-            gte(orders.createdAt, currentRange.start),
-            lte(orders.createdAt, currentRange.end),
-          ),
+  const [
+    ordersCurr,
+    ordersPrev,
+    reportCurr,
+    reportPrev,
+    stockList,
+    reportYesterday,
+    reportPrevPrev,
+  ] = await Promise.all([
+    db
+      .select()
+      .from(orders)
+      .where(
+        and(
+          gte(orders.createdAt, currentRange.start),
+          lte(orders.createdAt, currentRange.end),
         ),
-      db
-        .select()
-        .from(orders)
-        .where(
-          and(
-            gte(orders.createdAt, previousRange.start),
-            lte(orders.createdAt, previousRange.end),
-          ),
+      ),
+    db
+      .select()
+      .from(orders)
+      .where(
+        and(
+          gte(orders.createdAt, previousRange.start),
+          lte(orders.createdAt, previousRange.end),
         ),
-      db
-        .select()
-        .from(daily_reports)
-        .where(
-          and(
-            gte(daily_reports.createdAt, currentRange.start),
-            lte(daily_reports.createdAt, currentRange.end),
-          ),
-        )
-        .limit(1),
-      db
-        .select()
-        .from(daily_reports)
-        .where(
-          and(
-            gte(daily_reports.createdAt, previousRange.start),
-            lte(daily_reports.createdAt, previousRange.end),
-          ),
-        )
-        .limit(1),
-      db.select().from(stock),
-    ]);
+      ),
+    db
+      .select()
+      .from(daily_reports)
+      .where(
+        and(
+          gte(daily_reports.createdAt, currentRange.start),
+          lte(daily_reports.createdAt, currentRange.end),
+        ),
+      )
+      .limit(1),
+    db
+      .select()
+      .from(daily_reports)
+      .where(
+        and(
+          gte(daily_reports.createdAt, previousRange.start),
+          lte(daily_reports.createdAt, previousRange.end),
+        ),
+      )
+      .limit(1),
+    db.select().from(stock),
+    db
+      .select()
+      .from(daily_reports)
+      .where(
+        and(
+          gte(daily_reports.createdAt, yesterdayRange.start),
+          lte(daily_reports.createdAt, yesterdayRange.end),
+        ),
+      )
+      .limit(1),
+    db
+      .select()
+      .from(daily_reports)
+      .where(
+        and(
+          gte(daily_reports.createdAt, prevYesterdayRange.start),
+          lte(daily_reports.createdAt, prevYesterdayRange.end),
+        ),
+      )
+      .limit(1),
+  ]);
 
-  const [snapshotsCurr, snapshotsPrev, weatherCurr, weatherPrev] =
-    await Promise.all([
-      reportCurr[0]
-        ? db
-            .select()
-            .from(daily_stock_snapshots)
-            .where(eq(daily_stock_snapshots.reportId, reportCurr[0].id))
-        : Promise.resolve([] as DailyStockSnapshot[]),
-      reportPrev[0]
-        ? db
-            .select()
-            .from(daily_stock_snapshots)
-            .where(eq(daily_stock_snapshots.reportId, reportPrev[0].id))
-        : Promise.resolve([] as DailyStockSnapshot[]),
-      reportCurr[0]
-        ? db
-            .select()
-            .from(weather_logs)
-            .where(eq(weather_logs.reportId, reportCurr[0].id))
-        : Promise.resolve([] as WeatherLog[]),
-      reportPrev[0]
-        ? db
-            .select()
-            .from(weather_logs)
-            .where(eq(weather_logs.reportId, reportPrev[0].id))
-        : Promise.resolve([] as WeatherLog[]),
-    ]);
+  const [
+    snapshotsCurr,
+    snapshotsPrev,
+    weatherCurr,
+    weatherPrev,
+    snapshotsYesterday,
+    snapshotsPrevPrev,
+  ] = await Promise.all([
+    reportCurr[0]
+      ? db
+          .select()
+          .from(daily_stock_snapshots)
+          .where(eq(daily_stock_snapshots.reportId, reportCurr[0].id))
+      : Promise.resolve([] as DailyStockSnapshot[]),
+    reportPrev[0]
+      ? db
+          .select()
+          .from(daily_stock_snapshots)
+          .where(eq(daily_stock_snapshots.reportId, reportPrev[0].id))
+      : Promise.resolve([] as DailyStockSnapshot[]),
+    reportCurr[0]
+      ? db
+          .select()
+          .from(weather_logs)
+          .where(eq(weather_logs.reportId, reportCurr[0].id))
+      : Promise.resolve([] as WeatherLog[]),
+    reportPrev[0]
+      ? db
+          .select()
+          .from(weather_logs)
+          .where(eq(weather_logs.reportId, reportPrev[0].id))
+      : Promise.resolve([] as WeatherLog[]),
+    reportYesterday[0]
+      ? db
+          .select()
+          .from(daily_stock_snapshots)
+          .where(eq(daily_stock_snapshots.reportId, reportYesterday[0].id))
+      : Promise.resolve([] as DailyStockSnapshot[]),
+    reportPrevPrev[0]
+      ? db
+          .select()
+          .from(daily_stock_snapshots)
+          .where(eq(daily_stock_snapshots.reportId, reportPrevPrev[0].id))
+      : Promise.resolve([] as DailyStockSnapshot[]),
+  ]);
 
-  // Buat label waktu terurut shift-aware (23:xx sebelum 00:xx)
   const allOrders = [...ordersCurr, ...ordersPrev];
   const timeLabels = Array.from(
     new Set(
@@ -193,12 +243,26 @@ export async function getDailyAnalytics(): Promise<DailyData> {
         snapshotsCurr.find((x) => x.stockId === s.id)?.sisaQuantity ?? 0,
       sisaPrevious:
         snapshotsPrev.find((x) => x.stockId === s.id)?.sisaQuantity ?? 0,
+      stockAwalCurrent: snapshotsYesterday.find((x) => x.stockId === s.id)
+        ?.sisaQuantity,
+      stockAwalPrevious: snapshotsPrevPrev.find((x) => x.stockId === s.id)
+        ?.sisaQuantity,
     }));
 
-  const isLiburCurrent =
-    reportCurr[0]?.actualRevenue === 0 && !!reportCurr[0]?.note;
-  const isLiburPrevious =
-    reportPrev[0]?.actualRevenue === 0 && !!reportPrev[0]?.note;
+  const isLiburCurrent = ordersCurr.length === 0 && !!reportCurr[0]?.note;
+  const isLiburPrevious = ordersPrev.length === 0 && !!reportPrev[0]?.note;
+
+  const getStats = (logs: WeatherLog[]) => {
+    const stats = { cerah: 0, mendung: 0, gerimis: 0, hujan: 0 };
+    logs.forEach((w) => {
+      const l = w.weather.toLowerCase();
+      if (l.includes("cerah")) stats.cerah++;
+      else if (l.includes("hujan")) stats.hujan++;
+      else if (l.includes("gerimis")) stats.gerimis++;
+      else stats.mendung++;
+    });
+    return stats;
+  };
 
   return {
     timeLabel: formatLabel(reportDate, "Ini"),
@@ -224,6 +288,16 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     takeawayPreviousTrend,
     cuacaCurrent,
     cuacaPrevious,
+    cuacaCurrentStats: getStats(weatherCurr),
+    cuacaPreviousStats: getStats(weatherPrev),
+    weatherLogsCurrent: weatherCurr.map((w) => ({
+      timeRange: w.timeRange,
+      weather: w.weather,
+    })),
+    weatherLogsPrevious: weatherPrev.map((w) => ({
+      timeRange: w.timeRange,
+      weather: w.weather,
+    })),
     sisaBahan,
   };
 }

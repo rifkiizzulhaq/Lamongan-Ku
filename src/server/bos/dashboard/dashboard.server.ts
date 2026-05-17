@@ -8,6 +8,7 @@ import {
   daily_reports,
   daily_stock_snapshots,
   shop_status,
+  dining_table,
 } from "@/db/schema";
 import { gte, lte, and, sql, eq } from "drizzle-orm";
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
@@ -138,23 +139,30 @@ export async function getRevenueChartData() {
   try {
     const data = await db
       .select({
-        qty: sql<number>`coalesce(sum(${order_items.quantity}), 0)`,
+        qty: order_items.quantity,
+        menuName: stock.name,
         type: orders.orderType,
+        isTakeaway: order_items.isTakeaway,
+        tableName: dining_table.name,
         created_at: orders.createdAt,
       })
       .from(orders)
-      .leftJoin(order_items, eq(orders.id, order_items.orderId))
+      .innerJoin(order_items, eq(orders.id, order_items.orderId))
+      .innerJoin(stock, eq(order_items.stockId, stock.id))
+      .leftJoin(dining_table, eq(orders.diningTableId, dining_table.id))
       .where(
         and(
           gte(orders.createdAt, start),
           lte(orders.createdAt, end),
           eq(orders.status, "selesai"),
         ),
-      )
-      .groupBy(orders.id, orders.orderType, orders.createdAt);
+      );
 
     return data.map((d) => ({
       qty: Number(d.qty),
+      menuName: d.menuName,
+      tableName: d.tableName ?? null,
+      isTakeaway: d.isTakeaway === "true",
       type: d.type === "bungkus" ? "Bungkus" : "Makan Sini",
       created_at: d.created_at.toISOString(),
     }));

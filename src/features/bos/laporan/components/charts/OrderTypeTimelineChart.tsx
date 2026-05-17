@@ -16,6 +16,7 @@ interface Props {
   takeawayTrend: number[];
   dineInPreviousTrend: number[];
   takeawayPreviousTrend: number[];
+  showComparison?: boolean;
 }
 
 export default function OrderTypeTimelineChart({
@@ -28,13 +29,23 @@ export default function OrderTypeTimelineChart({
   takeawayTrend,
   dineInPreviousTrend,
   takeawayPreviousTrend,
+  showComparison,
 }: Props) {
   const series = [
     { name: `Makan di Tempat (${currentLabel})`, data: dineInTrend },
     { name: `Bungkus (${currentLabel})`, data: takeawayTrend },
-    { name: `Makan di Tempat (${previousLabel})`, data: dineInPreviousTrend },
-    { name: `Bungkus (${previousLabel})`, data: takeawayPreviousTrend },
   ];
+
+  if (showComparison !== false) {
+    series.push({
+      name: `Makan di Tempat (${previousLabel})`,
+      data: dineInPreviousTrend,
+    });
+    series.push({
+      name: `Bungkus (${previousLabel})`,
+      data: takeawayPreviousTrend,
+    });
+  }
 
   const options: ApexCharts.ApexOptions = {
     chart: {
@@ -100,13 +111,19 @@ export default function OrderTypeTimelineChart({
           {subtitle}
         </p>
       </div>
-      <div className="w-full">
-        <ReactApexChart
-          options={options}
-          series={series}
-          type="area"
-          height={320}
-        />
+      <div className="w-full overflow-x-auto overflow-y-hidden pb-2 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700">
+        <div
+          style={{
+            minWidth: labels.length > 12 ? `${labels.length * 35}px` : "100%",
+          }}
+        >
+          <ReactApexChart
+            options={options}
+            series={series}
+            type="area"
+            height={320}
+          />
+        </div>
       </div>
     </div>
   );

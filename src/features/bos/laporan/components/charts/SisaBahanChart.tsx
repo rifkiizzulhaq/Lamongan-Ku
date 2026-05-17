@@ -11,23 +11,44 @@ interface Props {
   data: SisaBahanData[];
   currentLabel: string;
   previousLabel: string;
+  showComparison?: boolean;
 }
 
 export default function SisaBahanChart({
   data,
   currentLabel,
   previousLabel,
+  showComparison,
 }: Props) {
-  const series = [
+  const series: { name: string; data: number[]; color?: string }[] = [];
+
+  series.push(
     {
-      name: currentLabel,
+      name: `Awal ${currentLabel}`,
+      data: data.map((d) => d.stockAwalCurrent ?? 0),
+      color: "#fb923c",
+    },
+    {
+      name: `Akhir ${currentLabel}`,
       data: data.map((d) => d.sisaCurrent),
+      color: "#f97316",
     },
-    {
-      name: previousLabel,
-      data: data.map((d) => d.sisaPrevious),
-    },
-  ];
+  );
+
+  if (showComparison !== false) {
+    series.push(
+      {
+        name: `Awal ${previousLabel}`,
+        data: data.map((d) => d.stockAwalPrevious ?? 0),
+        color: "#6b7280",
+      },
+      {
+        name: `Akhir ${previousLabel}`,
+        data: data.map((d) => d.sisaPrevious),
+        color: "#3f3f46",
+      },
+    );
+  }
 
   const options: ApexCharts.ApexOptions = {
     chart: {
@@ -39,8 +60,8 @@ export default function SisaBahanChart({
     plotOptions: {
       bar: {
         horizontal: true,
-        barHeight: "60%",
-        borderRadius: 4,
+        barHeight: "80%",
+        borderRadius: 3,
       },
     },
     dataLabels: {
@@ -48,6 +69,14 @@ export default function SisaBahanChart({
       style: {
         fontSize: "10px",
         colors: ["#fff"],
+      },
+      dropShadow: {
+        enabled: true,
+        top: 1,
+        left: 1,
+        blur: 1,
+        color: "#000",
+        opacity: 0.8,
       },
     },
     stroke: { show: true, width: 1, colors: ["transparent"] },
@@ -62,15 +91,16 @@ export default function SisaBahanChart({
         style: { colors: "#737373", fontWeight: 600 },
       },
     },
-    colors: ["#f97316", "#3f3f46"],
     tooltip: {
       theme: "dark",
-      y: { formatter: (val) => val + " Porsi" },
+      y: { formatter: (val) => val + " pcs" },
     },
     legend: {
       position: "top",
       horizontalAlign: "left",
       labels: { colors: "#737373" },
+      showForSingleSeries: true,
+      markers: { radius: 2 } as any,
     },
     grid: {
       borderColor: "#404040",
@@ -80,7 +110,7 @@ export default function SisaBahanChart({
     },
   };
 
-  const chartHeight = Math.max(300, data.length * 45 + 100);
+  const chartHeight = Math.max(300, data.length * 80 + 100);
 
   return (
     <div className="w-full border border-neutral-200 dark:border-neutral-700 rounded-2xl p-5 bg-white dark:bg-neutral-800">
@@ -89,11 +119,11 @@ export default function SisaBahanChart({
           Sisa Bahan (Menu)
         </h3>
         <p className="text-xs dark:text-neutral-400 text-neutral-700 font-medium">
-          Perbandingan sisa {currentLabel} vs {previousLabel}
+          Stock Awal → Akhir: {currentLabel} vs {previousLabel}
         </p>
       </div>
 
-      <div className="w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 max-h-100">
+      <div className="w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 max-h-105">
         <div style={{ height: chartHeight }}>
           <ReactApexChart
             options={options}

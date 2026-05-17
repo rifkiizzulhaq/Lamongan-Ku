@@ -41,6 +41,8 @@ const CUACA_OPTIONS: { label: CuacaOption; icon: ReactNode }[] = [
 ];
 
 const JAM_SLOTS = [
+  "15:00-16:00",
+  "16:00-17:00",
   "17:00-18:00",
   "18:00-19:00",
   "19:00-20:00",
@@ -197,7 +199,7 @@ export default function TutupWarungModal({
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-7 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700">
           <div>
             <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-3">
-              Cuaca Per Jam (17:00 - 02:00)
+              Cuaca Per Jam (15:00 - 02:00)
             </p>
             <div className="flex gap-3 my-3 flex-wrap">
               {CUACA_OPTIONS.map((o) => (

@@ -21,6 +21,8 @@ export default function AggregatedAnalytics({
   titleSuffix,
   intervalName,
 }: Props) {
+  const showComparison =
+    data.totalRevenuePrevious > 0 || data.totalPortionPrevious > 0;
   return (
     <div className="flex flex-col gap-5 pb-6">
       <SummaryCards
@@ -82,6 +84,14 @@ export default function AggregatedAnalytics({
         isLiburPreviousTrend={data.isLiburPreviousTrend}
         alasanLiburCurrentTrend={data.alasanLiburCurrentTrend}
         alasanLiburPreviousTrend={data.alasanLiburPreviousTrend}
+        showComparison={showComparison}
+        yAxisFormatter={(val) =>
+          new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0,
+          }).format(val)
+        }
       />
 
       <ComparisonBarChart
@@ -101,6 +111,7 @@ export default function AggregatedAnalytics({
         isLiburPreviousTrend={data.isLiburPreviousTrend}
         alasanLiburCurrentTrend={data.alasanLiburCurrentTrend}
         alasanLiburPreviousTrend={data.alasanLiburPreviousTrend}
+        showComparison={showComparison}
       />
 
       <OrderTypeTimelineChart
@@ -113,6 +124,7 @@ export default function AggregatedAnalytics({
         takeawayTrend={data.takeawayHourlyAvg || []}
         dineInPreviousTrend={data.dineInPreviousHourlyAvg || []}
         takeawayPreviousTrend={data.takeawayPreviousHourlyAvg || []}
+        showComparison={showComparison}
       />
 
       <OrderTypeChart
@@ -124,13 +136,17 @@ export default function AggregatedAnalytics({
         takeawayCurrent={data.takeawayCurrent}
         dineInPrevious={data.dineInPrevious}
         takeawayPrevious={data.takeawayPrevious}
+        showComparison={showComparison}
       />
 
       <WeatherSummaryCard
         currentData={data.cuacaCurrent}
         previousData={data.cuacaPrevious}
+        currentBreakdown={data.cuacaCurrentBreakdown}
+        previousBreakdown={data.cuacaPreviousBreakdown}
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
+        showComparison={showComparison}
         isDaily={false}
       />
 
@@ -138,6 +154,7 @@ export default function AggregatedAnalytics({
         data={data.sisaBahan}
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
+        showComparison={showComparison}
       />
     </div>
   );

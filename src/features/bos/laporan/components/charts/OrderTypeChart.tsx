@@ -15,6 +15,7 @@ interface Props {
   takeawayCurrent: number;
   dineInPrevious: number;
   takeawayPrevious: number;
+  showComparison?: boolean;
 }
 
 export default function OrderTypeChart({
@@ -26,17 +27,31 @@ export default function OrderTypeChart({
   takeawayCurrent,
   dineInPrevious,
   takeawayPrevious,
+  showComparison,
 }: Props) {
   const series = [
     {
-      name: currentLabel,
-      data: [dineInCurrent, takeawayCurrent],
+      name: `Makan di Tempat (${currentLabel})`,
+      data: [dineInCurrent],
     },
     {
-      name: previousLabel,
-      data: [dineInPrevious, takeawayPrevious],
+      name: `Bungkus (${currentLabel})`,
+      data: [takeawayCurrent],
     },
   ];
+
+  if (showComparison !== false) {
+    series.push(
+      {
+        name: `Makan di Tempat (${previousLabel})`,
+        data: [dineInPrevious],
+      },
+      {
+        name: `Bungkus (${previousLabel})`,
+        data: [takeawayPrevious],
+      },
+    );
+  }
 
   const options: ApexCharts.ApexOptions = {
     chart: {
@@ -63,7 +78,7 @@ export default function OrderTypeChart({
     },
     stroke: { show: true, width: 1, colors: ["transparent"] },
     xaxis: {
-      categories: ["Makan di Tempat", "Bungkus"],
+      categories: [""],
       axisBorder: { show: false },
       axisTicks: { show: false },
       labels: { show: false },
@@ -73,7 +88,7 @@ export default function OrderTypeChart({
         style: { colors: "#737373", fontWeight: 600, fontSize: "12px" },
       },
     },
-    colors: ["#10b981", "#3f3f46"],
+    colors: ["#10b981", "#34d399", "#52525b", "#71717a"],
     tooltip: {
       theme: "dark",
       y: { formatter: (val) => val + " Pesanan" },
@@ -82,6 +97,8 @@ export default function OrderTypeChart({
       position: "top",
       horizontalAlign: "left",
       labels: { colors: "#737373" },
+      showForSingleSeries: true,
+      markers: { radius: 2 } as any,
     },
     grid: {
       borderColor: "#404040",
