@@ -19,6 +19,11 @@ interface ClosingReportPayload {
 }
 
 export async function checkIfReportedToday() {
+  const status = await db.query.shop_status.findFirst();
+  if (status && status.isBuka === 0) {
+    return true;
+  }
+
   const { startOfDay, endOfDay } = getShiftWaktu();
   const existing = await db.query.daily_reports.findFirst({
     where: and(

@@ -31,6 +31,7 @@ interface Props {
   previousLabel: string;
   isDaily?: boolean;
   showComparison?: boolean;
+  intervalName?: string;
 }
 
 export default function WeatherSummaryCard({
@@ -44,6 +45,7 @@ export default function WeatherSummaryCard({
   previousLabel,
   isDaily,
   showComparison,
+  intervalName = "Hari",
 }: Props) {
   const parseDaily = (data?: WeatherStats | string[]): WeatherStats => {
     if (!data) return { cerah: 0, mendung: 0, gerimis: 0, hujan: 0 };
@@ -269,7 +271,7 @@ export default function WeatherSummaryCard({
       {!isDaily && (currentBreakdown || previousBreakdown) && (
         <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-700">
           <p className="text-[10px] uppercase font-black tracking-widest text-neutral-400 mb-3">
-            Rincian Per Hari
+            Rincian Per {intervalName}
           </p>
           <div className="flex flex-col gap-3">
             {[

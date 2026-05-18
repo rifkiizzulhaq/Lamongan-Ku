@@ -138,7 +138,7 @@ export default function RevenueChart() {
         allMinutes.map((mins) => makanSiniMap[mins]?.items || {}),
       ] as Record<string, number>[][],
       takeaway: [
-        allMinutes.map((_) => ({}) as Record<string, number>),
+        allMinutes.map(() => ({}) as Record<string, number>),
         allMinutes.map((mins) => makanSiniMap[mins]?.takeawayItems || {}),
       ] as Record<string, number>[][],
       tables: [

@@ -148,6 +148,7 @@ export default function AggregatedAnalytics({
         previousLabel={data.prevTimeLabel}
         showComparison={showComparison}
         isDaily={false}
+        intervalName={intervalName}
       />
 
       <SisaBahanChart

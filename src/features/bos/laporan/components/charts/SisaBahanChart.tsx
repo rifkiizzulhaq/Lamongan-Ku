@@ -100,7 +100,8 @@ export default function SisaBahanChart({
       horizontalAlign: "left",
       labels: { colors: "#737373" },
       showForSingleSeries: true,
-      markers: { radius: 2 } as any,
+      // @ts-expect-error Property 'radius' exists at runtime but is missing from ApexCharts typings
+      markers: { radius: 2 },
     },
     grid: {
       borderColor: "#404040",

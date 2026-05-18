@@ -9,9 +9,63 @@ import {
   shop_status,
 } from "@/db/schema";
 import { and, gte, lte } from "drizzle-orm";
-import { getLastFixDate } from "./utils";
+import { getLastFixDate, getWibDate } from "./utils";
 
 export async function checkAndRunAutoClose(): Promise<void> {
+  const wibNow = getWibDate();
+  const nowHour = wibNow.getHours();
+
+  if (nowHour >= 17) {
+    const ty = wibNow.getFullYear();
+    const tm = String(wibNow.getMonth() + 1).padStart(2, "0");
+    const td = String(wibNow.getDate()).padStart(2, "0");
+
+    const todayShiftStart = new Date(`${ty}-${tm}-${td}T15:00:00+07:00`);
+    const todayShiftEnd = new Date(
+      todayShiftStart.getTime() + 11 * 60 * 60 * 1000,
+    );
+    const todayStockCheckStart = new Date(`${ty}-${tm}-${td}T00:00:00+07:00`);
+    const todayStockCheckEnd = new Date(`${ty}-${tm}-${td}T17:00:00+07:00`);
+
+    const existingTodayReport = await db.query.daily_reports.findFirst({
+      where: and(
+        gte(daily_reports.createdAt, todayShiftStart),
+        lte(daily_reports.createdAt, todayShiftEnd),
+      ),
+    });
+
+    if (!existingTodayReport) {
+      const todayStockSaved = await db.query.stock.findFirst({
+        where: (s, { and: _a, gte: _gte, lte: _lte }) =>
+          _a(
+            _gte(s.updatedAt, todayStockCheckStart),
+            _lte(s.updatedAt, todayStockCheckEnd),
+          ),
+      });
+
+      const todayOrders = await db.query.orders.findMany({
+        where: and(
+          gte(orders.createdAt, todayShiftStart),
+          lte(orders.createdAt, new Date()),
+        ),
+      });
+
+      const todayActive =
+        todayStockSaved !== undefined || todayOrders.length > 0;
+
+      if (!todayActive) {
+        const currentStatus = await db.query.shop_status.findFirst();
+        if (currentStatus?.isBuka === 1) {
+          await db.update(shop_status).set({
+            isBuka: 0,
+            reason: "Sistem Otomatis: Tidak ada aktivitas",
+            updatedAt: new Date(),
+          });
+        }
+      }
+    }
+  }
+
   const anyStockUpdate = await db.query.stock.findFirst({
     where: (s, { ne }) => ne(s.updatedAt, s.createdAt),
   });

@@ -50,22 +50,36 @@ function computeHourlyAvg(
   const dIn = new Array<number>(hours.length).fill(0);
   const tAway = new Array<number>(hours.length).fill(0);
 
+  const activeDays = new Set<string>();
+
   orderList.forEach((o) => {
-    const h = new Date(o.createdAt).getHours();
+    const wib = new Date(
+      new Date(o.createdAt).toLocaleString("en-US", {
+        timeZone: "Asia/Jakarta",
+      }),
+    );
+    const h = wib.getHours();
     const label = `${String(h).padStart(2, "0")}:00`;
     const idx = hours.indexOf(label);
     if (idx === -1) return;
+
+    const shiftWib = new Date(wib);
+    if (h < 6) shiftWib.setDate(shiftWib.getDate() - 1);
+    activeDays.add(
+      `${shiftWib.getFullYear()}-${shiftWib.getMonth()}-${shiftWib.getDate()}`,
+    );
+
     const t = o.orderType.toLowerCase();
     if (t.includes("makan") || t.includes("dine") || t.includes("tempat"))
       dIn[idx]++;
     else tAway[idx]++;
   });
 
-  const safe = Math.max(numDays, 1);
+  const safe = Math.max(activeDays.size > 0 ? activeDays.size : numDays, 1);
   return {
     labels: hours,
-    dineIn: dIn.map((v) => Math.round(v / safe)),
-    takeaway: tAway.map((v) => Math.round(v / safe)),
+    dineIn: dIn.map((v) => Math.round((v / safe) * 10) / 10),
+    takeaway: tAway.map((v) => Math.round((v / safe) * 10) / 10),
   };
 }
 
