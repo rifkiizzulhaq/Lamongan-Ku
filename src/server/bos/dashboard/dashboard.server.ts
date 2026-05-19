@@ -31,6 +31,27 @@ export async function getShopStatus() {
 export async function updateShopStatus(isBuka: boolean, reason?: string) {
   try {
     const current = await getShopStatus();
+
+    if (isBuka) {
+      const now = new Date();
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Jakarta",
+        hour: "numeric",
+        minute: "numeric",
+        hour12: false,
+      });
+      const parts = formatter.formatToParts(now);
+      const nowHour = parseInt(parts.find((p) => p.type === "hour")?.value || "0");
+      const nowMin = parseInt(parts.find((p) => p.type === "minute")?.value || "0");
+
+      if (nowHour > 18 || (nowHour === 18 && nowMin >= 30) || nowHour < 6) {
+        return {
+          success: false,
+          error: "Sudah melewati batas waktu (18:30) untuk membuka warung hari ini. Harap tunggu shift berikutnya.",
+        };
+      }
+    }
+
     await db
       .update(shop_status)
       .set({

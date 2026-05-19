@@ -124,8 +124,15 @@ export default function Page() {
               onClick={() => {
                 if (stats.shopStatus?.isBuka === 0) {
                   const now = new Date();
-                  const nowHour = now.getHours();
-                  const nowMin = now.getMinutes();
+                  const formatter = new Intl.DateTimeFormat("en-US", {
+                    timeZone: "Asia/Jakarta",
+                    hour: "numeric",
+                    minute: "numeric",
+                    hour12: false,
+                  });
+                  const parts = formatter.formatToParts(now);
+                  const nowHour = parseInt(parts.find((p) => p.type === "hour")?.value || "0");
+                  const nowMin = parseInt(parts.find((p) => p.type === "minute")?.value || "0");
                   if (
                     nowHour > 18 ||
                     (nowHour === 18 && nowMin >= 30) ||
