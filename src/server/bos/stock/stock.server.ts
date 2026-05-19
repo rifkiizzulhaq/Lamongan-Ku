@@ -36,12 +36,14 @@ export async function updateQuantities(
   items: { stockId: number; quantity: number }[],
 ) {
   try {
-    for (const item of items) {
-      await db
-        .update(stock)
-        .set({ quantity: item.quantity, updatedAt: new Date() })
-        .where(eq(stock.id, item.stockId));
-    }
+    await Promise.all(
+      items.map((item) =>
+        db
+          .update(stock)
+          .set({ quantity: item.quantity, updatedAt: new Date() })
+          .where(eq(stock.id, item.stockId)),
+      ),
+    );
     revalidatePath("/stock");
     return { success: true };
   } catch (error) {

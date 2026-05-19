@@ -2,6 +2,9 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 
+// Global timeout map to debounce invalidations per query key across multiple tables
+const debounceTimeouts: Record<string, NodeJS.Timeout> = {};
+
 export function useSupabaseRealtime(table: string, queryKeys: string[]) {
   const queryClient = useQueryClient();
   const queryKeysString = JSON.stringify(queryKeys);
@@ -16,7 +19,13 @@ export function useSupabaseRealtime(table: string, queryKeys: string[]) {
         { event: "*", schema: "public", table: table },
         () => {
           keys.forEach((key: string) => {
-            queryClient.invalidateQueries({ queryKey: [key] });
+            if (debounceTimeouts[key]) {
+              clearTimeout(debounceTimeouts[key]);
+            }
+            debounceTimeouts[key] = setTimeout(() => {
+              queryClient.invalidateQueries({ queryKey: [key] });
+              delete debounceTimeouts[key];
+            }, 500); 
           });
         },
       )

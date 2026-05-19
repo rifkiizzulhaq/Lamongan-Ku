@@ -55,36 +55,38 @@ export async function getDashboardStats() {
   const shopStatus = await getShopStatus();
 
   try {
-    const todayOrders = await db
-      .select({
-        total: sql<number>`coalesce(sum(${orders.totalPrice}), 0)`,
-        count: sql<number>`coalesce(count(${orders.id}), 0)`,
-      })
-      .from(orders)
-      .where(
-        and(
-          gte(orders.createdAt, startOfDay),
-          lte(orders.createdAt, endOfDay),
-          eq(orders.status, "selesai"),
+    const [todayOrders, report, currentStock] = await Promise.all([
+      db
+        .select({
+          total: sql<number>`coalesce(sum(${orders.totalPrice}), 0)`,
+          count: sql<number>`coalesce(count(${orders.id}), 0)`,
+        })
+        .from(orders)
+        .where(
+          and(
+            gte(orders.createdAt, startOfDay),
+            lte(orders.createdAt, endOfDay),
+            eq(orders.status, "selesai"),
+          ),
         ),
-      );
+      db.query.daily_reports.findFirst({
+        where: and(
+          gte(daily_reports.createdAt, startOfDay),
+          lte(daily_reports.createdAt, endOfDay),
+        ),
+        with: {
+          weathers: true,
+          snapshots: {
+            with: { stock: true },
+          },
+        },
+        orderBy: (reports, { desc }) => [desc(reports.id)],
+      }),
+      db.select().from(stock).orderBy(stock.id),
+    ]);
 
     const pendapatan = Number(todayOrders[0]?.total || 0);
     const pesananCount = Number(todayOrders[0]?.count || 0);
-
-    const report = await db.query.daily_reports.findFirst({
-      where: and(
-        gte(daily_reports.createdAt, startOfDay),
-        lte(daily_reports.createdAt, endOfDay),
-      ),
-      with: {
-        weathers: true,
-        snapshots: {
-          with: { stock: true },
-        },
-      },
-      orderBy: (reports, { desc }) => [desc(reports.id)],
-    });
 
     const isClosed =
       !!report && report.snapshots && report.snapshots.length > 0;
@@ -99,8 +101,6 @@ export async function getDashboardStats() {
           sisa: s.sisaQuantity,
         }));
     } else {
-      const currentStock = await db.select().from(stock).orderBy(stock.id);
-
       sisaBahan = currentStock.map((s) => ({
         id: s.id,
         nama: s.name,
@@ -209,12 +209,14 @@ export async function updateStockInventory(
   try {
     const { startOfDay, endOfDay } = getShiftWaktu();
 
-    for (const item of items) {
-      await db
-        .update(stock)
-        .set({ quantity: item.sisa })
-        .where(eq(stock.id, item.stockId));
-    }
+    await Promise.all(
+      items.map((item) =>
+        db
+          .update(stock)
+          .set({ quantity: item.sisa, updatedAt: new Date() })
+          .where(eq(stock.id, item.stockId))
+      )
+    );
 
     const report = await db.query.daily_reports.findFirst({
       where: and(
@@ -225,17 +227,19 @@ export async function updateStockInventory(
     });
 
     if (report) {
-      for (const item of items) {
-        await db
-          .update(daily_stock_snapshots)
-          .set({ sisaQuantity: item.sisa })
-          .where(
-            and(
-              eq(daily_stock_snapshots.reportId, report.id),
-              eq(daily_stock_snapshots.stockId, item.stockId),
-            ),
-          );
-      }
+      await Promise.all(
+        items.map((item) =>
+          db
+            .update(daily_stock_snapshots)
+            .set({ sisaQuantity: item.sisa })
+            .where(
+              and(
+                eq(daily_stock_snapshots.reportId, report.id),
+                eq(daily_stock_snapshots.stockId, item.stockId),
+              ),
+            )
+        )
+      );
     }
 
     revalidatePath("/dashboard");
