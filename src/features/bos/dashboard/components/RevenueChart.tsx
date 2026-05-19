@@ -7,7 +7,6 @@ import { getRevenueChartData } from "@/src/server/bos/dashboard/dashboard.server
 import { useSupabaseRealtime } from "@/src/hooks/useSupabaseRealtime";
 import { LuLoader } from "react-icons/lu";
 
-// Pre-generated SVG strings for use inside HTML tooltip (tidak bisa pakai JSX di sini)
 const svgShoppingBag = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`;
 const svgMapPin = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:middle"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
 
@@ -17,6 +16,7 @@ interface TooltipDataPoint {
   details?: Record<string, number>;
   takeawayItems?: Record<string, number>;
   tables?: string[];
+  customerTypes?: string[];
 }
 
 interface TooltipSeries {
@@ -69,6 +69,7 @@ export default function RevenueChart() {
         items: Record<string, number>;
         takeawayItems: Record<string, number>;
         tables: Set<string>;
+        customerTypes: Set<string>;
       }
     > = {};
 
@@ -102,6 +103,7 @@ export default function RevenueChart() {
             items: {},
             takeawayItems: {},
             tables: new Set(),
+            customerTypes: new Set(),
           };
         makanSiniMap[key].qty += p.qty;
         if (p.menuName) {
@@ -115,6 +117,9 @@ export default function RevenueChart() {
         }
         if (p.tableName) {
           makanSiniMap[key].tables.add(p.tableName);
+        }
+        if (p.customerType && p.customerType !== "-") {
+          makanSiniMap[key].customerTypes.add(p.customerType);
         }
       }
     });
@@ -148,6 +153,14 @@ export default function RevenueChart() {
         allMinutes.map((mins) =>
           makanSiniMap[mins]?.tables
             ? Array.from(makanSiniMap[mins].tables)
+            : [],
+        ),
+      ] as string[][][],
+      customerTypes: [
+        allMinutes.map(() => []),
+        allMinutes.map((mins) =>
+          makanSiniMap[mins]?.customerTypes
+            ? Array.from(makanSiniMap[mins].customerTypes)
             : [],
         ),
       ] as string[][][],
@@ -259,6 +272,12 @@ export default function RevenueChart() {
                 html += `<div class="text-[10px] text-neutral-300 pl-2">• ${name} <span class="font-bold text-white ml-0.5">x${q}</span></div>`;
               });
               html += `</div>`;
+            }
+
+            const cTypes =
+              tooltipData?.customerTypes?.[idx]?.[dataPointIndex] ?? [];
+            if (cTypes.length > 0) {
+              html += `<div class="pl-3.5 mt-1.5 text-[10px] text-neutral-400">Tipe Pelanggan: <span class="text-neutral-200 font-bold capitalize">${cTypes.join(", ")}</span></div>`;
             }
 
             const tables = tooltipData?.tables[idx]?.[dataPointIndex] ?? [];

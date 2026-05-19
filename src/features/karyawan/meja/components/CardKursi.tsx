@@ -184,14 +184,18 @@ export default function CardKursi({
                     </span>
                   </div>
                 )}
-                {items.map((item, i) => {
-                  const isItemChanged =
-                    isHighlighted &&
-                    changedItemNames.has(`${item.n}-${item.isTakeaway}`);
-                  return (
-                    <div
-                      key={i}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 border rounded-md shadow-sm transition-all duration-500 cursor-default
+                {[...items]
+                  .sort((a, b) =>
+                    a.isTakeaway === b.isTakeaway ? 0 : a.isTakeaway ? 1 : -1,
+                  )
+                  .map((item, i) => {
+                    const isItemChanged =
+                      isHighlighted &&
+                      changedItemNames.has(`${item.n}-${item.isTakeaway}`);
+                    return (
+                      <div
+                        key={i}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 border rounded-md shadow-sm transition-all duration-500 cursor-default
                         ${
                           isItemChanged
                             ? "bg-yellow-100 dark:bg-yellow-800/40 border-yellow-400 dark:border-yellow-500"
@@ -200,14 +204,14 @@ export default function CardKursi({
                               : "bg-white dark:bg-neutral-800/80 border-neutral-200 dark:border-neutral-700"
                         }
                       `}
-                    >
-                      {isItemChanged && (
-                        <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400">
-                          {item.isTakeaway ? "bungkus:" : "update:"}
-                        </span>
-                      )}
-                      <span
-                        className={`text-xs font-medium
+                      >
+                        {isItemChanged && (
+                          <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400">
+                            {item.isTakeaway ? "update: bungkus:" : "update:"}
+                          </span>
+                        )}
+                        <span
+                          className={`text-xs font-medium
                         ${
                           isItemChanged
                             ? "text-yellow-800 dark:text-yellow-200"
@@ -216,25 +220,25 @@ export default function CardKursi({
                               : "text-neutral-700 dark:text-neutral-300"
                         }
                       `}
-                      >
-                        {!isItemChanged && item.isTakeaway
-                          ? `Bungkus: ${item.n}`
-                          : item.n}
-                      </span>
-                      <span
-                        className={`flex items-center justify-center min-w-5 h-5 font-bold rounded text-[10px]
+                        >
+                          {!isItemChanged && item.isTakeaway
+                            ? `Bungkus: ${item.n}`
+                            : item.n}
+                        </span>
+                        <span
+                          className={`flex items-center justify-center min-w-5 h-5 font-bold rounded text-[10px]
                         ${
                           isItemChanged
                             ? "bg-yellow-300 text-yellow-900 dark:bg-yellow-600 dark:text-yellow-100"
                             : "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400"
                         }
                       `}
-                      >
-                        {item.q}x
-                      </span>
-                    </div>
-                  );
-                })}
+                        >
+                          {item.q}x
+                        </span>
+                      </div>
+                    );
+                  })}
               </div>
             </Link>
 

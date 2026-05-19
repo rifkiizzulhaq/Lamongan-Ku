@@ -142,6 +142,7 @@ export async function getRevenueChartData() {
         qty: order_items.quantity,
         menuName: stock.name,
         type: orders.orderType,
+        customerType: orders.customerType,
         isTakeaway: order_items.isTakeaway,
         tableName: dining_table.name,
         created_at: orders.createdAt,
@@ -164,6 +165,7 @@ export async function getRevenueChartData() {
       tableName: d.tableName ?? null,
       isTakeaway: d.isTakeaway === "true",
       type: d.type === "bungkus" ? "Bungkus" : "Makan Sini",
+      customerType: d.customerType ?? "-",
       created_at: d.created_at.toISOString(),
     }));
   } catch (error) {

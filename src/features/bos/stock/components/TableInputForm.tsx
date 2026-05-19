@@ -18,6 +18,7 @@ import {
   deleteTable,
 } from "@/src/server/bos/table/table.server";
 import { useWarungStore } from "@/src/store/warungStore";
+import { useUiStore } from "@/src/store/uiStore";
 
 export interface TableItem {
   id: number;
@@ -30,6 +31,7 @@ interface TableInputFormProps {
 
 export default function TableInputForm({ tables }: TableInputFormProps) {
   const { isBuka } = useWarungStore();
+  const { addToast } = useUiStore();
   const [newTableName, setNewTableName] = useState("");
   const [addingTable, setAddingTable] = useState(false);
   const [editingTableId, setEditingTableId] = useState<number | null>(null);
@@ -48,8 +50,9 @@ export default function TableInputForm({ tables }: TableInputFormProps) {
         setAddingTable(false);
         setNewTableName("");
         invalidateData();
+        addToast("Berhasil menambah meja!", "success");
       } else {
-        alert(res.error || "Gagal menambah meja");
+        addToast(res.error || "Gagal menambah meja", "error");
       }
     },
   });
@@ -61,8 +64,9 @@ export default function TableInputForm({ tables }: TableInputFormProps) {
       if (res.success) {
         setEditingTableId(null);
         invalidateData();
+        addToast("Meja berhasil diperbarui!", "success");
       } else {
-        alert(res.error || "Gagal memperbarui meja");
+        addToast(res.error || "Gagal memperbarui meja", "error");
       }
     },
   });
@@ -72,8 +76,9 @@ export default function TableInputForm({ tables }: TableInputFormProps) {
     onSuccess: (res) => {
       if (res.success) {
         invalidateData();
+        addToast("Meja telah dihapus!", "success");
       } else {
-        alert(res.error || "Gagal menghapus meja");
+        addToast(res.error || "Gagal menghapus meja", "error");
       }
     },
   });

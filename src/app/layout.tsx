@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ReactQueryProvider from "@/src/providers/ReactQueryProvider";
+import GlobalUIProvider from "@/src/components/ui/GlobalUIProvider";
 
 const jakartaSans = Plus_Jakarta_Sans({
   variable: "--font-jakarta-sans",
@@ -29,7 +30,10 @@ export default function RootLayout({
       className={`${jakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col text-neutral-900 bg-neutral-100 dark:bg-neutral-900 dark:text-neutral-100">
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <ReactQueryProvider>
+          {children}
+          <GlobalUIProvider />
+        </ReactQueryProvider>
       </body>
     </html>
   );

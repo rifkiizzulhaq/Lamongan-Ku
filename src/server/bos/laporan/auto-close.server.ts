@@ -56,11 +56,17 @@ export async function checkAndRunAutoClose(): Promise<void> {
       if (!todayActive) {
         const currentStatus = await db.query.shop_status.findFirst();
         if (currentStatus?.isBuka === 1) {
-          await db.update(shop_status).set({
-            isBuka: 0,
-            reason: "Sistem Otomatis: Tidak ada aktivitas",
-            updatedAt: new Date(),
-          });
+          const lastUpdate = new Date(currentStatus.updatedAt);
+          const isUpdatedToday = lastUpdate.toDateString() === wibNow.toDateString();
+          const updatedHour = lastUpdate.getHours();
+
+          if (!(isUpdatedToday && updatedHour >= 17)) {
+            await db.update(shop_status).set({
+              isBuka: 0,
+              reason: "Sistem Otomatis: Tidak ada aktivitas",
+              updatedAt: new Date(),
+            });
+          }
         }
       }
     }
@@ -137,20 +143,39 @@ export async function checkAndRunAutoClose(): Promise<void> {
           })),
         );
       }
-    } else if (!wasActive) {
-      await db.insert(daily_reports).values({
+    } else {
+      const [newReportLibur] = await db.insert(daily_reports).values({
         actualRevenue: 0,
         systemRevenue: 0,
-        note: "Sistem Otomatis: Tidak ada penjualan (Libur/Tutup)",
+        note: "Sistem Otomatis: Tidak ada pesanan (Libur/Tutup)",
         createdAt: shiftEnd,
-      });
+      }).returning({ id: daily_reports.id });
 
+      const currentStocksLibur = await db.select().from(stock);
+      if (currentStocksLibur.length > 0) {
+        await db.insert(daily_stock_snapshots).values(
+          currentStocksLibur.map((s) => ({
+            reportId: newReportLibur.id,
+            stockId: s.id,
+            sisaQuantity: s.quantity || 0,
+            createdAt: shiftEnd,
+          })),
+        );
+      }
       if (i === 0) {
-        await db.update(shop_status).set({
-          isBuka: 0,
-          reason: "Sistem Otomatis: Kemarin Libur",
-          updatedAt: new Date(),
-        });
+        const currentStatus = await db.query.shop_status.findFirst();
+        if (currentStatus) {
+          const lastUpdate = new Date(currentStatus.updatedAt);
+          const isUpdatedToday = lastUpdate.toDateString() === wibNow.toDateString();
+          
+          if (!(isUpdatedToday && currentStatus.isBuka === 1)) {
+            await db.update(shop_status).set({
+              isBuka: 0,
+              reason: "Sistem Otomatis: Kemarin Libur",
+              updatedAt: new Date(),
+            });
+          }
+        }
       }
     }
   }

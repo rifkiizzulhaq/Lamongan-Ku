@@ -110,7 +110,17 @@ function aggregate({
 
   const liburReports = reports.filter(isLibur);
   const totalLibur = liburReports.length;
-  const alasanLibur = liburReports.map((r) => r.note ?? "Libur");
+  const alasanLibur = liburReports.map((r) => {
+    const d = getShiftDate(r.createdAt);
+    const wib = getWibDate(d);
+    const formatter = new Intl.DateTimeFormat("id-ID", {
+      weekday: "short",
+      day: "numeric",
+      month: "short"
+    });
+    const dateStr = formatter.format(wib);
+    return `${dateStr}: ${r.note ?? "Libur"}`;
+  });
 
   const cuaca = { cerah: 0, mendung: 0, gerimis: 0, hujan: 0 };
   weatherLogs.forEach((w) => {
@@ -230,7 +240,6 @@ function aggregate({
       const ordersForDay = orderList.filter(
         (o) => o.createdAt >= start && o.createdAt <= end,
       );
-      // Use order-based revenue — never trust actualRevenue in DB (may be 0)
       revenueTrend.push(ordersForDay.reduce((acc, o) => acc + o.totalPrice, 0));
 
       const portions = ordersForDay.length;

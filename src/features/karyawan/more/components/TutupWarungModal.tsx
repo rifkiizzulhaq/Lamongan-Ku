@@ -18,6 +18,7 @@ import {
 } from "@/src/server/karyawan/more/more.server";
 import { CuacaSlot, SisaItem } from "@/interfaces/models";
 import type { Stock } from "@/db/schema";
+import { useUiStore } from "@/src/store/uiStore";
 
 type CuacaOption = "Cerah" | "Mendung" | "Gerimis" | "Hujan";
 
@@ -65,6 +66,7 @@ export default function TutupWarungModal({
   onClose: () => void;
   stockList: Stock[];
 }) {
+  const { addToast } = useUiStore();
   const queryClient = useQueryClient();
   const { data: isAlreadyReported, isLoading: isCheckingReport } = useQuery({
     queryKey: ["check-reported-today"],
@@ -152,10 +154,11 @@ export default function TutupWarungModal({
       queryClient.invalidateQueries({ queryKey: ["stock-list"] });
       queryClient.invalidateQueries({ queryKey: ["check-reported-today"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      addToast("Warung berhasil ditutup!", "success");
       onClose();
     },
     onError: (err: Error) => {
-      alert(err.message || "Gagal mengirim laporan");
+      addToast(err.message || "Gagal mengirim laporan", "error");
     },
   });
 

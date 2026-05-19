@@ -49,29 +49,35 @@ export default function CardRiwayat({
               : ""
           }`}
         >
-          {items.map((item, i) => (
-            <div
-              key={i}
-              className={`flex items-center gap-2 px-2.5 py-1 border rounded-md shadow-sm transition-colors ${
-                item.isTakeaway
-                  ? "bg-neutral-800 border-neutral-700 text-white"
-                  : "bg-white dark:bg-neutral-800/80 border-neutral-200 dark:border-neutral-700"
-              }`}
-            >
-              <span
-                className={`text-xs font-medium ${
+          {[...items]
+            .sort((a, b) =>
+              a.isTakeaway === b.isTakeaway ? 0 : a.isTakeaway ? 1 : -1,
+            )
+            .map((item, i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-2 px-2.5 py-1 border rounded-md shadow-sm transition-colors ${
                   item.isTakeaway
-                    ? "text-neutral-200"
-                    : "text-neutral-700 dark:text-neutral-300"
+                    ? "bg-neutral-800 border-neutral-700 text-white"
+                    : "bg-white dark:bg-neutral-800/80 border-neutral-200 dark:border-neutral-700"
                 }`}
               >
-                {item.n}
-              </span>
-              <span className="flex items-center justify-center min-w-5 h-5 bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 font-bold rounded text-[10px]">
-                {item.q}
-              </span>
-            </div>
-          ))}
+                <span
+                  className={`text-xs font-medium ${
+                    item.isTakeaway
+                      ? "text-neutral-200"
+                      : "text-neutral-700 dark:text-neutral-300"
+                  }`}
+                >
+                  {item.isTakeaway && orderType === "makan"
+                    ? `Bungkus: ${item.n}`
+                    : item.n}
+                </span>
+                <span className="flex items-center justify-center min-w-5 h-5 bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400 font-bold rounded text-[10px]">
+                  {item.q}
+                </span>
+              </div>
+            ))}
         </div>
       </div>
     </section>

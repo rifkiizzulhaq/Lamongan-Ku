@@ -19,8 +19,10 @@ import {
   saveActualRevenue,
 } from "@/src/server/bos/dashboard/dashboard.server";
 import LockedPage from "@/src/components/ui/LockedPage";
+import { useUiStore } from "@/src/store/uiStore";
 
 export default function Page() {
+  const { addToast } = useUiStore();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [uangFisik, setUangFisik] = useState<string>("");
@@ -58,9 +60,10 @@ export default function Page() {
     onSuccess: (res: { success: boolean; error?: string }) => {
       if (res.success) {
         queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+        addToast("Pendapatan kasir berhasil disave!", "success");
         router.push("/dashboard");
       } else {
-        alert(res.error);
+        addToast(res.error || "Terjadi kesalahan", "error");
       }
     },
   });

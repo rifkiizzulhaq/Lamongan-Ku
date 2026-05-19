@@ -27,11 +27,14 @@ import StatCard from "@/src/features/bos/dashboard/components/StatCard";
 import RevenueChart from "@/src/features/bos/dashboard/components/RevenueChart";
 import SisaBahanDashboardChart from "@/src/features/bos/dashboard/components/SisaBahanDashboardChart";
 import DashboardSkeleton from "@/src/components/ui/DashboardSkeleton";
+import { useUiStore } from "@/src/store/uiStore";
 
 export default function Page() {
   const queryClient = useQueryClient();
   const [catatanLibur, setCatatanLibur] = useState("");
   const [pendingBuka, setPendingBuka] = useState(true);
+
+  const { addToast, showConfirm } = useUiStore();
 
   useSupabaseRealtime("orders", ["dashboard-stats", "revenue-chart"]);
   useSupabaseRealtime("order_items", ["dashboard-stats", "revenue-chart"]);
@@ -51,8 +54,9 @@ export default function Page() {
         queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
         setCatatanLibur("");
         setPendingBuka(true);
+        addToast("Berhasil update status warung!", "success");
       } else {
-        alert(res.error);
+        addToast(res.error || "Gagal update status", "error");
       }
     },
   });
@@ -119,12 +123,34 @@ export default function Page() {
             <Button
               onClick={() => {
                 if (stats.shopStatus?.isBuka === 0) {
+                  const now = new Date();
+                  const nowHour = now.getHours();
+                  const nowMin = now.getMinutes();
                   if (
-                    confirm("Apakah Anda yakin ingin membuka kembali warung?")
+                    nowHour > 18 ||
+                    (nowHour === 18 && nowMin >= 30) ||
+                    nowHour < 6
                   ) {
-                    updateStatus(true);
+                    addToast(
+                      "Sudah melewati batas waktu (18:30) untuk membuka warung hari ini. Harap tunggu shift berikutnya.",
+                      "error",
+                    );
+                    return;
                   }
+
+                  showConfirm(
+                    "Buka Warung?",
+                    "Apakah Anda yakin ingin membuka kembali warung?",
+                    () => updateStatus(true),
+                  );
                 } else {
+                  if (!stats.isClosed) {
+                    addToast(
+                      "Warung sedang beroperasi! Anda hanya dapat mengubah status menjadi libur setelah shift selesai dan melakukan Tutup Warung.",
+                      "error",
+                    );
+                    return;
+                  }
                   setPendingBuka(!pendingBuka);
                 }
               }}

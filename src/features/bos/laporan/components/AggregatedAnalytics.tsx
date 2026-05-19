@@ -43,12 +43,16 @@ export default function AggregatedAnalytics({
                 <p className="text-sm font-bold text-neutral-800 dark:text-white">
                   {data.timeLabel}: Libur {data.totalLiburCurrent} Hari
                 </p>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  Alasan: {data.alasanLiburCurrentList?.join(", ")}
-                </p>
+                <div className="text-xs text-neutral-500 mt-1 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700 pr-2">
+                  <ul className="list-disc pl-4 space-y-1">
+                    {data.alasanLiburCurrentList?.map((alasan, idx) => (
+                      <li key={idx}>{alasan}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
-            {data.totalLiburPrevious! > 0 && (
+            {data.totalLiburPrevious! > 0 && showComparison && (
               <div
                 className={
                   data.totalLiburCurrent! > 0
@@ -59,9 +63,13 @@ export default function AggregatedAnalytics({
                 <p className="text-sm font-bold text-neutral-800 dark:text-white">
                   {data.prevTimeLabel}: Libur {data.totalLiburPrevious} Hari
                 </p>
-                <p className="text-xs text-neutral-500 mt-0.5">
-                  Alasan: {data.alasanLiburPreviousList?.join(", ")}
-                </p>
+                <div className="text-xs text-neutral-500 mt-1 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700 pr-2">
+                  <ul className="list-disc pl-4 space-y-1">
+                    {data.alasanLiburPreviousList?.map((alasan, idx) => (
+                      <li key={idx}>{alasan}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             )}
           </div>

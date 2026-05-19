@@ -9,8 +9,8 @@ import {
   getDailyAnalytics,
   getAggregatedAnalytics,
 } from "@/src/server/bos/laporan/laporan.server";
-import { LuLoader } from "react-icons/lu";
 import Button from "@/src/components/ui/Button";
+import LaporanSkeleton from "@/src/features/bos/laporan/components/LaporanSkeleton";
 
 type TabMode = "Harian" | "Mingguan" | "Bulanan" | "Tahunan";
 
@@ -59,12 +59,7 @@ export default function LaporanPage() {
 
         <div className="relative w-full flex flex-col h-full overflow-y-auto pb-20 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-64 gap-3">
-              <LuLoader className="animate-spin text-orange" size={32} />
-              <p className="text-sm font-bold text-neutral-500 animate-pulse">
-                Menghitung data laporan...
-              </p>
-            </div>
+            <LaporanSkeleton />
           ) : (
             <>
               {activeTab === "Harian" && dailyData && (

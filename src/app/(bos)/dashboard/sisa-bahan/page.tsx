@@ -12,6 +12,7 @@ import {
   updateStockInventory,
 } from "@/src/server/bos/dashboard/dashboard.server";
 import LockedPage from "@/src/components/ui/LockedPage";
+import { useUiStore } from "@/src/store/uiStore";
 
 interface SisaItemLocal {
   stockId: number;
@@ -20,6 +21,7 @@ interface SisaItemLocal {
 }
 
 export default function SisaBahanPage() {
+  const { addToast } = useUiStore();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [items, setItems] = useState<SisaItemLocal[]>([]);
@@ -56,9 +58,10 @@ export default function SisaBahanPage() {
       if (res.success) {
         queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
         queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+        addToast("Sisa bahan berhasil disave!", "success");
         router.push("/dashboard");
       } else {
-        alert(res.error);
+        addToast(res.error || "Terjadi kesalahan", "error");
       }
     },
   });

@@ -11,15 +11,18 @@ import {
   LuLoader,
   LuTrash2,
   LuTriangleAlert,
+  LuPencil,
 } from "react-icons/lu";
 import {
   updateQuantities,
   create,
   deletes,
+  update,
 } from "@/src/server/bos/stock/stock.server";
 import Input from "@/src/components/ui/Input";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
+import { useUiStore } from "@/src/store/uiStore";
 
 import { StockFormItem } from "@/interfaces/models";
 
@@ -34,6 +37,7 @@ export default function StockInputForm({
   isBuka: initialIsBuka,
   hasYesterdayData,
 }: StockInputFormProps) {
+  const { addToast } = useUiStore();
   const { isBuka, setIsBuka } = useWarungStore();
 
   useEffect(() => {
@@ -65,6 +69,11 @@ export default function StockInputForm({
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState("");
   const [newQty, setNewQty] = useState("");
+
+  const [editTarget, setEditTarget] = useState<StockFormItem | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPrice, setEditPrice] = useState("");
+
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number;
     nama: string;
@@ -76,9 +85,30 @@ export default function StockInputForm({
       updateQuantities(items),
     onSuccess: (res) => {
       if (res.success) {
-        alert("Stock berhasil disimpan!");
+        addToast("Stock berhasil disimpan!", "success");
       } else {
-        alert("Gagal menyimpan stock, coba lagi.");
+        addToast("Gagal menyimpan stock, coba lagi.", "error");
+      }
+    },
+  });
+
+  const { mutate: editItem, isPending: editing } = useMutation({
+    mutationFn: ({
+      id,
+      name,
+      price,
+    }: {
+      id: number;
+      name: string;
+      price: number;
+    }) => update(id, name, price),
+    onSuccess: (res) => {
+      if (res.success) {
+        setEditTarget(null);
+        router.refresh();
+        addToast("Item berhasil diubah!", "success");
+      } else {
+        addToast("Gagal mengubah item.", "error");
       }
     },
   });
@@ -100,8 +130,9 @@ export default function StockInputForm({
         setNewQty("");
         setShowAddModal(false);
         router.refresh();
+        addToast("Item berhasil ditambah!", "success");
       } else {
-        alert("Gagal menambah item.");
+        addToast("Gagal menambah item.", "error");
       }
     },
   });
@@ -112,8 +143,9 @@ export default function StockInputForm({
       if (res.success) {
         setDeleteTarget(null);
         router.refresh();
+        addToast("Item berhasil dihapus!", "success");
       } else {
-        alert("Gagal menghapus item.");
+        addToast("Gagal menghapus item.", "error");
       }
     },
   });
@@ -167,7 +199,7 @@ export default function StockInputForm({
       }));
 
     if (items.length === 0) {
-      alert("Belum ada stock yang diisi.");
+      addToast("Belum ada stock yang diisi.", "info");
       return;
     }
 
@@ -179,6 +211,18 @@ export default function StockInputForm({
     const priceValue = newPrice ? parseInt(newPrice) : 0;
     const qtyValue = newQty ? parseInt(newQty) : 0;
     tambahItem({ name: newName.trim(), price: priceValue, qty: qtyValue });
+  };
+
+  const handleEditItem = () => {
+    if (!editTarget || !editName.trim()) return;
+    const priceValue = editPrice ? parseInt(editPrice) : 0;
+    editItem({ id: editTarget.id, name: editName.trim(), price: priceValue });
+  };
+
+  const handleOpenEdit = (item: StockFormItem) => {
+    setEditTarget(item);
+    setEditName(item.nama);
+    setEditPrice(item.price.toString());
   };
 
   return (
@@ -283,16 +327,26 @@ export default function StockInputForm({
                       Rp {item.price.toLocaleString("id-ID")}
                     </span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDeleteTarget({ id: item.id, nama: item.nama })
-                    }
-                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
-                    title="Hapus item ini"
-                  >
-                    <LuTrash2 size={14} />
-                  </button>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(item)}
+                      className="p-1.5 rounded-lg text-orange-400 hover:text-orange-600 hover:bg-orange/10 transition-colors"
+                      title="Edit harga item"
+                    >
+                      <LuPencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDeleteTarget({ id: item.id, nama: item.nama })
+                      }
+                      className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      title="Hapus item ini"
+                    >
+                      <LuTrash2 size={14} />
+                    </button>
+                  </div>
                 </div>
                 <Input
                   id={`stock-${item.id}`}
@@ -391,6 +445,69 @@ export default function StockInputForm({
                   <LuLoader className="animate-spin" size={16} />
                 ) : (
                   "Simpan"
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editTarget && (
+        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setEditTarget(null)}
+          />
+          <div className="relative w-full max-w-md bg-white dark:bg-neutral-900 rounded-t-3xl sm:rounded-3xl p-6 flex flex-col gap-4 z-10 animate-in slide-in-from-bottom-5">
+            <h3 className="font-black text-lg text-neutral-800 dark:text-white flex items-center gap-2">
+              <LuPencil size={20} /> Edit Item Stock
+            </h3>
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+                  Nama Item
+                </label>
+                <Input
+                  id="edit-name"
+                  placeholder="contoh: Ayam"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="mt-1 w-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange/50"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">
+                  Harga (Rp)
+                </label>
+                <Input
+                  id="edit-price"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="contoh: Rp 16.000"
+                  value={formatRupiah(editPrice)}
+                  onChange={(e) => setEditPrice(parseCurrency(e.target.value))}
+                  className="mt-1 w-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange/50"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-2">
+              <Button
+                onClick={() => setEditTarget(null)}
+                className="flex-1 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 font-bold text-sm"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={handleEditItem}
+                disabled={editing || !editName}
+                className="flex-1 py-3 rounded-xl bg-orange text-white font-bold text-sm hover:bg-orange-600 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {editing ? (
+                  <LuLoader className="animate-spin" size={16} />
+                ) : (
+                  <>
+                    <LuSave size={16} /> Update
+                  </>
                 )}
               </Button>
             </div>

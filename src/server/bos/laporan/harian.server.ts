@@ -56,6 +56,7 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     stockList,
     reportYesterday,
     reportPrevPrev,
+    currentShopStatus,
   ] = await Promise.all([
     db
       .select()
@@ -116,6 +117,7 @@ export async function getDailyAnalytics(): Promise<DailyData> {
         ),
       )
       .limit(1),
+    db.query.shop_status.findFirst(),
   ]);
 
   const [
@@ -249,8 +251,18 @@ export async function getDailyAnalytics(): Promise<DailyData> {
         ?.sisaQuantity,
     }));
 
-  const isLiburCurrent = ordersCurr.length === 0 && !!reportCurr[0]?.note;
-  const isLiburPrevious = ordersPrev.length === 0 && !!reportPrev[0]?.note;
+  const targetIsToday =
+    currentRange.start.getTime() <= new Date().getTime() &&
+    currentRange.end.getTime() > new Date().getTime();
+
+  const isLiburCurrent =
+    ordersCurr.length === 0 &&
+    (!!reportCurr[0]?.note ||
+      (targetIsToday && currentShopStatus?.isBuka === 0) ||
+      !targetIsToday);
+
+  const isLiburPrevious =
+    ordersPrev.length === 0 && !!reportPrev[0]?.note;
 
   const getStats = (logs: WeatherLog[]) => {
     const stats = { cerah: 0, mendung: 0, gerimis: 0, hujan: 0 };
@@ -269,8 +281,14 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     prevTimeLabel: formatLabel(prevReportDate, "Lalu"),
     isLiburCurrent,
     isLiburPrevious,
-    alasanLiburCurrent: isLiburCurrent ? (reportCurr[0]?.note ?? "") : "",
-    alasanLiburPrevious: isLiburPrevious ? (reportPrev[0]?.note ?? "") : "",
+    alasanLiburCurrent: isLiburCurrent
+      ? reportCurr[0]?.note ||
+        (targetIsToday ? currentShopStatus?.reason : "") ||
+        "Tidak ada aktivitas penjualan pada hari tersebut (Libur/Tutup)."
+      : "",
+    alasanLiburPrevious: isLiburPrevious
+      ? reportPrev[0]?.note || "Tidak ada aktivitas penjualan pada hari tersebut (Libur/Tutup)."
+      : "",
     revenueLabels: timeLabels,
     revenueCurrent,
     revenuePrevious,

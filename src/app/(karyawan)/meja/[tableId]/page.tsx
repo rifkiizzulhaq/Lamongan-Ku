@@ -160,7 +160,7 @@ export default function Page() {
               Belum ada pesanan di meja ini.
             </div>
           ) : (
-            orders.map((order, idx) => (
+            orders.map((order) => (
               <CardKursi
                 key={order.id}
                 id={`M - ${order.id}`}

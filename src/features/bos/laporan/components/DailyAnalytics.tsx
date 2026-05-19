@@ -22,7 +22,7 @@ export default function DailyAnalytics({ data }: Props) {
         <div className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-4 rounded-xl flex gap-3 items-start">
           <LuInfo className="shrink-0 mt-0.5" size={18} />
           <div>
-            <p className="font-bold text-sm">Warung Libur Hari Ini</p>
+            <p className="font-bold text-sm">Warung Libur Pada {data.timeLabel}</p>
             <p className="text-xs mt-1">
               {data.alasanLiburCurrent || "Tidak ada alasan spesifik."}
             </p>
@@ -30,7 +30,7 @@ export default function DailyAnalytics({ data }: Props) {
         </div>
       )}
 
-      {data.isLiburPrevious && (
+      {data.isLiburPrevious && showComparison && (
         <div className="bg-orange/10 border border-orange/20 text-orange p-4 rounded-xl flex gap-3 items-start">
           <LuInfo className="shrink-0 mt-0.5" size={18} />
           <div>
