@@ -8,7 +8,7 @@ import {
   dining_table,
   daily_reports,
 } from "@/db/schema";
-import { and, eq, inArray, ne, gte, lte } from "drizzle-orm";
+import { and, eq, inArray, ne, gte, lte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { checkIfReportedToday } from "../more/more.server";
 import { getShiftWaktu } from "@/src/utils/date";
@@ -308,12 +308,9 @@ export async function deleteMakanOrder(orderId: number) {
     const restorePromises = Object.entries(stockDelta).map(
       ([stockIdStr, qty]) => {
         const stockId = parseInt(stockIdStr);
-        const s = stockData.find((st) => st.id === stockId);
-        if (!s || s.quantity === null) return Promise.resolve();
-        const newQty = s.quantity + qty;
         return db
           .update(stock)
-          .set({ quantity: newQty })
+          .set({ quantity: sql`${stock.quantity} + ${qty}` })
           .where(eq(stock.id, stockId));
       },
     );

@@ -151,7 +151,7 @@ export default function Page() {
                     () => updateStatus(true),
                   );
                 } else {
-                  if (!stats.isClosed) {
+                  if (!stats.isClosed && (stats.pesananCount > 0 || stats.pendapatan > 0)) {
                     addToast(
                       "Warung sedang beroperasi! Anda hanya dapat mengubah status menjadi libur setelah shift selesai dan melakukan Tutup Warung.",
                       "error",

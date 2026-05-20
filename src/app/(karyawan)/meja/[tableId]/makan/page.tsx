@@ -84,6 +84,17 @@ function MakanContent() {
   const isSpecialMenu = (name: string) =>
     specialZeroStockItems.includes(name.trim().toLowerCase());
 
+  const hasMainStockAvailable = stockList?.some((s) => {
+    if (isSpecialMenu(s.name)) return false;
+    const initialLockedQty =
+      mode === "update" && orderData
+        ? orderData.cartItems
+            .filter((i) => i.stockId === s.id)
+            .reduce((sum, item) => sum + item.quantity, 0)
+        : 0;
+    return (s.quantity ?? 0) + initialLockedQty > 0;
+  });
+
   const addToCart = (s: Stock) => {
     setCart((prev) => {
       const existing = prev.find(
@@ -103,7 +114,11 @@ function MakanContent() {
       const available = (s.quantity ?? 0) + initialLockedQty;
       const special = isSpecialMenu(s.name);
 
-      if (!special && currentTotalQtyForStock >= available) return prev;
+      if (special) {
+        if (!hasMainStockAvailable) return prev;
+      } else {
+        if (currentTotalQtyForStock >= available) return prev;
+      }
 
       if (existing) {
         return prev.map((i) =>
@@ -196,7 +211,9 @@ function MakanContent() {
                 : 0;
             const available = (s.quantity ?? 0) + initialLockedQty;
             const special = isSpecialMenu(s.name);
-            const canAdd = special || currentTotalQtyForStock < available;
+            const canAdd = special
+              ? hasMainStockAvailable
+              : currentTotalQtyForStock < available;
 
             const currentSpecificQty =
               cart.find(

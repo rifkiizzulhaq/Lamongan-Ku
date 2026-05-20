@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
@@ -27,6 +27,11 @@ export const orders = pgTable("orders", {
   customerType: text("customer_type"),
   totalPrice: integer("total_price").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    createdAtIndex: index("orders_created_at_idx").on(table.createdAt),
+    statusIndex: index("orders_status_idx").on(table.status),
+  };
 });
 
 export const order_items = pgTable("order_items", {

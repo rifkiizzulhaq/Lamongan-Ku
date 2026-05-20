@@ -105,9 +105,33 @@ export async function checkAndRunAutoClose(): Promise<void> {
       }
     }
 
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(new Date());
+    const yToday = parseInt(parts.find((p) => p.type === "year")?.value || "0");
+    const mTodayNum = parseInt(parts.find((p) => p.type === "month")?.value || "0");
+    const dTodayNum = parseInt(parts.find((p) => p.type === "day")?.value || "0");
+    const nowHour = parseInt(parts.find((p) => p.type === "hour")?.value || "0");
+    const nowMin = parseInt(parts.find((p) => p.type === "minute")?.value || "0");
+
+    const isPast1830 = nowHour > 18 || (nowHour === 18 && nowMin >= 30);
+
+    const mToday = String(mTodayNum).padStart(2, "0");
+    const dToday = String(dTodayNum).padStart(2, "0");
+    const todayDate = new Date(`${yToday}-${mToday}-${dToday}T00:00:00+07:00`);
+
     const { targetDate: latestFixDate } = getLastFixDate();
 
-    const checkStartDate = new Date(latestFixDate);
+    const latestCheckDate = isPast1830 ? todayDate : latestFixDate;
+
+    const checkStartDate = new Date(latestCheckDate);
     checkStartDate.setDate(checkStartDate.getDate() - 13);
     checkStartDate.setHours(0, 0, 0, 0);
 
@@ -116,7 +140,7 @@ export async function checkAndRunAutoClose(): Promise<void> {
         gte(daily_reports.createdAt, checkStartDate),
         lte(
           daily_reports.createdAt,
-          new Date(latestFixDate.getTime() + 30 * 60 * 60 * 1000),
+          new Date(latestCheckDate.getTime() + 30 * 60 * 60 * 1000),
         ),
       ),
     });
@@ -125,7 +149,7 @@ export async function checkAndRunAutoClose(): Promise<void> {
 
     await Promise.all(
       daysToCheck.map(async (i) => {
-        const checkDate = new Date(latestFixDate);
+        const checkDate = new Date(latestCheckDate);
         checkDate.setDate(checkDate.getDate() - i);
         checkDate.setHours(0, 0, 0, 0);
 
@@ -168,6 +192,13 @@ export async function checkAndRunAutoClose(): Promise<void> {
 
         const wasActive =
           stockSavedToday !== undefined || shiftOrders.length > 0;
+
+        const isToday = checkDate.getTime() === todayDate.getTime();
+
+        if (isToday && wasActive) {
+          // Jika ini hari ini dan ada aktivitas aktif, jangan lakukan auto-close sekarang (shift sedang berjalan)
+          return;
+        }
 
         if (wasActive && shiftOrders.length > 0) {
           const totalRevenue = shiftOrders.reduce(
@@ -217,10 +248,9 @@ export async function checkAndRunAutoClose(): Promise<void> {
               })),
             );
           }
-          if (i === 0) {
+          if (i === 0 || isToday) {
             const currentStatus = await db.query.shop_status.findFirst();
             if (currentStatus && currentStatus.isBuka === 1) {
-              // Proteksi retroaktif: Periksa apakah ada aktivitas nyata (transaksi atau update stok) setelah shift libur berakhir
               const [hasOrderAfter, hasStockUpdateAfter] = await Promise.all([
                 db.query.orders.findFirst({
                   where: gte(orders.createdAt, shiftEnd),
@@ -240,7 +270,9 @@ export async function checkAndRunAutoClose(): Promise<void> {
               if (!isUpdatedAfterShift) {
                 await db.update(shop_status).set({
                   isBuka: 0,
-                  reason: "Sistem Otomatis: Kemarin Libur",
+                  reason: isToday
+                    ? "Sistem Otomatis: Batas waktu buka warung terlewati (18:30)"
+                    : "Sistem Otomatis: Kemarin Libur",
                   updatedAt: new Date(),
                 });
               }

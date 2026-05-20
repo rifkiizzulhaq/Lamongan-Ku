@@ -167,10 +167,7 @@ export default function StockInputForm({
     const newInputs: Record<number, string> = {};
     stockList.forEach((item) => {
       if (newValue) {
-        newInputs[item.id] =
-          item.sisaKemarin > 0
-            ? item.sisaKemarin.toString()
-            : item.quantity?.toString() || "";
+        newInputs[item.id] = item.sisaKemarin.toString();
       } else {
         newInputs[item.id] =
           item.quantity !== null && item.quantity > 0

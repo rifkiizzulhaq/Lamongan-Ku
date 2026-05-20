@@ -38,6 +38,15 @@ export default function BungkusOrderingClient({
   const isSpecialMenu = (name: string) =>
     specialZeroStockItems.includes(name.trim().toLowerCase());
 
+  const hasMainStockAvailable = stockList.some((s) => {
+    if (isSpecialMenu(s.name)) return false;
+    const initialLockedQty =
+      mode === "update"
+        ? (initialCart.find((i) => i.stockId === s.id)?.quantity ?? 0)
+        : 0;
+    return (s.quantity ?? 0) + initialLockedQty > 0;
+  });
+
   const { mutate: simpan, isPending } = useMutation({
     mutationFn: async (payload: { stockId: number; quantity: number }[]) => {
       if (mode === "update" && orderId) {
@@ -61,7 +70,11 @@ export default function BungkusOrderingClient({
       const available = (s.quantity ?? 0) + initialLockedQty;
       const special = isSpecialMenu(s.name);
 
-      if (!special && currentQty >= available) return prev;
+      if (special) {
+        if (!hasMainStockAvailable) return prev;
+      } else {
+        if (currentQty >= available) return prev;
+      }
 
       if (existing)
         return prev.map((i) =>
@@ -105,7 +118,9 @@ export default function BungkusOrderingClient({
               const available =
                 (s.quantity ?? 0) + (mode === "update" ? initialLockedQty : 0);
               const special = isSpecialMenu(s.name);
-              const canAdd = special || currentQty < available;
+              const canAdd = special
+                ? hasMainStockAvailable
+                : currentQty < available;
 
               return (
                 <CardOrdering

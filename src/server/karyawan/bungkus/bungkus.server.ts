@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { orders, order_items, stock } from "@/db/schema";
-import { and, eq, inArray, ne, gte, lte, count } from "drizzle-orm";
+import { and, eq, inArray, ne, gte, lte, count, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { checkIfReportedToday } from "../more/more.server";
 import { getShiftWaktu } from "@/src/utils/date";
@@ -252,18 +252,26 @@ export async function deletes(orderId: number) {
       where: eq(order_items.orderId, orderId),
     });
 
+    const stockDelta: Record<number, number> = {};
     for (const item of oldItems) {
-      const s = await db.query.stock.findFirst({
-        where: eq(stock.id, item.stockId),
-      });
-      if (!s || s.quantity === null) continue;
-      await db
-        .update(stock)
-        .set({ quantity: s.quantity + item.quantity })
-        .where(eq(stock.id, item.stockId));
+      stockDelta[item.stockId] = (stockDelta[item.stockId] ?? 0) + item.quantity;
     }
 
-    await db.delete(orders).where(eq(orders.id, orderId));
+    const restorePromises = Object.entries(stockDelta).map(
+      ([stockIdStr, qty]) => {
+        const stockId = parseInt(stockIdStr);
+        return db
+          .update(stock)
+          .set({ quantity: sql`${stock.quantity} + ${qty}` })
+          .where(eq(stock.id, stockId));
+      },
+    );
+
+    await Promise.all([
+      db.delete(orders).where(eq(orders.id, orderId)),
+      ...restorePromises,
+    ]);
+
     revalidatePath("/bungkus");
     return { success: true };
   } catch {

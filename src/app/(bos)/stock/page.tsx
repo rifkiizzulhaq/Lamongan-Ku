@@ -42,7 +42,7 @@ export default async function Page() {
           <StockInputForm
             stockList={stockFormItems}
             isBuka={shopStatus.isBuka === 1}
-            hasYesterdayData={stockFormItems.some((s) => s.sisaKemarin > 0)}
+            hasYesterdayData={Object.keys(yesterdaySnapshot).length > 0}
           />
           <TableInputForm tables={tables} />
         </div>
