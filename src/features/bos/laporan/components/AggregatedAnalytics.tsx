@@ -78,7 +78,11 @@ export default function AggregatedAnalytics({
 
       <TrendLineChart
         title={`Pendapatan ${titleSuffix}`}
-        subtitle={`Tren pendapatan per ${intervalName.toLowerCase()} ${data.timeLabel} vs ${data.prevTimeLabel}`}
+        subtitle={
+          showComparison
+            ? `Tren pendapatan per ${intervalName.toLowerCase()} ${data.timeLabel} vs ${data.prevTimeLabel}`
+            : `Tren pendapatan per ${intervalName.toLowerCase()} ${data.timeLabel}`
+        }
         labels={data.labels}
         currentData={data.revenueCurrentTrend}
         previousData={data.revenuePreviousTrend}
@@ -104,7 +108,11 @@ export default function AggregatedAnalytics({
 
       <ComparisonBarChart
         title={`Penjualan Porsi ${titleSuffix}`}
-        subtitle={`Perbandingan jumlah porsi per ${intervalName.toLowerCase()}`}
+        subtitle={
+          showComparison
+            ? `Perbandingan jumlah porsi per ${intervalName.toLowerCase()}`
+            : `Jumlah porsi per ${intervalName.toLowerCase()}`
+        }
         labels={data.labels}
         currentData={data.portionCurrentTrend}
         previousData={data.portionPreviousTrend}
@@ -124,7 +132,11 @@ export default function AggregatedAnalytics({
 
       <OrderTypeTimelineChart
         title="Rata-rata Tren Pesanan Per Jam"
-        subtitle={`Rata-rata persebaran jam makan pada ${data.timeLabel} vs ${data.prevTimeLabel}`}
+        subtitle={
+          showComparison
+            ? `Rata-rata persebaran jam makan pada ${data.timeLabel} vs ${data.prevTimeLabel}`
+            : `Rata-rata persebaran jam makan pada ${data.timeLabel}`
+        }
         labels={data.hourlyLabels || []}
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}

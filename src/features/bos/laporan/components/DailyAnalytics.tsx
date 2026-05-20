@@ -55,7 +55,11 @@ export default function DailyAnalytics({ data }: Props) {
 
       <TrendLineChart
         title="Pendapatan (Harian)"
-        subtitle={`Perbandingan pendapatan per jam ${data.timeLabel} vs ${data.prevTimeLabel}`}
+        subtitle={
+          showComparison
+            ? `Perbandingan pendapatan per jam ${data.timeLabel} vs ${data.prevTimeLabel}`
+            : `Pendapatan per jam ${data.timeLabel}`
+        }
         labels={data.revenueLabels}
         currentData={data.revenueCurrent}
         previousData={data.revenuePrevious}
@@ -75,7 +79,11 @@ export default function DailyAnalytics({ data }: Props) {
 
       <OrderTypeTimelineChart
         title="Tren Pesanan Per Jam"
-        subtitle={`Perbandingan Makan di Tempat vs Bungkus pada ${data.timeLabel} vs ${data.prevTimeLabel}`}
+        subtitle={
+          showComparison
+            ? `Perbandingan Makan di Tempat vs Bungkus pada ${data.timeLabel} vs ${data.prevTimeLabel}`
+            : `Makan di Tempat vs Bungkus pada ${data.timeLabel}`
+        }
         labels={data.revenueLabels}
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
@@ -88,7 +96,11 @@ export default function DailyAnalytics({ data }: Props) {
 
       <OrderTypeChart
         title="Total Tipe Pesanan"
-        subtitle={`Makan di Tempat vs Bungkus pada ${data.timeLabel} vs ${data.prevTimeLabel}`}
+        subtitle={
+          showComparison
+            ? `Makan di Tempat vs Bungkus pada ${data.timeLabel} vs ${data.prevTimeLabel}`
+            : `Makan di Tempat vs Bungkus pada ${data.timeLabel}`
+        }
         currentLabel={data.timeLabel}
         previousLabel={data.prevTimeLabel}
         showComparison={showComparison}

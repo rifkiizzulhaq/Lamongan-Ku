@@ -144,7 +144,7 @@ export default function TutupWarungModal({
       return res;
     },
     onSuccess: () => {
-      const waText = `*LAPORAN STOK HARIAN*\nTanggal: ${today}\n\n${sisa
+      const waText = `Laporan stock harian pada\nTanggal: ${today}\n\n${sisa
         .map((s) => `- ${s.nama}: ${s.sisa ?? 0}`)
         .join("\n")}\n\nCatatan: ${catatan || "-"}`;
 

@@ -27,6 +27,7 @@ interface AggregateParams {
   days: number;
   labelFormat: Intl.DateTimeFormatOptions;
   rangeCurrentEnd: Date;
+  launchShiftDate?: Date | null;
 }
 
 function computeHourlyAvg(
@@ -91,6 +92,7 @@ function aggregate({
   days,
   labelFormat,
   rangeCurrentEnd,
+  launchShiftDate,
 }: AggregateParams) {
   const totalRevenue = orderList.reduce((acc, o) => acc + o.totalPrice, 0);
   const totalPortion = orderList.length;
@@ -116,7 +118,7 @@ function aggregate({
     const formatter = new Intl.DateTimeFormat("id-ID", {
       weekday: "short",
       day: "numeric",
-      month: "short"
+      month: "short",
     });
     const dateStr = formatter.format(wib);
     return `${dateStr}: ${r.note ?? "Libur"}`;
@@ -155,8 +157,20 @@ function aggregate({
 
   const shiftTarget = new Date(rangeCurrentEnd.getTime() - 24 * 60 * 60 * 1000);
 
+  let monthsLimit = 12;
+  if (mode === "Tahunan" && launchShiftDate) {
+    const launchWib = getWibDate(launchShiftDate);
+    const targetWib = getWibDate(shiftTarget);
+    const launchMonth = launchWib.getFullYear() * 12 + launchWib.getMonth();
+    const targetMonth = targetWib.getFullYear() * 12 + targetWib.getMonth();
+    const monthsSinceLaunch = targetMonth - launchMonth + 1;
+    if (monthsSinceLaunch > 0 && monthsSinceLaunch < 12) {
+      monthsLimit = monthsSinceLaunch;
+    }
+  }
+
   if (mode === "Tahunan") {
-    for (let i = 11; i >= 0; i--) {
+    for (let i = monthsLimit - 1; i >= 0; i--) {
       const wib = getWibDate(shiftTarget);
       wib.setMonth(wib.getMonth() - i);
       const y = wib.getFullYear();
@@ -328,6 +342,38 @@ export async function getAggregatedAnalytics(
     labelFormat = { month: "short", timeZone: "Asia/Jakarta" };
   }
 
+  const firstOrder = await db.query.orders.findFirst({
+    orderBy: (o, { asc }) => asc(o.createdAt),
+  });
+  const launchShiftDate = firstOrder
+    ? getShiftDate(firstOrder.createdAt)
+    : null;
+  if (launchShiftDate) {
+    launchShiftDate.setHours(0, 0, 0, 0);
+  }
+
+  if (launchShiftDate) {
+    const rangeCurrentEnd = new Date(endOfFixDate);
+    const lastShiftDate = getShiftDate(rangeCurrentEnd);
+    lastShiftDate.setHours(0, 0, 0, 0);
+    const diffTime = lastShiftDate.getTime() - launchShiftDate.getTime();
+    const daysSinceLaunch = Math.floor(diffTime / (24 * 60 * 60 * 1000)) + 1;
+
+    if (mode === "Mingguan") {
+      if (daysSinceLaunch > 0 && daysSinceLaunch < 7) {
+        days = daysSinceLaunch;
+      }
+    } else if (mode === "Bulanan") {
+      if (daysSinceLaunch > 0 && daysSinceLaunch < 30) {
+        days = daysSinceLaunch;
+      }
+    } else if (mode === "Tahunan") {
+      if (daysSinceLaunch > 0 && daysSinceLaunch < 365) {
+        days = daysSinceLaunch;
+      }
+    }
+  }
+
   const rangeCurrentEnd = new Date(endOfFixDate);
   const rangeCurrentStart = new Date(
     endOfFixDate.getTime() - days * 24 * 60 * 60 * 1000,
@@ -359,24 +405,20 @@ export async function getAggregatedAnalytics(
           ),
         )
         .orderBy(desc(daily_reports.createdAt)),
-      db
-        .select()
-        .from(orders)
-        .where(
-          and(
-            gte(orders.createdAt, rangeCurrentStart),
-            lte(orders.createdAt, rangeCurrentEnd),
-          ),
+      db.query.orders.findMany({
+        where: and(
+          gte(orders.createdAt, rangeCurrentStart),
+          lte(orders.createdAt, rangeCurrentEnd),
         ),
-      db
-        .select()
-        .from(orders)
-        .where(
-          and(
-            gte(orders.createdAt, rangePreviousStart),
-            lte(orders.createdAt, rangePreviousEnd),
-          ),
+        with: { items: true },
+      }),
+      db.query.orders.findMany({
+        where: and(
+          gte(orders.createdAt, rangePreviousStart),
+          lte(orders.createdAt, rangePreviousEnd),
         ),
+        with: { items: true },
+      }),
       db.select().from(stock),
     ]);
 
@@ -410,7 +452,13 @@ export async function getAggregatedAnalytics(
       : Promise.resolve([] as WeatherLog[]),
   ]);
 
-  const aggParams = { mode, days, labelFormat, rangeCurrentEnd };
+  const aggParams = {
+    mode,
+    days,
+    labelFormat,
+    rangeCurrentEnd,
+    launchShiftDate,
+  };
   const currAgg = aggregate({
     reports: reportsCurr,
     orderList: ordersCurr,
@@ -441,12 +489,27 @@ export async function getAggregatedAnalytics(
         (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt),
       );
 
-      const stockAwalCurrent = snapsCurrForItem[0]?.sisaQuantity;
       const sisaCurrent =
         snapsCurrForItem[snapsCurrForItem.length - 1]?.sisaQuantity ?? 0;
-      const stockAwalPrevious = snapsPrevForItem[0]?.sisaQuantity;
       const sisaPrevious =
         snapsPrevForItem[snapsPrevForItem.length - 1]?.sisaQuantity ?? 0;
+
+      const soldCurrent = ordersCurr.reduce((sum, order) => {
+        const orderItem = order.items?.find(
+          (item) => item.stockId === s.id,
+        );
+        return sum + (orderItem ? orderItem.quantity : 0);
+      }, 0);
+
+      const soldPrevious = ordersPrev.reduce((sum, order) => {
+        const orderItem = order.items?.find(
+          (item) => item.stockId === s.id,
+        );
+        return sum + (orderItem ? orderItem.quantity : 0);
+      }, 0);
+
+      const stockAwalCurrent = sisaCurrent + soldCurrent;
+      const stockAwalPrevious = sisaPrevious + soldPrevious;
 
       return {
         nama: s.name,

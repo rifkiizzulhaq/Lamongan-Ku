@@ -60,9 +60,11 @@ export default function TrendLineChart({
     series.push({ name: previousLabel, data: previousData });
   }
 
+  const chartType = labels.length === 1 ? "scatter" : "area";
+
   const options: ApexCharts.ApexOptions = {
     chart: {
-      type: "area",
+      type: chartType,
       toolbar: { show: false },
       zoom: { enabled: false },
       fontFamily: "inherit",
@@ -84,6 +86,12 @@ export default function TrendLineChart({
       opacity: [1, 0.1],
     },
     colors: ["#f97316", "#737373"],
+    markers: {
+      size: labels.length === 1 ? 5 : 0,
+      hover: {
+        size: 7,
+      },
+    },
     xaxis: {
       categories: labels,
       axisBorder: { show: false },
@@ -248,7 +256,7 @@ export default function TrendLineChart({
           <ReactApexChart
             options={options}
             series={series}
-            type="area"
+            type={chartType}
             height={320}
           />
         </div>

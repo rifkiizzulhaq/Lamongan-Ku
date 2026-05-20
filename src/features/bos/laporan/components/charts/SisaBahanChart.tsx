@@ -120,7 +120,7 @@ export default function SisaBahanChart({
           Sisa Bahan (Menu)
         </h3>
         <p className="text-xs dark:text-neutral-400 text-neutral-700 font-medium">
-          Stock Awal → Akhir: {currentLabel} vs {previousLabel}
+          Stock Awal → Akhir: {currentLabel}{showComparison !== false ? ` vs ${previousLabel}` : ""}
         </p>
       </div>
 
