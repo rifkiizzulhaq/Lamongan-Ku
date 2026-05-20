@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { update, deletes } from "@/src/server/karyawan/bungkus/bungkus.server";
 import { LuTrash2, LuLoader } from "react-icons/lu";
-import { OrderItem } from "@/interfaces/models";
+import { OrderItem } from "@/interfaces/order";
 import { useNotificationStore } from "@/src/store/notificationStore";
 
 export interface CardBungkusProps {

@@ -24,7 +24,7 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { useUiStore } from "@/src/store/uiStore";
 
-import { StockFormItem } from "@/interfaces/models";
+import { StockFormItem } from "@/interfaces/stock";
 
 interface StockInputFormProps {
   stockList: StockFormItem[];

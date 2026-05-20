@@ -2,7 +2,7 @@
 
 import { LuSun, LuCloud, LuCloudRain, LuCloudDrizzle } from "react-icons/lu";
 
-import { WeatherStats } from "@/interfaces/models";
+import { WeatherStats } from "@/interfaces/cuaca";
 
 interface Props {
   currentData?: WeatherStats | string[];

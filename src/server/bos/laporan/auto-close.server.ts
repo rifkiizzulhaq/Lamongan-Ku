@@ -77,7 +77,7 @@ export async function checkAndRunAutoClose(): Promise<void> {
       }
 
       const idsToDelete: number[] = [];
-      for (const [_, reports] of grouped.entries()) {
+      for (const reports of grouped.values()) {
         if (reports.length > 1) {
           const sorted = [...reports].sort((a, b) => {
             const isAutoA = a.note?.includes("Sistem Otomatis:") ? 1 : 0;
@@ -196,7 +196,6 @@ export async function checkAndRunAutoClose(): Promise<void> {
         const isToday = checkDate.getTime() === todayDate.getTime();
 
         if (isToday && wasActive) {
-          // Jika ini hari ini dan ada aktivitas aktif, jangan lakukan auto-close sekarang (shift sedang berjalan)
           return;
         }
 

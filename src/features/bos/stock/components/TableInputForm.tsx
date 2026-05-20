@@ -20,10 +20,7 @@ import {
 import { useWarungStore } from "@/src/store/warungStore";
 import { useUiStore } from "@/src/store/uiStore";
 
-export interface TableItem {
-  id: number;
-  name: string;
-}
+import { TableItem } from "@/interfaces/stock";
 
 interface TableInputFormProps {
   tables: TableItem[];

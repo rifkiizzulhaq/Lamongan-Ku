@@ -1,44 +1,3 @@
-type CuacaOption = "Cerah" | "Mendung" | "Gerimis" | "Hujan";
-
-export interface CartItem {
-  stockId: number;
-  name: string;
-  price: number;
-  quantity: number;
-  isTakeaway?: boolean;
-}
-
-export interface OrderItem {
-  n: string;
-  q: number;
-  isTakeaway?: boolean;
-}
-
-export interface KursiItem {
-  n: string;
-  q: number;
-  isTakeaway?: boolean;
-}
-
-export interface CuacaSlot {
-  jam: string;
-  cuaca: CuacaOption | null;
-}
-
-export interface SisaItem {
-  nama: string;
-  sisa?: number;
-  stockId?: number;
-}
-
-export interface StockFormItem {
-  id: number;
-  nama: string;
-  price: number;
-  quantity: number | null;
-  sisaKemarin: number;
-}
-
 export interface SisaBahanData {
   nama: string;
   sisaCurrent: number;
@@ -172,39 +131,4 @@ export interface AggregatedData {
   takeawayPreviousHourlyAvg?: number[];
 
   sisaBahan: SisaBahanData[];
-}
-
-export interface WeatherStats {
-  cerah: number;
-  mendung: number;
-  gerimis: number;
-  hujan: number;
-}
-
-export interface DashboardWeatherItem {
-  id: number;
-  timeRange: string;
-  weather: string;
-}
-
-export interface DashboardSisaBahanItem {
-  id: number;
-  nama: string;
-  sisa: number | null;
-}
-
-export interface DashboardShopStatusItem {
-  isBuka: number;
-  reason: string | null;
-}
-
-export interface DashboardStatsResponse {
-  pendapatan: number;
-  pendapatanFisik: number;
-  pesananCount: number;
-  sisaBahan: DashboardSisaBahanItem[];
-  note: string | null;
-  weathers: DashboardWeatherItem[];
-  isClosed: boolean;
-  shopStatus?: DashboardShopStatusItem;
 }

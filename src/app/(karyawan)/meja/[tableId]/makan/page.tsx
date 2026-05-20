@@ -13,7 +13,7 @@ import {
   updateMakanItems,
 } from "@/src/server/karyawan/meja/meja.server";
 import { checkIfReportedToday } from "@/src/server/karyawan/more/more.server";
-import { CartItem } from "@/interfaces/models";
+import { CartItem } from "@/interfaces/order";
 import type { Stock } from "@/db/schema";
 import PageHeaderSkeleton from "@/src/components/ui/PageHeaderSkeleton";
 import CardOrderingSkeleton from "@/src/features/karyawan/pos/components/CardOrderingSkeleton";

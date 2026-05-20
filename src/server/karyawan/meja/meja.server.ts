@@ -293,13 +293,6 @@ export async function deleteMakanOrder(orderId: number) {
       where: eq(order_items.orderId, orderId),
     });
 
-    const stockData = await db.query.stock.findMany({
-      where: inArray(
-        stock.id,
-        oldItems.map((i) => i.stockId),
-      ),
-    });
-
     const stockDelta: Record<number, number> = {};
     for (const old of oldItems) {
       stockDelta[old.stockId] = (stockDelta[old.stockId] ?? 0) + old.quantity;

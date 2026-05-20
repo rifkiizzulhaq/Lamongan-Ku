@@ -16,7 +16,8 @@ import {
   saveClosingReport,
   checkIfReportedToday,
 } from "@/src/server/karyawan/more/more.server";
-import { CuacaSlot, SisaItem } from "@/interfaces/models";
+import { CuacaSlot } from "@/interfaces/cuaca";
+import { SisaItem } from "@/interfaces/stock";
 import type { Stock } from "@/db/schema";
 import { useUiStore } from "@/src/store/uiStore";
 

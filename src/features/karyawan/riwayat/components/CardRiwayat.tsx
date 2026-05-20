@@ -1,4 +1,4 @@
-import { OrderItem } from "@/interfaces/models";
+import { OrderItem } from "@/interfaces/order";
 
 export interface CardRiwayatProps {
   id: string;
@@ -21,7 +21,6 @@ export default function CardRiwayat({
     <section className="w-full bg-white dark:bg-neutral-700 rounded-xl border border-neutral-300 dark:border-neutral-600 flex items-stretch shadow-sm hover:border-orange-500/50 transition-colors cursor-default">
       <div className="w-2 bg-orange rounded-l-xl shrink-0"></div>
       <div className="flex flex-col px-5 py-4 w-full">
-        {/* Header: ID + total */}
         <div className="w-full flex items-center justify-between">
           <h1 className="text-lg font-bold text-gray-800 dark:text-white uppercase tracking-wide">
             {id}

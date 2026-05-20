@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import CardOrdering from "@/src/features/karyawan/pos/components/CardOrdering";
 import Cart from "@/src/features/karyawan/pos/components/Cart";
-import { CartItem } from "@/interfaces/models";
+import { CartItem } from "@/interfaces/order";
 import {
   create,
   updateItems,

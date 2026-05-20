@@ -10,7 +10,7 @@ import {
 } from "@/db/schema";
 import type { Order, WeatherLog, DailyStockSnapshot } from "@/db/schema";
 import { and, gte, lte, eq } from "drizzle-orm";
-import type { DailyData } from "@/interfaces/models";
+import type { DailyData } from "@/interfaces/laporan";
 import {
   getWibDate,
   getLastFixDate,

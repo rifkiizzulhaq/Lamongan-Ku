@@ -10,7 +10,7 @@ import {
   deleteMakanOrder,
   payMakanOrder,
 } from "@/src/server/karyawan/meja/meja.server";
-import { KursiItem } from "@/interfaces/models";
+import { KursiItem } from "@/interfaces/order";
 import { useNotificationStore } from "@/src/store/notificationStore";
 
 export interface CardKursiProps {

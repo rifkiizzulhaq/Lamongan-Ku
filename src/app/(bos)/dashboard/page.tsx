@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   DashboardSisaBahanItem,
   DashboardWeatherItem,
-} from "@/interfaces/models";
+} from "@/interfaces/dashboard";
 import { useSupabaseRealtime } from "@/src/hooks/useSupabaseRealtime";
 import {
   updateShopStatus,

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { SisaBahanData } from "@/interfaces/models";
+import { SisaBahanData } from "@/interfaces/laporan";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,

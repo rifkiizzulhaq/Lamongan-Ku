@@ -1,6 +1,6 @@
 import Button from "@/src/components/ui/Button";
 
-import { CartItem } from "@/interfaces/models";
+import { CartItem } from "@/interfaces/order";
 import { LuLoader } from "react-icons/lu";
 
 export interface CartProps {

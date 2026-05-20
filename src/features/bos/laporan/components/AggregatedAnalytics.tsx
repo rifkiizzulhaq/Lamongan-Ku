@@ -1,6 +1,6 @@
 "use client";
 
-import { AggregatedData } from "@/interfaces/models";
+import { AggregatedData } from "@/interfaces/laporan";
 import TrendLineChart from "./charts/TrendLineChart";
 import ComparisonBarChart from "./charts/ComparisonBarChart";
 import OrderTypeChart from "./charts/OrderTypeChart";
