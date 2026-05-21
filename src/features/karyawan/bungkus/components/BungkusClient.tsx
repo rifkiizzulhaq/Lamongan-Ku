@@ -2,16 +2,12 @@
 
 import { useRef, useEffect } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import CardBungkus, { CardBungkusProps } from "./CardBungkus";
+import CardBungkus from "./CardBungkus";
 import { getAll } from "@/src/server/karyawan/bungkus/bungkus.server";
-import { LuLoader } from "react-icons/lu";
 import { useSupabaseRealtime } from "@/src/hooks/useSupabaseRealtime";
+import CardBungkusSkeleton from "./CardBungkusSkeleton";
 
-export default function BungkusClient({
-  initialData,
-}: {
-  initialData: CardBungkusProps[];
-}) {
+export default function BungkusClient() {
   useSupabaseRealtime("orders", ["bungkus-orders"]);
 
   const {
@@ -36,10 +32,6 @@ export default function BungkusClient({
       return allPages.length + 1;
     },
     initialPageParam: 1,
-    initialData: {
-      pages: [initialData],
-      pageParams: [1],
-    },
     staleTime: 0,
   });
 
@@ -87,7 +79,7 @@ export default function BungkusClient({
 
       {isFetchingNextPage && (
         <div className="w-full py-4 flex justify-center items-center">
-          <LuLoader className="animate-spin text-orange text-2xl" />
+          <CardBungkusSkeleton count={5} />
         </div>
       )}
 

@@ -30,7 +30,7 @@ export default function BungkusOrderingClient({
   const router = useRouter();
 
   const { data: isClosed = false } = useQuery({
-    queryKey: ["check-reported-today"],
+    queryKey: ["check-reported-today", new Date().toDateString()],
     queryFn: () => checkIfReportedToday(),
   });
 

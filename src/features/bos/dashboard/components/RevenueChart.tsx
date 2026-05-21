@@ -37,6 +37,13 @@ interface TooltipParams {
   w: TooltipContext;
 }
 
+interface OrderDetail {
+  orderId: number;
+  items: Record<string, number>;
+  takeawayItems: Record<string, number>;
+  tableName: string | null;
+  customerType: string;
+}
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
 });
@@ -60,17 +67,11 @@ export default function RevenueChart() {
 
     const bungkusMap: Record<
       number,
-      { qty: number; items: Record<string, number>; tables: Set<string> }
+      { qty: number; orders: Record<number, OrderDetail> }
     > = {};
     const makanSiniMap: Record<
       number,
-      {
-        qty: number;
-        items: Record<string, number>;
-        takeawayItems: Record<string, number>;
-        tables: Set<string>;
-        customerTypes: Set<string>;
-      }
+      { qty: number; orders: Record<number, OrderDetail> }
     > = {};
 
     const toShiftMinutes = (isoStr: string): number => {
@@ -85,41 +86,50 @@ export default function RevenueChart() {
 
     sortedData.forEach((p) => {
       const key = toShiftMinutes(p.created_at);
+      const orderId = p.orderId;
+
       if (p.type === "Bungkus") {
-        if (!bungkusMap[key])
-          bungkusMap[key] = { qty: 0, items: {}, tables: new Set() };
+        if (!bungkusMap[key]) bungkusMap[key] = { qty: 0, orders: {} };
         bungkusMap[key].qty += p.qty;
-        if (p.menuName) {
-          bungkusMap[key].items[p.menuName] =
-            (bungkusMap[key].items[p.menuName] || 0) + p.qty;
-        }
-        if (p.tableName) {
-          bungkusMap[key].tables.add(p.tableName);
-        }
-      } else {
-        if (!makanSiniMap[key])
-          makanSiniMap[key] = {
-            qty: 0,
+
+        if (!bungkusMap[key].orders[orderId]) {
+          bungkusMap[key].orders[orderId] = {
+            orderId,
             items: {},
             takeawayItems: {},
-            tables: new Set(),
-            customerTypes: new Set(),
+            tableName: p.tableName,
+            customerType: p.customerType,
           };
+        }
+
+        if (p.menuName) {
+          bungkusMap[key].orders[orderId].items[p.menuName] =
+            (bungkusMap[key].orders[orderId].items[p.menuName] || 0) + p.qty;
+        }
+      } else {
+        if (!makanSiniMap[key]) makanSiniMap[key] = { qty: 0, orders: {} };
         makanSiniMap[key].qty += p.qty;
+
+        if (!makanSiniMap[key].orders[orderId]) {
+          makanSiniMap[key].orders[orderId] = {
+            orderId,
+            items: {},
+            takeawayItems: {},
+            tableName: p.tableName,
+            customerType: p.customerType,
+          };
+        }
+
         if (p.menuName) {
           if (p.isTakeaway) {
-            makanSiniMap[key].takeawayItems[p.menuName] =
-              (makanSiniMap[key].takeawayItems[p.menuName] || 0) + p.qty;
+            makanSiniMap[key].orders[orderId].takeawayItems[p.menuName] =
+              (makanSiniMap[key].orders[orderId].takeawayItems[p.menuName] ||
+                0) + p.qty;
           } else {
-            makanSiniMap[key].items[p.menuName] =
-              (makanSiniMap[key].items[p.menuName] || 0) + p.qty;
+            makanSiniMap[key].orders[orderId].items[p.menuName] =
+              (makanSiniMap[key].orders[orderId].items[p.menuName] || 0) +
+              p.qty;
           }
-        }
-        if (p.tableName) {
-          makanSiniMap[key].tables.add(p.tableName);
-        }
-        if (p.customerType && p.customerType !== "-") {
-          makanSiniMap[key].customerTypes.add(p.customerType);
         }
       }
     });
@@ -138,32 +148,12 @@ export default function RevenueChart() {
     };
 
     const tooltipData = {
-      details: [
-        allMinutes.map((mins) => bungkusMap[mins]?.items || {}),
-        allMinutes.map((mins) => makanSiniMap[mins]?.items || {}),
-      ] as Record<string, number>[][],
-      takeaway: [
-        allMinutes.map(() => ({}) as Record<string, number>),
-        allMinutes.map((mins) => makanSiniMap[mins]?.takeawayItems || {}),
-      ] as Record<string, number>[][],
-      tables: [
+      orders: [
+        allMinutes.map((mins) => Object.values(bungkusMap[mins]?.orders || {})),
         allMinutes.map((mins) =>
-          bungkusMap[mins]?.tables ? Array.from(bungkusMap[mins].tables) : [],
+          Object.values(makanSiniMap[mins]?.orders || {}),
         ),
-        allMinutes.map((mins) =>
-          makanSiniMap[mins]?.tables
-            ? Array.from(makanSiniMap[mins].tables)
-            : [],
-        ),
-      ] as string[][][],
-      customerTypes: [
-        allMinutes.map(() => []),
-        allMinutes.map((mins) =>
-          makanSiniMap[mins]?.customerTypes
-            ? Array.from(makanSiniMap[mins].customerTypes)
-            : [],
-        ),
-      ] as string[][][],
+      ],
     };
 
     return {
@@ -224,7 +214,7 @@ export default function RevenueChart() {
       yaxis: {
         title: {
           text: "Porsi",
-          style: { fontWeight: 800, color: "#f97316" },
+          style: { fontWeight: 800, color: "#22C55E" },
         },
         labels: {
           style: { colors: "#a3a3a3" },
@@ -255,35 +245,42 @@ export default function RevenueChart() {
             html += `<span>${s.name}: ${val} Porsi</span>`;
             html += `</div>`;
 
-            const details = tooltipData?.details[idx]?.[dataPointIndex];
-            if (details && Object.keys(details).length > 0) {
-              html += `<div class="pl-3.5 flex flex-col gap-0.5 text-[10px] text-neutral-300">`;
-              Object.entries(details).forEach(([name, q]) => {
-                html += `<div>• ${name} <span class="font-bold text-white ml-0.5">x${q}</span></div>`;
-              });
-              html += `</div>`;
-            }
+            const minuteOrders =
+              tooltipData?.orders?.[idx]?.[dataPointIndex] || [];
 
-            const takeawayItems = tooltipData?.takeaway[idx]?.[dataPointIndex];
-            if (takeawayItems && Object.keys(takeawayItems).length > 0) {
-              html += `<div class="pl-3.5 mt-1.5 flex flex-col gap-0.5">`;
-              html += `<div class="text-[10px] font-bold text-orange-400 mb-0.5">${svgShoppingBag} Bungkus:</div>`;
-              Object.entries(takeawayItems).forEach(([name, q]) => {
-                html += `<div class="text-[10px] text-neutral-300 pl-2">• ${name} <span class="font-bold text-white ml-0.5">x${q}</span></div>`;
-              });
-              html += `</div>`;
-            }
+            minuteOrders.forEach((order: OrderDetail, orderIndex: number) => {
+              if (minuteOrders.length > 1) {
+                html += `<div class="text-[10px] font-black text-neutral-500 uppercase tracking-widest pl-3.5 mb-1 mt-2 border-t border-neutral-700/50 pt-2 first:mt-0 first:border-0 first:pt-0">Pesanan ${orderIndex + 1}</div>`;
+              }
 
-            const cTypes =
-              tooltipData?.customerTypes?.[idx]?.[dataPointIndex] ?? [];
-            if (cTypes.length > 0) {
-              html += `<div class="pl-3.5 mt-1.5 text-[10px] text-neutral-400">Tipe Pelanggan: <span class="text-neutral-200 font-bold capitalize">${cTypes.join(", ")}</span></div>`;
-            }
+              if (order.items && Object.keys(order.items).length > 0) {
+                html += `<div class="pl-4 flex flex-col gap-0.5 text-[10px] text-neutral-300">`;
+                Object.entries(order.items).forEach(([name, q]) => {
+                  html += `<div>• ${name} <span class="font-bold text-white ml-0.5">x${q}</span></div>`;
+                });
+                html += `</div>`;
+              }
 
-            const tables = tooltipData?.tables[idx]?.[dataPointIndex] ?? [];
-            if (tables.length > 0) {
-              html += `<div class="pl-3.5 mt-1 text-[10px] text-neutral-400">${svgMapPin} Meja: <span class="text-neutral-200 font-bold">${tables.join(", ")}</span></div>`;
-            }
+              if (
+                order.takeawayItems &&
+                Object.keys(order.takeawayItems).length > 0
+              ) {
+                html += `<div class="pl-4 mt-1.5 flex flex-col gap-0.5">`;
+                html += `<div class="text-[10px] font-bold text-orange-400 mb-0.5">${svgShoppingBag} Bungkus:</div>`;
+                Object.entries(order.takeawayItems).forEach(([name, q]) => {
+                  html += `<div class="text-[10px] text-neutral-300 pl-2">• ${name} <span class="font-bold text-white ml-0.5">x${q}</span></div>`;
+                });
+                html += `</div>`;
+              }
+
+              if (order.customerType && order.customerType !== "-") {
+                html += `<div class="pl-4 mt-1.5 text-[10px] text-neutral-400">Tipe Pelanggan: <span class="text-neutral-200 font-bold capitalize">${order.customerType}</span></div>`;
+              }
+
+              if (order.tableName) {
+                html += `<div class="pl-4 mt-1 text-[10px] text-neutral-400">${svgMapPin} Meja: <span class="text-neutral-200 font-bold">${order.tableName}</span></div>`;
+              }
+            });
             html += `</div>`;
           });
 

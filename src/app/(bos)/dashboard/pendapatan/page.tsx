@@ -26,6 +26,7 @@ export default function Page() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [uangFisik, setUangFisik] = useState<string>("");
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const formatIDR = (val: number) =>
     new Intl.NumberFormat("id-ID", {
@@ -47,13 +48,14 @@ export default function Page() {
   });
 
   useEffect(() => {
-    const UangFisiks = () => {
-      if (stats?.pendapatanFisik && uangFisik === "") {
+    const UangFisik = () => {
+      if (stats?.pendapatanFisik !== undefined && !isInitialized) {
         setUangFisik(stats.pendapatanFisik.toString());
+        setIsInitialized(true);
       }
     };
-    UangFisiks();
-  }, [stats, uangFisik]);
+    UangFisik();
+  }, [stats?.pendapatanFisik, isInitialized]);
 
   const { mutate: simpan, isPending } = useMutation({
     mutationFn: (val: number) => saveActualRevenue(val),
@@ -140,13 +142,12 @@ export default function Page() {
           </div>
 
           <div
-            className={`group relative overflow-hidden rounded-2xl border-l-8 flex items-center transition-all ${
-              selisih === 0
+            className={`group relative overflow-hidden rounded-2xl border-l-8 flex items-center transition-all ${selisih === 0
                 ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500"
                 : selisih > 0
                   ? "bg-blue-50 dark:bg-blue-900/20 border-blue-500"
                   : "bg-rose-50 dark:bg-rose-900/20 border-rose-500"
-            }`}
+              }`}
           >
             <div className="flex flex-col p-4 flex-1">
               <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1">
@@ -154,13 +155,12 @@ export default function Page() {
               </p>
               <div className="flex items-center gap-2">
                 <h2
-                  className={`text-xl font-black ${
-                    selisih === 0
+                  className={`text-xl font-black ${selisih === 0
                       ? "text-emerald-600"
                       : selisih > 0
                         ? "text-blue-600"
                         : "text-rose-600"
-                  }`}
+                    }`}
                 >
                   {selisih === 0 ? "PAS (Sesuai)" : formatIDR(selisih)}
                 </h2>

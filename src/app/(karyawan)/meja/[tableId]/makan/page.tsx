@@ -34,7 +34,7 @@ function MakanContent() {
 
   const [isTakeaway, setIsTakeaway] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [initialCartLoaded, setInitialCartLoaded] = useState(false);
+  const [initialCartLoaded, setInitialCartLoaded] = useState(mode === "create");
 
   const { data: isClosed = false } = useQuery({
     queryKey: ["check-reported-today"],
@@ -54,8 +54,6 @@ function MakanContent() {
 
   if (mode === "update" && orderData && !initialCartLoaded) {
     setCart(orderData.cartItems.map((item) => ({ ...item })));
-    setInitialCartLoaded(true);
-  } else if (mode === "create" && !initialCartLoaded) {
     setInitialCartLoaded(true);
   }
 

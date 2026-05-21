@@ -32,6 +32,23 @@ export function getLastFixDate(): { targetDate: Date; endOfFixDate: Date } {
   return { targetDate, endOfFixDate };
 }
 
+export function getAutoCloseTargetDate(): Date {
+  const wibNow = getWibDate();
+  const currentHour = wibNow.getHours();
+  const targetWib = new Date(wibNow);
+
+  if (currentHour >= 2) {
+    targetWib.setDate(targetWib.getDate() - 1);
+  } else {
+    targetWib.setDate(targetWib.getDate() - 2);
+  }
+
+  const y = targetWib.getFullYear();
+  const m = String(targetWib.getMonth() + 1).padStart(2, "0");
+  const d = String(targetWib.getDate()).padStart(2, "0");
+  return new Date(`${y}-${m}-${d}T00:00:00+07:00`);
+}
+
 export function getShiftDate(date: Date | string | number): Date {
   const wib = getWibDate(date);
   if (wib.getHours() < 6) wib.setDate(wib.getDate() - 1);

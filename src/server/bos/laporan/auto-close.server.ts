@@ -9,7 +9,7 @@ import {
   shop_status,
 } from "@/db/schema";
 import { and, gte, lte, inArray } from "drizzle-orm";
-import { getLastFixDate, getShiftDate } from "./utils";
+import { getShiftDate, getAutoCloseTargetDate } from "./utils";
 
 let activeAutoClosePromise: Promise<void> | null = null;
 
@@ -125,7 +125,7 @@ export async function checkAndRunAutoClose(): Promise<void> {
     const dToday = String(dTodayNum).padStart(2, "0");
     const todayDate = new Date(`${yToday}-${mToday}-${dToday}T00:00:00+07:00`);
 
-    const { targetDate: latestFixDate } = getLastFixDate();
+    const latestFixDate = getAutoCloseTargetDate();
 
     const latestCheckDate = isPast1830 ? todayDate : latestFixDate;
 

@@ -172,6 +172,7 @@ export async function getRevenueChartData() {
   try {
     const data = await db
       .select({
+        orderId: orders.id,
         qty: order_items.quantity,
         menuName: stock.name,
         type: orders.orderType,
@@ -193,6 +194,7 @@ export async function getRevenueChartData() {
       );
 
     return data.map((d) => ({
+      orderId: d.orderId,
       qty: Number(d.qty),
       menuName: d.menuName,
       tableName: d.tableName ?? null,
