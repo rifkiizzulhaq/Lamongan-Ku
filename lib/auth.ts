@@ -4,6 +4,10 @@ import { db } from "@/db";
 import { user, session, account, verification } from "@/db/auth-schema";
 
 export const auth = betterAuth({
+  trustedOrigins: [
+    "https://*.devtunnels.ms",
+    "https://*.asse.devtunnels.ms",
+  ],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: { user, session, account, verification },

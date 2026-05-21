@@ -12,6 +12,24 @@ import { eq, and, gte, lte, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getShiftWaktu } from "@/src/utils/date";
 import { checkAndRunAutoClose } from "../../bos/laporan/auto-close.server";
+import { requireAuth } from "@/lib/auth-guard";
+import { z } from "zod";
+
+const closingReportSchema = z.object({
+  note: z.string().optional(),
+  weatherSlots: z.array(
+    z.object({
+      jam: z.string(),
+      cuaca: z.string().nullable(),
+    }),
+  ),
+  stockSnapshots: z.array(
+    z.object({
+      stockId: z.number().int().positive(),
+      sisa: z.number().int().min(0),
+    }),
+  ),
+});
 
 interface ClosingReportPayload {
   note?: string;
@@ -23,6 +41,7 @@ import { unstable_noStore as noStore } from "next/cache";
 
 export async function checkIfReportedToday() {
   noStore();
+  await requireAuth();
   await checkAndRunAutoClose();
   const status = await db.query.shop_status.findFirst();
   if (status && status.isBuka === 0) {
@@ -43,6 +62,8 @@ export async function checkIfReportedToday() {
 
 export async function saveClosingReport(payload: ClosingReportPayload) {
   try {
+    await requireAuth();
+    payload = closingReportSchema.parse(payload);
     const { startOfDay, endOfDay } = getShiftWaktu();
 
     const activeOrders = await db.query.orders.findFirst({
@@ -148,4 +169,18 @@ export async function saveClosingReport(payload: ClosingReportPayload) {
     console.error("Error saving closing report:", error);
     return { success: false, error: "Gagal menyimpan laporan" };
   }
+}
+
+export async function getTodayOrderCount() {
+  noStore();
+  await requireAuth();
+  const { startOfDay, endOfDay } = getShiftWaktu();
+  const shiftOrders = await db.query.orders.findMany({
+    where: and(
+      gte(orders.createdAt, startOfDay),
+      lte(orders.createdAt, endOfDay),
+    ),
+    columns: { id: true },
+  });
+  return shiftOrders.length;
 }

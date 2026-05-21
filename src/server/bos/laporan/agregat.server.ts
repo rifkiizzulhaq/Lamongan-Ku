@@ -7,9 +7,10 @@ import {
   stock,
   daily_stock_snapshots,
   weather_logs,
+  order_items,
 } from "@/db/schema";
 import type { Order, DailyReport, WeatherLog } from "@/db/schema";
-import { and, gte, lte, desc, inArray } from "drizzle-orm";
+import { and, gte, lte, desc, inArray, sum, eq } from "drizzle-orm";
 import type { AggregatedData } from "@/interfaces/laporan";
 import {
   getWibDate,
@@ -18,6 +19,7 @@ import {
   dominantWeather,
 } from "./utils";
 import { checkAndRunAutoClose } from "./auto-close.server";
+import { requireAuth } from "@/lib/auth-guard";
 
 interface AggregateParams {
   reports: DailyReport[];
@@ -325,7 +327,8 @@ function aggregate({
 export async function getAggregatedAnalytics(
   mode: "Mingguan" | "Bulanan" | "Tahunan",
 ): Promise<AggregatedData> {
-  await checkAndRunAutoClose();
+  await requireAuth(["bos"]);
+  checkAndRunAutoClose().catch(console.error);
 
   const { endOfFixDate } = getLastFixDate();
   let days = 7;
@@ -383,60 +386,85 @@ export async function getAggregatedAnalytics(
     rangeCurrentStart.getTime() - days * 24 * 60 * 60 * 1000,
   );
 
-  const [reportsCurr, reportsPrev, ordersCurr, ordersPrev, stockList] =
-    await Promise.all([
-      db
-        .select()
-        .from(daily_reports)
-        .where(
-          and(
-            gte(daily_reports.createdAt, rangeCurrentStart),
-            lte(daily_reports.createdAt, rangeCurrentEnd),
-          ),
-        )
-        .orderBy(desc(daily_reports.createdAt)),
-      db
-        .select()
-        .from(daily_reports)
-        .where(
-          and(
-            gte(daily_reports.createdAt, rangePreviousStart),
-            lte(daily_reports.createdAt, rangePreviousEnd),
-          ),
-        )
-        .orderBy(desc(daily_reports.createdAt)),
-      db.query.orders.findMany({
-        where: and(
+  const [reportsCurr, reportsPrev, stockList] = await Promise.all([
+    db
+      .select()
+      .from(daily_reports)
+      .where(
+        and(
+          gte(daily_reports.createdAt, rangeCurrentStart),
+          lte(daily_reports.createdAt, rangeCurrentEnd),
+        ),
+      )
+      .orderBy(desc(daily_reports.createdAt)),
+    db
+      .select()
+      .from(daily_reports)
+      .where(
+        and(
+          gte(daily_reports.createdAt, rangePreviousStart),
+          lte(daily_reports.createdAt, rangePreviousEnd),
+        ),
+      )
+      .orderBy(desc(daily_reports.createdAt)),
+    db.select().from(stock),
+  ]);
+
+  const [ordersCurr, ordersPrev] = await Promise.all([
+    db.query.orders.findMany({
+      where: and(
+        gte(orders.createdAt, rangeCurrentStart),
+        lte(orders.createdAt, rangeCurrentEnd),
+      ),
+    }),
+    db.query.orders.findMany({
+      where: and(
+        gte(orders.createdAt, rangePreviousStart),
+        lte(orders.createdAt, rangePreviousEnd),
+      ),
+    }),
+  ]);
+
+  const [soldItemsCurr, soldItemsPrev] = await Promise.all([
+    db
+      .select({
+        stockId: order_items.stockId,
+        total: sum(order_items.quantity),
+      })
+      .from(order_items)
+      .leftJoin(orders, eq(order_items.orderId, orders.id))
+      .where(
+        and(
           gte(orders.createdAt, rangeCurrentStart),
           lte(orders.createdAt, rangeCurrentEnd),
         ),
-        with: { items: true },
-      }),
-      db.query.orders.findMany({
-        where: and(
+      )
+      .groupBy(order_items.stockId),
+    db
+      .select({
+        stockId: order_items.stockId,
+        total: sum(order_items.quantity),
+      })
+      .from(order_items)
+      .leftJoin(orders, eq(order_items.orderId, orders.id))
+      .where(
+        and(
           gte(orders.createdAt, rangePreviousStart),
           lte(orders.createdAt, rangePreviousEnd),
         ),
-        with: { items: true },
-      }),
-      db.select().from(stock),
-    ]);
+      )
+      .groupBy(order_items.stockId),
+  ]);
 
   const currIds = reportsCurr.map((r) => r.id);
   const prevIds = reportsPrev.map((r) => r.id);
 
-  const [snapsCurr, snapsPrev, wLogsCurr, wLogsPrev] = await Promise.all([
+  const [snapsCurr, wLogsCurr] = await Promise.all([
     currIds.length > 0
       ? db
           .select()
           .from(daily_stock_snapshots)
           .where(inArray(daily_stock_snapshots.reportId, currIds))
-      : Promise.resolve([]),
-    prevIds.length > 0
-      ? db
-          .select()
-          .from(daily_stock_snapshots)
-          .where(inArray(daily_stock_snapshots.reportId, prevIds))
       : Promise.resolve([]),
     currIds.length > 0
       ? db
@@ -444,6 +472,15 @@ export async function getAggregatedAnalytics(
           .from(weather_logs)
           .where(inArray(weather_logs.reportId, currIds))
       : Promise.resolve([] as WeatherLog[]),
+  ]);
+
+  const [snapsPrev, wLogsPrev] = await Promise.all([
+    prevIds.length > 0
+      ? db
+          .select()
+          .from(daily_stock_snapshots)
+          .where(inArray(daily_stock_snapshots.reportId, prevIds))
+      : Promise.resolve([]),
     prevIds.length > 0
       ? db
           .select()
@@ -475,6 +512,13 @@ export async function getAggregatedAnalytics(
   const currHourly = computeHourlyAvg(ordersCurr, days);
   const prevHourly = computeHourlyAvg(ordersPrev, days);
 
+  const currSoldMap = Object.fromEntries(
+    soldItemsCurr.map((i) => [i.stockId, Number(i.total || 0)]),
+  );
+  const prevSoldMap = Object.fromEntries(
+    soldItemsPrev.map((i) => [i.stockId, Number(i.total || 0)]),
+  );
+
   const excludedItems = ["teh manis", "nasi", "sambal"];
   const sisaBahan = stockList
     .filter((s) => !excludedItems.includes(s.name.toLowerCase()))
@@ -494,19 +538,8 @@ export async function getAggregatedAnalytics(
       const sisaPrevious =
         snapsPrevForItem[snapsPrevForItem.length - 1]?.sisaQuantity ?? 0;
 
-      const soldCurrent = ordersCurr.reduce((sum, order) => {
-        const orderItem = order.items?.find(
-          (item) => item.stockId === s.id,
-        );
-        return sum + (orderItem ? orderItem.quantity : 0);
-      }, 0);
-
-      const soldPrevious = ordersPrev.reduce((sum, order) => {
-        const orderItem = order.items?.find(
-          (item) => item.stockId === s.id,
-        );
-        return sum + (orderItem ? orderItem.quantity : 0);
-      }, 0);
+      const soldCurrent = currSoldMap[s.id] || 0;
+      const soldPrevious = prevSoldMap[s.id] || 0;
 
       const stockAwalCurrent = sisaCurrent + soldCurrent;
       const stockAwalPrevious = sisaPrevious + soldPrevious;

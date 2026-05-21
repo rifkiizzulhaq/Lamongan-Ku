@@ -15,6 +15,7 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import {
   saveClosingReport,
   checkIfReportedToday,
+  getTodayOrderCount,
 } from "@/src/server/karyawan/more/more.server";
 import { CuacaSlot } from "@/interfaces/cuaca";
 import { SisaItem } from "@/interfaces/stock";
@@ -58,7 +59,7 @@ const JAM_SLOTS = [
 
 const EXCLUDED_ITEMS = ["sambal", "teh manis", "nasi"];
 
-const OWNER_PHONE = "6285156630893";
+const OWNER_PHONE = process.env.NEXT_PUBLIC_OWNER_PHONE || "6285156630893";
 
 export default function TutupWarungModal({
   onClose,
@@ -75,6 +76,15 @@ export default function TutupWarungModal({
     staleTime: 0,
     refetchOnMount: "always",
   });
+
+  const { data: orderCount = 0, isLoading: isCheckingOrders } = useQuery({
+    queryKey: ["today-order-count"],
+    queryFn: () => getTodayOrderCount(),
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+
+  const hasEnoughOrders = orderCount >= 10;
 
   const getFilteredSlots = () => {
     const now = new Date();
@@ -286,13 +296,21 @@ export default function TutupWarungModal({
 
         <Button
           onClick={() => kirim()}
-          disabled={isPending || isCheckingReport || !!isAlreadyReported}
+          disabled={
+            isPending ||
+            isCheckingReport ||
+            isCheckingOrders ||
+            !!isAlreadyReported ||
+            !hasEnoughOrders
+          }
           className="w-full bg-orange hover:bg-orange/90 active:scale-[0.99] text-white font-black uppercase tracking-widest py-5 text-sm transition-all flex items-center justify-center gap-2 shrink-0 disabled:opacity-50 disabled:bg-neutral-400"
         >
-          {isPending || isCheckingReport ? (
+          {isPending || isCheckingReport || isCheckingOrders ? (
             <LuLoader className="animate-spin" size={20} />
           ) : isAlreadyReported ? (
             "Laporan Sudah Terkirim"
+          ) : !hasEnoughOrders ? (
+            `Minimal 10 Pesanan (Saat ini: ${orderCount})`
           ) : (
             <>
               Kirim Laporan

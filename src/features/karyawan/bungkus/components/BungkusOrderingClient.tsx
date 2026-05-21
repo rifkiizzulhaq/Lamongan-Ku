@@ -47,6 +47,8 @@ export default function BungkusOrderingClient({
     return (s.quantity ?? 0) + initialLockedQty > 0;
   });
 
+  const [isNavigating, setIsNavigating] = useState(false);
+
   const { mutate: simpan, isPending } = useMutation({
     mutationFn: async (payload: { stockId: number; quantity: number }[]) => {
       if (mode === "update" && orderId) {
@@ -55,6 +57,7 @@ export default function BungkusOrderingClient({
       return create(payload);
     },
     onSuccess: () => {
+      setIsNavigating(true);
       router.push("/bungkus");
     },
   });
@@ -144,7 +147,7 @@ export default function BungkusOrderingClient({
         cart={cart}
         totalPrice={totalPrice}
         onSave={handleSave}
-        isPending={isPending}
+        isPending={isPending || isNavigating}
         isClosed={isClosed}
       />
     </>

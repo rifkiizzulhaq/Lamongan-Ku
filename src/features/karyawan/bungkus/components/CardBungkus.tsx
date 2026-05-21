@@ -80,7 +80,10 @@ export default function CardBungkus({
     }
   }, [unseenUpdatedOrders, parsedOrderId, activateHighlight, hasUnseen]);
 
+  const [isNavigating, setIsNavigating] = useState(false);
+
   const invalidateAndRefresh = () => {
+    setIsNavigating(true);
     queryClient.invalidateQueries({ queryKey: ["bungkus"] });
     router.refresh();
   };
@@ -200,10 +203,10 @@ export default function CardBungkus({
             <div className="flex">
               <Button
                 onClick={() => hapus()}
-                disabled={isDeleting}
+                disabled={isDeleting || isNavigating}
                 className="h-12 w-16 shrink-0 bg-red-500 text-white hover:bg-red-600 dark:bg-red-900 dark:hover:bg-red-700 uppercase font-bold rounded-none text-xs transition-colors mt-auto z-10 relative flex items-center justify-center disabled:opacity-50"
               >
-                {isDeleting ? (
+                {isDeleting || isNavigating ? (
                   <LuLoader className="animate-spin" />
                 ) : (
                   <LuTrash2 size={18} strokeWidth={2.5} />

@@ -7,9 +7,10 @@ import {
   stock,
   daily_stock_snapshots,
   weather_logs,
+  order_items,
 } from "@/db/schema";
 import type { Order, WeatherLog, DailyStockSnapshot } from "@/db/schema";
-import { and, gte, lte, eq } from "drizzle-orm";
+import { and, gte, lte, eq, sum } from "drizzle-orm";
 import type { DailyData } from "@/interfaces/laporan";
 import {
   getWibDate,
@@ -19,9 +20,11 @@ import {
   countPortion,
 } from "./utils";
 import { checkAndRunAutoClose } from "./auto-close.server";
+import { requireAuth } from "@/lib/auth-guard";
 
 export async function getDailyAnalytics(): Promise<DailyData> {
-  await checkAndRunAutoClose();
+  await requireAuth(["bos"]);
+  checkAndRunAutoClose().catch(console.error);
 
   const { targetDate } = getLastFixDate();
   const reportDate = new Date(targetDate);
@@ -41,120 +44,108 @@ export async function getDailyAnalytics(): Promise<DailyData> {
 
   const currentRange = getRange(reportDate);
   const previousRange = getRange(prevReportDate);
-  const yesterdayRange = getRange(
-    new Date(targetDate.getTime() - 1 * 24 * 60 * 60 * 1000),
-  );
-  const prevYesterdayRange = getRange(
-    new Date(targetDate.getTime() - 8 * 24 * 60 * 60 * 1000),
-  );
 
-  const [
-    ordersCurr,
-    ordersPrev,
-    reportCurr,
-    reportPrev,
-    stockList,
-    reportYesterday,
-    reportPrevPrev,
-    currentShopStatus,
-  ] = await Promise.all([
+  const [ordersCurr, ordersPrev] = await Promise.all([
     db.query.orders.findMany({
       where: and(
         gte(orders.createdAt, currentRange.start),
         lte(orders.createdAt, currentRange.end),
       ),
-      with: { items: true },
     }),
     db.query.orders.findMany({
       where: and(
         gte(orders.createdAt, previousRange.start),
         lte(orders.createdAt, previousRange.end),
       ),
-      with: { items: true },
     }),
-    db
-      .select()
-      .from(daily_reports)
-      .where(
-        and(
-          gte(daily_reports.createdAt, currentRange.start),
-          lte(daily_reports.createdAt, currentRange.end),
-        ),
-      )
-      .limit(1),
-    db
-      .select()
-      .from(daily_reports)
-      .where(
-        and(
-          gte(daily_reports.createdAt, previousRange.start),
-          lte(daily_reports.createdAt, previousRange.end),
-        ),
-      )
-      .limit(1),
-    db.select().from(stock),
-    db
-      .select()
-      .from(daily_reports)
-      .where(
-        and(
-          gte(daily_reports.createdAt, yesterdayRange.start),
-          lte(daily_reports.createdAt, yesterdayRange.end),
-        ),
-      )
-      .limit(1),
-    db
-      .select()
-      .from(daily_reports)
-      .where(
-        and(
-          gte(daily_reports.createdAt, prevYesterdayRange.start),
-          lte(daily_reports.createdAt, prevYesterdayRange.end),
-        ),
-      )
-      .limit(1),
-    db.query.shop_status.findFirst(),
   ]);
 
-  const [snapshotsCurr, snapshotsPrev, weatherCurr, weatherPrev] =
+  const [reportCurr, reportPrev, stockList, currentShopStatus] =
     await Promise.all([
-      reportCurr[0]
-        ? db
-            .select()
-            .from(daily_stock_snapshots)
-            .where(eq(daily_stock_snapshots.reportId, reportCurr[0].id))
-        : Promise.resolve([] as DailyStockSnapshot[]),
-      reportPrev[0]
-        ? db
-            .select()
-            .from(daily_stock_snapshots)
-            .where(eq(daily_stock_snapshots.reportId, reportPrev[0].id))
-        : Promise.resolve([] as DailyStockSnapshot[]),
-      reportCurr[0]
-        ? db
-            .select()
-            .from(weather_logs)
-            .where(eq(weather_logs.reportId, reportCurr[0].id))
-        : Promise.resolve([] as WeatherLog[]),
-      reportPrev[0]
-        ? db
-            .select()
-            .from(weather_logs)
-            .where(eq(weather_logs.reportId, reportPrev[0].id))
-        : Promise.resolve([] as WeatherLog[]),
-      reportYesterday[0]
-        ? db
-            .select()
-            .from(daily_stock_snapshots)
-            .where(eq(daily_stock_snapshots.reportId, reportYesterday[0].id))
-        : Promise.resolve([] as DailyStockSnapshot[]),
-      reportPrevPrev[0]
-        ? db
-            .select()
-            .from(daily_stock_snapshots)
-            .where(eq(daily_stock_snapshots.reportId, reportPrevPrev[0].id))
-        : Promise.resolve([] as DailyStockSnapshot[]),
+      db
+        .select()
+        .from(daily_reports)
+        .where(
+          and(
+            gte(daily_reports.createdAt, currentRange.start),
+            lte(daily_reports.createdAt, currentRange.end),
+          ),
+        )
+        .limit(1),
+      db
+        .select()
+        .from(daily_reports)
+        .where(
+          and(
+            gte(daily_reports.createdAt, previousRange.start),
+            lte(daily_reports.createdAt, previousRange.end),
+          ),
+        )
+        .limit(1),
+      db.select().from(stock),
+      db.query.shop_status.findFirst(),
     ]);
+
+  const [soldItemsCurr, soldItemsPrev] = await Promise.all([
+    db
+      .select({
+        stockId: order_items.stockId,
+        total: sum(order_items.quantity),
+      })
+      .from(order_items)
+      .leftJoin(orders, eq(order_items.orderId, orders.id))
+      .where(
+        and(
+          gte(orders.createdAt, currentRange.start),
+          lte(orders.createdAt, currentRange.end),
+        ),
+      )
+      .groupBy(order_items.stockId),
+    db
+      .select({
+        stockId: order_items.stockId,
+        total: sum(order_items.quantity),
+      })
+      .from(order_items)
+      .leftJoin(orders, eq(order_items.orderId, orders.id))
+      .where(
+        and(
+          gte(orders.createdAt, previousRange.start),
+          lte(orders.createdAt, previousRange.end),
+        ),
+      )
+      .groupBy(order_items.stockId),
+  ]);
+
+  const [snapshotsCurr, weatherCurr] = await Promise.all([
+    reportCurr[0]
+      ? db
+          .select()
+          .from(daily_stock_snapshots)
+          .where(eq(daily_stock_snapshots.reportId, reportCurr[0].id))
+      : Promise.resolve([] as DailyStockSnapshot[]),
+    reportCurr[0]
+      ? db
+          .select()
+          .from(weather_logs)
+          .where(eq(weather_logs.reportId, reportCurr[0].id))
+      : Promise.resolve([] as WeatherLog[]),
+  ]);
+
+  const [snapshotsPrev, weatherPrev] = await Promise.all([
+    reportPrev[0]
+      ? db
+          .select()
+          .from(daily_stock_snapshots)
+          .where(eq(daily_stock_snapshots.reportId, reportPrev[0].id))
+      : Promise.resolve([] as DailyStockSnapshot[]),
+    reportPrev[0]
+      ? db
+          .select()
+          .from(weather_logs)
+          .where(eq(weather_logs.reportId, reportPrev[0].id))
+      : Promise.resolve([] as WeatherLog[]),
+  ]);
 
   const allOrders = [...ordersCurr, ...ordersPrev];
   const timeLabels = Array.from(
@@ -226,6 +217,13 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     cuacaPrevious,
   );
 
+  const currSoldMap = Object.fromEntries(
+    soldItemsCurr.map((i) => [i.stockId, Number(i.total || 0)]),
+  );
+  const prevSoldMap = Object.fromEntries(
+    soldItemsPrev.map((i) => [i.stockId, Number(i.total || 0)]),
+  );
+
   const excludedItems = ["teh manis", "nasi", "sambal"];
   const sisaBahan = stockList
     .filter((s) => !excludedItems.includes(s.name.toLowerCase()))
@@ -235,15 +233,8 @@ export async function getDailyAnalytics(): Promise<DailyData> {
       const sisaPrevious =
         snapshotsPrev.find((x) => x.stockId === s.id)?.sisaQuantity ?? 0;
 
-      const soldCurrent = ordersCurr.reduce((sum, order) => {
-        const orderItem = order.items?.find((item) => item.stockId === s.id);
-        return sum + (orderItem ? orderItem.quantity : 0);
-      }, 0);
-
-      const soldPrevious = ordersPrev.reduce((sum, order) => {
-        const orderItem = order.items?.find((item) => item.stockId === s.id);
-        return sum + (orderItem ? orderItem.quantity : 0);
-      }, 0);
+      const soldCurrent = currSoldMap[s.id] || 0;
+      const soldPrevious = prevSoldMap[s.id] || 0;
 
       const stockAwalCurrent = sisaCurrent + soldCurrent;
       const stockAwalPrevious = sisaPrevious + soldPrevious;

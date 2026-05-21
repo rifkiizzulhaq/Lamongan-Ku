@@ -6,9 +6,26 @@ import { and, eq, inArray, ne, gte, lte, count, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { checkIfReportedToday } from "../more/more.server";
 import { getShiftWaktu } from "@/src/utils/date";
+import { requireAuth } from "@/lib/auth-guard";
+import { z } from "zod";
+
+const orderItemSchema = z.object({
+  stockId: z.number().int().positive(),
+  quantity: z.number().int().min(1),
+});
+
+const createOrderSchema = z.object({
+  items: z.array(orderItemSchema).min(1),
+});
+
+const updateItemsSchema = z.object({
+  orderId: z.number().int().positive(),
+  items: z.array(orderItemSchema).min(1),
+});
 
 export async function getStock() {
   try {
+    await requireAuth();
     return await db.select().from(stock).orderBy(stock.createdAt);
   } catch {
     return [];
@@ -17,6 +34,7 @@ export async function getStock() {
 
 export async function getAll(page = 1, limitNum = 5) {
   try {
+    await requireAuth();
     const { startOfDay, endOfDay } = getShiftWaktu();
     const offsetNum = (page - 1) * limitNum;
     const bungkusOrders = await db.query.orders.findMany({
@@ -49,6 +67,7 @@ export async function getAll(page = 1, limitNum = 5) {
 
 export async function getOrderById(orderId: number) {
   try {
+    await requireAuth();
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
       with: { items: { with: { stock: true } } },
@@ -74,6 +93,11 @@ export async function updateItems(
   items: { stockId: number; quantity: number }[],
 ) {
   try {
+    await requireAuth();
+    const parsed = updateItemsSchema.parse({ orderId, items });
+    orderId = parsed.orderId;
+    items = parsed.items;
+
     if (items.length === 0) return { success: false };
 
     const oldItems = await db.query.order_items.findMany({
@@ -146,6 +170,10 @@ export async function updateItems(
 
 export async function create(items: { stockId: number; quantity: number }[]) {
   try {
+    await requireAuth();
+    const parsed = createOrderSchema.parse({ items });
+    items = parsed.items;
+
     const isClosed = await checkIfReportedToday();
     if (isClosed) {
       return {
@@ -238,6 +266,7 @@ export async function create(items: { stockId: number; quantity: number }[]) {
 
 export async function update(orderId: number, status: string) {
   try {
+    await requireAuth();
     await db.update(orders).set({ status }).where(eq(orders.id, orderId));
     revalidatePath("/bungkus");
     return { success: true };
@@ -248,13 +277,15 @@ export async function update(orderId: number, status: string) {
 
 export async function deletes(orderId: number) {
   try {
+    await requireAuth();
     const oldItems = await db.query.order_items.findMany({
       where: eq(order_items.orderId, orderId),
     });
 
     const stockDelta: Record<number, number> = {};
     for (const item of oldItems) {
-      stockDelta[item.stockId] = (stockDelta[item.stockId] ?? 0) + item.quantity;
+      stockDelta[item.stockId] =
+        (stockDelta[item.stockId] ?? 0) + item.quantity;
     }
 
     const restorePromises = Object.entries(stockDelta).map(

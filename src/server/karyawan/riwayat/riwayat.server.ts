@@ -2,18 +2,28 @@
 
 import { db } from "@/db";
 import { orders } from "@/db/schema";
-import { eq, gte, lte, and } from "drizzle-orm";
+import { eq, gte, lte, and, desc, count } from "drizzle-orm";
 import { getShiftWaktu } from "@/src/utils/date";
+import { requireAuth } from "@/lib/auth-guard";
 
 export async function getHistory(page: number = 1, limitNum: number = 10) {
+  await requireAuth();
   const { startOfDay, endOfDay } = getShiftWaktu();
 
-  const todayOrders = await db.query.orders.findMany({
-    where: and(
-      eq(orders.status, "selesai"),
-      gte(orders.createdAt, startOfDay),
-      lte(orders.createdAt, endOfDay),
-    ),
+  const baseWhere = and(
+    eq(orders.status, "selesai"),
+    gte(orders.createdAt, startOfDay),
+    lte(orders.createdAt, endOfDay),
+  );
+
+  const [countResult] = await db
+    .select({ total: count() })
+    .from(orders)
+    .where(baseWhere);
+  const totalToday = countResult.total;
+
+  const result = await db.query.orders.findMany({
+    where: baseWhere,
     with: {
       items: {
         with: {
@@ -21,14 +31,10 @@ export async function getHistory(page: number = 1, limitNum: number = 10) {
         },
       },
     },
-    orderBy: [orders.createdAt],
+    orderBy: [desc(orders.createdAt)],
+    limit: limitNum,
+    offset: (page - 1) * limitNum,
   });
-
-  const totalToday = todayOrders.length;
-
-  const result = [...todayOrders]
-    .reverse()
-    .slice((page - 1) * limitNum, page * limitNum);
 
   return result.map((order, index) => {
     const sequenceNumber = totalToday - ((page - 1) * limitNum + index);

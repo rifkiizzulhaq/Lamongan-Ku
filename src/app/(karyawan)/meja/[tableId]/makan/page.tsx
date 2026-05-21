@@ -60,6 +60,7 @@ function MakanContent() {
   }
 
   const queryClient = useQueryClient();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const { mutate: simpan, isPending } = useMutation({
     mutationFn: async (
@@ -71,6 +72,7 @@ function MakanContent() {
       return createMakanOrder(tableId, customerType, payload);
     },
     onSuccess: () => {
+      setIsNavigating(true);
       queryClient.invalidateQueries({ queryKey: ["table-orders", tableId] });
       queryClient.invalidateQueries({ queryKey: ["makan-order", orderId] });
       queryClient.invalidateQueries({ queryKey: ["table", tableId] });
@@ -261,7 +263,7 @@ function MakanContent() {
         cart={cart}
         totalPrice={totalPrice}
         onSave={handleSave}
-        isPending={isPending}
+        isPending={isPending || isNavigating}
         isClosed={isClosed}
       />
     </section>

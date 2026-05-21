@@ -1,4 +1,11 @@
-import { pgTable, serial, text, timestamp, integer, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  integer,
+  index,
+} from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
@@ -18,44 +25,61 @@ export const dining_table = pgTable("dining_table", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  orderType: text("order_type").notNull(),
-  status: text("status").notNull().default("sedang di prosess.."),
-  diningTableId: integer("dining_table_id").references(() => dining_table.id),
-  label: text("label"),
-  customerType: text("customer_type"),
-  totalPrice: integer("total_price").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => {
-  return {
-    createdAtIndex: index("orders_created_at_idx").on(table.createdAt),
-    statusIndex: index("orders_status_idx").on(table.status),
-  };
-});
+export const orders = pgTable(
+  "orders",
+  {
+    id: serial("id").primaryKey(),
+    orderType: text("order_type").notNull(),
+    status: text("status").notNull().default("sedang di prosess.."),
+    diningTableId: integer("dining_table_id").references(() => dining_table.id),
+    label: text("label"),
+    customerType: text("customer_type"),
+    totalPrice: integer("total_price").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      createdAtIndex: index("orders_created_at_idx").on(table.createdAt),
+      statusIndex: index("orders_status_idx").on(table.status),
+    };
+  },
+);
 
-export const order_items = pgTable("order_items", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id")
-    .notNull()
-    .references(() => orders.id, { onDelete: "cascade" }),
-  stockId: integer("stock_id")
-    .notNull()
-    .references(() => stock.id),
-  quantity: integer("quantity").notNull(),
-  pricePerItem: integer("price_per_item").notNull(),
-  subtotal: integer("subtotal").notNull(),
-  isTakeaway: text("is_takeaway").default("false").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const order_items = pgTable(
+  "order_items",
+  {
+    id: serial("id").primaryKey(),
+    orderId: integer("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    stockId: integer("stock_id")
+      .notNull()
+      .references(() => stock.id),
+    quantity: integer("quantity").notNull(),
+    pricePerItem: integer("price_per_item").notNull(),
+    subtotal: integer("subtotal").notNull(),
+    isTakeaway: text("is_takeaway").default("false").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    orderIdIndex: index("order_items_order_id_idx").on(table.orderId),
+    stockIdIndex: index("order_items_stock_id_idx").on(table.stockId),
+  }),
+);
 
-export const daily_reports = pgTable("daily_reports", {
-  id: serial("id").primaryKey(),
-  note: text("note"),
-  systemRevenue: integer("system_revenue").notNull().default(0),
-  actualRevenue: integer("actual_revenue").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const daily_reports = pgTable(
+  "daily_reports",
+  {
+    id: serial("id").primaryKey(),
+    note: text("note"),
+    systemRevenue: integer("system_revenue").notNull().default(0),
+    actualRevenue: integer("actual_revenue").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    createdAtIndex: index("daily_reports_created_at_idx").on(table.createdAt),
+  }),
+);
 
 export const weather_logs = pgTable("weather_logs", {
   id: serial("id").primaryKey(),
@@ -67,17 +91,25 @@ export const weather_logs = pgTable("weather_logs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const daily_stock_snapshots = pgTable("daily_stock_snapshots", {
-  id: serial("id").primaryKey(),
-  reportId: integer("report_id")
-    .notNull()
-    .references(() => daily_reports.id, { onDelete: "cascade" }),
-  stockId: integer("stock_id")
-    .notNull()
-    .references(() => stock.id),
-  sisaQuantity: integer("sisa_quantity").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const daily_stock_snapshots = pgTable(
+  "daily_stock_snapshots",
+  {
+    id: serial("id").primaryKey(),
+    reportId: integer("report_id")
+      .notNull()
+      .references(() => daily_reports.id, { onDelete: "cascade" }),
+    stockId: integer("stock_id")
+      .notNull()
+      .references(() => stock.id),
+    sisaQuantity: integer("sisa_quantity").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    reportIdIndex: index("daily_stock_snapshots_report_id_idx").on(
+      table.reportId,
+    ),
+  }),
+);
 
 export const shop_status = pgTable("shop_status", {
   id: serial("id").primaryKey(),

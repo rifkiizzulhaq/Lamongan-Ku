@@ -78,19 +78,6 @@ export function countPortion(
   }).length;
 }
 
-export function isDineIn(orderType: string): boolean {
-  const t = orderType.toLowerCase();
-  return t.includes("makan") || t.includes("dine") || t.includes("tempat");
-}
-
-export function getShiftRange(dateWib: Date): { start: Date; end: Date } {
-  const y = dateWib.getFullYear();
-  const m = String(dateWib.getMonth() + 1).padStart(2, "0");
-  const d = String(dateWib.getDate()).padStart(2, "0");
-  const start = new Date(`${y}-${m}-${d}T15:00:00+07:00`);
-  const end = new Date(start.getTime() + 11 * 60 * 60 * 1000);
-  return { start, end };
-}
 
 export function dominantWeather(logs: WeatherLog[]): string {
   const c = { cerah: 0, mendung: 0, hujan: 0 };

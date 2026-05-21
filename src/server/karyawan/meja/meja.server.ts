@@ -12,9 +12,29 @@ import { and, eq, inArray, ne, gte, lte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { checkIfReportedToday } from "../more/more.server";
 import { getShiftWaktu } from "@/src/utils/date";
+import { requireAuth } from "@/lib/auth-guard";
+import { z } from "zod";
+
+const orderItemSchema = z.object({
+  stockId: z.number().int().positive(),
+  quantity: z.number().int().min(1),
+  isTakeaway: z.boolean().optional(),
+});
+
+const createOrderSchema = z.object({
+  tableId: z.number().int().positive(),
+  customerType: z.string().min(1),
+  items: z.array(orderItemSchema).min(1),
+});
+
+const updateItemsSchema = z.object({
+  orderId: z.number().int().positive(),
+  items: z.array(orderItemSchema).min(1),
+});
 
 export async function getTablesWithOrders() {
   try {
+    await requireAuth();
     const { startOfDay, endOfDay } = getShiftWaktu();
     const allTables = await db.query.dining_table.findMany({
       orderBy: [dining_table.createdAt],
@@ -47,6 +67,7 @@ export async function getOrdersByTable(
   limitNum = 5,
 ) {
   try {
+    await requireAuth();
     const { startOfDay, endOfDay } = getShiftWaktu();
     const offsetNum = (page - 1) * limitNum;
     const activeOrders = await db.query.orders.findMany({
@@ -82,6 +103,7 @@ export async function getOrdersByTable(
 
 export async function getTableById(tableId: number) {
   try {
+    await requireAuth();
     const table = await db.query.dining_table.findFirst({
       where: eq(dining_table.id, tableId),
     });
@@ -93,6 +115,7 @@ export async function getTableById(tableId: number) {
 
 export async function getOrderById(orderId: number) {
   try {
+    await requireAuth();
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
       with: { items: { with: { stock: true } } },
@@ -121,6 +144,12 @@ export async function createMakanOrder(
   items: { stockId: number; quantity: number; isTakeaway?: boolean }[],
 ) {
   try {
+    await requireAuth();
+    const parsed = createOrderSchema.parse({ tableId, customerType, items });
+    tableId = parsed.tableId;
+    customerType = parsed.customerType;
+    items = parsed.items;
+
     const isClosed = await checkIfReportedToday();
     if (isClosed) {
       return {
@@ -204,6 +233,11 @@ export async function updateMakanItems(
   items: { stockId: number; quantity: number; isTakeaway?: boolean }[],
 ) {
   try {
+    await requireAuth();
+    const parsed = updateItemsSchema.parse({ orderId, items });
+    orderId = parsed.orderId;
+    items = parsed.items;
+
     if (items.length === 0)
       return { success: false, error: "Keranjang kosong" };
 
@@ -284,6 +318,7 @@ export async function updateMakanItems(
 
 export async function deleteMakanOrder(orderId: number) {
   try {
+    await requireAuth();
     const orderInfo = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
       columns: { diningTableId: true },
@@ -327,6 +362,7 @@ export async function deleteMakanOrder(orderId: number) {
 
 export async function payMakanOrder(orderId: number) {
   try {
+    await requireAuth();
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
     });

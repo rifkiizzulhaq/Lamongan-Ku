@@ -85,12 +85,15 @@ export default function CardKursi({
     }
   }, [unseenUpdatedOrders, parsedOrderId, activateHighlight, hasUnseen]);
 
+  const [isNavigating, setIsNavigating] = useState(false);
+
   const { mutate: hapus, isPending: isDeleting } = useMutation({
     mutationFn: () =>
       deleteMakanOrder(
         typeof orderId === "string" ? parseInt(orderId) : orderId,
       ),
     onSuccess: () => {
+      setIsNavigating(true);
       queryClient.invalidateQueries({ queryKey: ["table-orders", tableId] });
       queryClient.invalidateQueries({ queryKey: ["tables-karyawan"] });
       queryClient.invalidateQueries({ queryKey: ["stock-list"] });
@@ -245,10 +248,10 @@ export default function CardKursi({
             <div className="flex shrink-0">
               <Button
                 onClick={() => hapus()}
-                disabled={isDeleting}
+                disabled={isDeleting || isNavigating}
                 className="h-12 w-16 shrink-0 bg-red-500 text-white hover:bg-red-600 dark:bg-red-900 dark:hover:bg-red-700 uppercase font-bold rounded-none text-xs transition-colors mt-auto z-10 relative flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isDeleting ? (
+                {isDeleting || isNavigating ? (
                   <LuLoader size={18} className="animate-spin" />
                 ) : (
                   <LuTrash2 size={18} strokeWidth={2.5} />

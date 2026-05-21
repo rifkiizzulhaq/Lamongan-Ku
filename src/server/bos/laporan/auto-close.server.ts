@@ -8,7 +8,7 @@ import {
   daily_stock_snapshots,
   shop_status,
 } from "@/db/schema";
-import { and, gte, lte } from "drizzle-orm";
+import { and, gte, lte, inArray } from "drizzle-orm";
 import { getLastFixDate, getShiftDate } from "./utils";
 
 let activeAutoClosePromise: Promise<void> | null = null;
@@ -51,7 +51,6 @@ export async function checkAndRunAutoClose(): Promise<void> {
         }
       }
       if (idsToDeletePreLaunch.length > 0) {
-        const { inArray } = await import("drizzle-orm");
         await db
           .delete(daily_reports)
           .where(inArray(daily_reports.id, idsToDeletePreLaunch));
@@ -98,7 +97,6 @@ export async function checkAndRunAutoClose(): Promise<void> {
       }
 
       if (idsToDelete.length > 0) {
-        const { inArray } = await import("drizzle-orm");
         await db
           .delete(daily_reports)
           .where(inArray(daily_reports.id, idsToDelete));

@@ -14,9 +14,18 @@ import { gte, lte, and, sql, eq } from "drizzle-orm";
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { getShiftWaktu } from "@/src/utils/date";
 import { checkAndRunAutoClose } from "@/src/server/bos/laporan/laporan.server";
+import { requireAuth } from "@/lib/auth-guard";
+import { z } from "zod";
+
+const saveRevenueSchema = z.number().min(0);
+const updateStockSchema = z.array(z.object({
+  stockId: z.number().int().positive(),
+  sisa: z.number().int().min(0)
+}));
 
 export async function getShopStatus() {
   noStore();
+  await requireAuth();
   const status = await db.query.shop_status.findFirst();
   if (!status) {
     const [newStatus] = await db
@@ -30,6 +39,7 @@ export async function getShopStatus() {
 
 export async function updateShopStatus(isBuka: boolean, reason?: string) {
   try {
+    await requireAuth(["bos"]);
     const current = await getShopStatus();
 
     if (isBuka) {
@@ -71,7 +81,8 @@ export async function updateShopStatus(isBuka: boolean, reason?: string) {
 
 export async function getDashboardStats() {
   noStore();
-  await checkAndRunAutoClose();
+  await requireAuth(["bos"]);
+  checkAndRunAutoClose().catch(console.error);
   const { startOfDay, endOfDay } = getShiftWaktu();
   const shopStatus = await getShopStatus();
 
@@ -155,6 +166,7 @@ export async function getDashboardStats() {
 
 export async function getRevenueChartData() {
   noStore();
+  await requireAuth(["bos"]);
   const { startOfDay: start, endOfDay: end } = getShiftWaktu();
 
   try {
@@ -197,6 +209,8 @@ export async function getRevenueChartData() {
 
 export async function saveActualRevenue(val: number) {
   try {
+    await requireAuth(["bos"]);
+    val = saveRevenueSchema.parse(val);
     const { startOfDay, endOfDay } = getShiftWaktu();
 
     const report = await db.query.daily_reports.findFirst({
@@ -228,6 +242,8 @@ export async function updateStockInventory(
   items: { stockId: number; sisa: number }[],
 ) {
   try {
+    await requireAuth(["bos"]);
+    items = updateStockSchema.parse(items);
     const { startOfDay, endOfDay } = getShiftWaktu();
 
     await Promise.all(
