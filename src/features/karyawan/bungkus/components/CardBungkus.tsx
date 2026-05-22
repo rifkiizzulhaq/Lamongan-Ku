@@ -4,7 +4,6 @@ import Button from "@/src/components/ui/Button";
 import PaymentModal from "@/src/features/karyawan/pos/components/PaymentModal";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { update, deletes } from "@/src/server/karyawan/bungkus/bungkus.server";
 import { LuTrash2, LuLoader } from "react-icons/lu";
@@ -53,12 +52,11 @@ export default function CardBungkus({
   );
 
   useEffect(() => {
-    if (manualChangedItems && manualChangedItems.length > 0) {
-      setChangedItemNames(new Set(manualChangedItems));
-      return;
-    }
+    let nextChangedItemNames = new Set<string>();
 
-    if (hasUnseen || isHighlighted) {
+    if (manualChangedItems && manualChangedItems.length > 0) {
+      nextChangedItemNames = new Set(manualChangedItems);
+    } else if (hasUnseen || isHighlighted) {
       const prev = prevItemsRef.current;
       const changed = new Set<string>();
 
@@ -75,13 +73,21 @@ export default function CardBungkus({
       });
 
       if (changed.size > 0) {
-        setChangedItemNames(changed);
+        nextChangedItemNames = changed;
       }
-      return;
+    } else {
+      prevItemsRef.current = items;
     }
 
-    prevItemsRef.current = items;
-    setChangedItemNames(new Set());
+    setChangedItemNames((current) => {
+      if (
+        current.size === nextChangedItemNames.size &&
+        Array.from(current).every((v) => nextChangedItemNames.has(v))
+      ) {
+        return current;
+      }
+      return nextChangedItemNames;
+    });
   }, [items, isHighlighted, hasUnseen, manualChangedItems]);
 
   useEffect(() => {
@@ -95,12 +101,14 @@ export default function CardBungkus({
   };
 
   const optimisticRemove = () => {
-    queryClient.setQueryData(["bungkus-orders"], (old: any) => {
-      if (!old) return old;
+    queryClient.setQueryData(["bungkus-orders"], (old: unknown) => {
+      if (!old || typeof old !== "object" || !("pages" in old)) return old;
+
+      const typedOld = old as { pages: { orderId: string }[][] };
       return {
-        ...old,
-        pages: old.pages.map((page: any[]) =>
-          page.filter((order) => String(order.orderId) !== String(orderId))
+        ...typedOld,
+        pages: typedOld.pages.map((page) =>
+          page.filter((order) => String(order.orderId) !== String(orderId)),
         ),
       };
     });
@@ -147,7 +155,11 @@ export default function CardBungkus({
           ></div>
           <div className="w-full h-full flex flex-col justify-between">
             <Link
-              href={isDeleting || isProcessing ? "#" : `/bungkus/ordering?mode=update&orderId=${orderId}`}
+              href={
+                isDeleting || isProcessing
+                  ? "#"
+                  : `/bungkus/ordering?mode=update&orderId=${orderId}`
+              }
               className={`flex flex-col items-center justify-between px-5 py-3 ${isDeleting || isProcessing ? "pointer-events-none opacity-50" : ""}`}
               onClick={(e) => {
                 if (isDeleting || isProcessing) {

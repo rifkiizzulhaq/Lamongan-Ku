@@ -17,7 +17,7 @@ describe("getShiftWaktu", () => {
     const { startOfDay, endOfDay } = getShiftWaktu();
 
     expect(startOfDay.toISOString()).toBe("2024-05-19T23:00:00.000Z");
-    expect(endOfDay.toISOString()).toBe("2024-05-20T22:59:59.000Z");
+    expect(endOfDay.toISOString()).toBe("2024-05-20T22:59:59.999Z");
   });
 
   it("should return previous day shift for early morning time (e.g., 01:00 WIB)", () => {
@@ -27,6 +27,6 @@ describe("getShiftWaktu", () => {
     const { startOfDay, endOfDay } = getShiftWaktu();
 
     expect(startOfDay.toISOString()).toBe("2024-05-19T23:00:00.000Z");
-    expect(endOfDay.toISOString()).toBe("2024-05-20T22:59:59.000Z");
+    expect(endOfDay.toISOString()).toBe("2024-05-20T22:59:59.999Z");
   });
 });

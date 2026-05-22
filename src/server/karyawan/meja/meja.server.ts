@@ -108,7 +108,8 @@ export async function getTableById(tableId: number) {
       where: eq(dining_table.id, tableId),
     });
     return table || null;
-  } catch {
+  } catch (error) {
+    console.error("Error fetching table by ID:", error);
     return null;
   }
 }
@@ -133,7 +134,8 @@ export async function getOrderById(orderId: number) {
         isTakeaway: item.isTakeaway === "true",
       })),
     };
-  } catch {
+  } catch (error) {
+    console.error("Error fetching order by ID:", error);
     return null;
   }
 }
@@ -394,7 +396,9 @@ export async function payMakanOrder(orderId: number) {
 
       await tx
         .update(daily_reports)
-        .set({ systemRevenue: sql`${daily_reports.systemRevenue} + ${order.totalPrice}` })
+        .set({
+          systemRevenue: sql`${daily_reports.systemRevenue} + ${order.totalPrice}`,
+        })
         .where(eq(daily_reports.id, currentReport.id));
     });
 

@@ -66,6 +66,7 @@ export default function Page() {
     price: s.price,
     quantity: s.quantity,
     sisaKemarin: yesterdaySnapshot[s.id] ?? 0,
+    isUnlimited: s.isUnlimited === 1,
   }));
 
   return (

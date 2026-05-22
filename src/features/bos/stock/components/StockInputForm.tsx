@@ -74,6 +74,9 @@ export default function StockInputForm({
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
 
+  const [isUnlimited, setIsUnlimited] = useState(false);
+  const [editIsUnlimited, setEditIsUnlimited] = useState(false);
+
   const [deleteTarget, setDeleteTarget] = useState<{
     id: number;
     nama: string;
@@ -97,11 +100,13 @@ export default function StockInputForm({
       id,
       name,
       price,
+      isUnlimited,
     }: {
       id: number;
       name: string;
       price: number;
-    }) => update(id, name, price),
+      isUnlimited: boolean;
+    }) => update(id, name, price, isUnlimited),
     onSuccess: (res) => {
       if (res.success) {
         setEditTarget(null);
@@ -118,16 +123,19 @@ export default function StockInputForm({
       name,
       price,
       qty,
+      isUnlimited,
     }: {
       name: string;
       price: number;
       qty: number;
-    }) => create(name, price, qty),
+      isUnlimited: boolean;
+    }) => create(name, price, qty, isUnlimited),
     onSuccess: (res) => {
       if (res.success) {
         setNewName("");
         setNewPrice("");
         setNewQty("");
+        setIsUnlimited(false);
         setShowAddModal(false);
         router.refresh();
         addToast("Item berhasil ditambah!", "success");
@@ -207,19 +215,20 @@ export default function StockInputForm({
     if (!newName.trim()) return;
     const priceValue = newPrice ? parseInt(newPrice) : 0;
     const qtyValue = newQty ? parseInt(newQty) : 0;
-    tambahItem({ name: newName.trim(), price: priceValue, qty: qtyValue });
+    tambahItem({ name: newName.trim(), price: priceValue, qty: qtyValue, isUnlimited });
   };
 
   const handleEditItem = () => {
     if (!editTarget || !editName.trim()) return;
     const priceValue = editPrice ? parseInt(editPrice) : 0;
-    editItem({ id: editTarget.id, name: editName.trim(), price: priceValue });
+    editItem({ id: editTarget.id, name: editName.trim(), price: priceValue, isUnlimited: editIsUnlimited });
   };
 
   const handleOpenEdit = (item: StockFormItem) => {
     setEditTarget(item);
     setEditName(item.nama);
     setEditPrice(item.price.toString());
+    setEditIsUnlimited(item.isUnlimited);
   };
 
   return (
@@ -347,13 +356,13 @@ export default function StockInputForm({
                 </div>
                 <Input
                   id={`stock-${item.id}`}
-                  type="number"
+                  type={item.isUnlimited ? "text" : "number"}
                   min="0"
-                  disabled={!isBuka}
-                  value={stockInputs[item.id] ?? ""}
+                  disabled={!isBuka || item.isUnlimited}
+                  value={item.isUnlimited ? "∞" : (stockInputs[item.id] ?? "")}
                   onChange={(e) => handleInputChange(item.id, e.target.value)}
-                  placeholder="0"
-                  className="w-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-800 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange/50 rounded-lg p-3 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  placeholder={item.isUnlimited ? "Unlimited" : "0"}
+                  className={`w-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 text-neutral-800 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange/50 rounded-lg p-3 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${item.isUnlimited ? "text-center font-black text-xl" : ""}`}
                 />
               </div>
             ))
@@ -425,6 +434,18 @@ export default function StockInputForm({
                   className="mt-1 w-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange/50"
                 />
               </div>
+              <div className="flex items-center gap-3 mt-2">
+                <input
+                  type="checkbox"
+                  id="new-is-unlimited"
+                  checked={isUnlimited}
+                  onChange={(e) => setIsUnlimited(e.target.checked)}
+                  className="w-5 h-5 accent-orange rounded cursor-pointer"
+                />
+                <label htmlFor="new-is-unlimited" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                  Stok Bebas / Unlimited
+                </label>
+              </div>
             </div>
             <div className="flex gap-3 mt-2">
               <Button
@@ -485,6 +506,18 @@ export default function StockInputForm({
                   onChange={(e) => setEditPrice(parseCurrency(e.target.value))}
                   className="mt-1 w-full border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-800 dark:text-white rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-orange/50"
                 />
+              </div>
+              <div className="flex items-center gap-3 mt-2">
+                <input
+                  type="checkbox"
+                  id="edit-is-unlimited"
+                  checked={editIsUnlimited}
+                  onChange={(e) => setEditIsUnlimited(e.target.checked)}
+                  className="w-5 h-5 accent-orange rounded cursor-pointer"
+                />
+                <label htmlFor="edit-is-unlimited" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                  Stok Bebas / Unlimited
+                </label>
               </div>
             </div>
             <div className="flex gap-3 mt-2">

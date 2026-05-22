@@ -1,15 +1,12 @@
 "use client";
 
-import Button from "@/src/components/ui/Button";
 import BungkusClient from "@/src/features/karyawan/bungkus/components/BungkusClient";
-import Link from "next/link";
 import PageHeader from "@/src/components/ui/PageHeader";
-import { LuPlus } from "react-icons/lu";
 import { checkIfReportedToday } from "@/src/server/karyawan/more/more.server";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Page() {
-  const { data: isClosed = false, isPending } = useQuery({
+  const { data: isClosed = false } = useQuery({
     queryKey: ["check-reported-today", new Date().toDateString()],
     queryFn: () => checkIfReportedToday(),
   });

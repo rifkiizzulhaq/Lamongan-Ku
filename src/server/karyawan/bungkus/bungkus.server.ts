@@ -27,7 +27,8 @@ export async function getStock() {
   try {
     await requireAuth();
     return await db.select().from(stock).orderBy(stock.createdAt);
-  } catch {
+  } catch (error) {
+    console.error("Error fetching bungkus orders:", error);
     return [];
   }
 }
@@ -60,7 +61,8 @@ export async function getAll(page = 1, limitNum = 5) {
         q: item.quantity,
       })),
     }));
-  } catch {
+  } catch (error) {
+    console.error("Error fetching bungkus orders:", error);
     return [];
   }
 }
@@ -83,7 +85,8 @@ export async function getOrderById(orderId: number) {
         quantity: item.quantity,
       })),
     };
-  } catch {
+  } catch (error) {
+    console.error("Error fetching order by ID:", error);
     return null;
   }
 }
@@ -98,7 +101,8 @@ export async function updateItems(
     orderId = parsed.orderId;
     items = parsed.items;
 
-    if (items.length === 0) return { success: false, error: "Keranjang kosong" };
+    if (items.length === 0)
+      return { success: false, error: "Keranjang kosong" };
 
     const oldItems = await db.query.order_items.findMany({
       where: eq(order_items.orderId, orderId),
@@ -183,7 +187,8 @@ export async function create(items: { stockId: number; quantity: number }[]) {
       };
     }
 
-    if (items.length === 0) return { success: false, error: "Keranjang kosong" };
+    if (items.length === 0)
+      return { success: false, error: "Keranjang kosong" };
 
     const stockData = await db.query.stock.findMany({
       where: inArray(

@@ -57,8 +57,6 @@ const JAM_SLOTS = [
   "01:00-02:00",
 ];
 
-const EXCLUDED_ITEMS = ["sambal", "teh manis", "nasi"];
-
 const OWNER_PHONE = process.env.NEXT_PUBLIC_OWNER_PHONE || "6285156630893";
 
 export default function TutupWarungModal({
@@ -116,9 +114,7 @@ export default function TutupWarungModal({
   );
   const [sisa, setSisa] = useState<SisaItem[]>(() =>
     stockList
-      .filter(
-        (s) => !EXCLUDED_ITEMS.some((ex) => s.name.toLowerCase().includes(ex)),
-      )
+      .filter((s) => s.isUnlimited === 0)
       .map((s) => ({
         nama: s.name,
         sisa: s.quantity ?? 0,

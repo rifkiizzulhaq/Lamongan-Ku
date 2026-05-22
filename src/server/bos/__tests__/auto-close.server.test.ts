@@ -7,6 +7,7 @@ vi.mock("@/db", () => {
       query: {
         stock: {
           findFirst: vi.fn(),
+          findMany: vi.fn(),
         },
         orders: {
           findFirst: vi.fn(),
@@ -84,6 +85,7 @@ describe("Auto Close Logic", () => {
 
     vi.mocked(db.query.daily_reports.findMany).mockResolvedValue([]);
     vi.mocked(db.query.orders.findMany).mockResolvedValue([]);
+    vi.mocked(db.query.stock.findMany).mockResolvedValue([]);
     vi.mocked(db.query.shop_status.findFirst).mockResolvedValue({
       id: 1,
       isBuka: 1,

@@ -14,6 +14,7 @@ import { checkIfReportedToday } from "@/src/server/karyawan/more/more.server";
 import type { Stock } from "@/db/schema";
 import { useUiStore } from "@/src/store/uiStore";
 import { useNotificationStore } from "@/src/store/notificationStore";
+import { useCart } from "@/src/hooks/useCart";
 
 interface Props {
   stockList: Stock[];
@@ -29,7 +30,14 @@ export default function BungkusOrderingClient({
   initialCart = [],
 }: Props) {
   const { addToast } = useUiStore();
-  const [cart, setCart] = useState<CartItem[]>(initialCart);
+  const {
+    cart,
+    isSpecialMenu,
+    hasMainStockAvailable,
+    addToCart,
+    removeFromCart,
+    totalPrice,
+  } = useCart({ stockList, initialCart, mode });
   const router = useRouter();
   const queryClient = useQueryClient();
   const setManualChangedItems = useNotificationStore(
@@ -42,19 +50,6 @@ export default function BungkusOrderingClient({
   const { data: isClosed = false } = useQuery({
     queryKey: ["check-reported-today", new Date().toDateString()],
     queryFn: () => checkIfReportedToday(),
-  });
-
-  const specialZeroStockItems = ["nasi", "teh manis", "sambal"];
-  const isSpecialMenu = (name: string) =>
-    specialZeroStockItems.includes(name.trim().toLowerCase());
-
-  const hasMainStockAvailable = stockList.some((s) => {
-    if (isSpecialMenu(s.name)) return false;
-    const initialLockedQty =
-      mode === "update"
-        ? (initialCart.find((i) => i.stockId === s.id)?.quantity ?? 0)
-        : 0;
-    return (s.quantity ?? 0) + initialLockedQty > 0;
   });
 
   const [isNavigating, setIsNavigating] = useState(false);
@@ -71,14 +66,16 @@ export default function BungkusOrderingClient({
         addToast(res.error || "Gagal menyimpan pesanan", "error");
         return;
       }
-      
+
       if (mode === "update" && orderId) {
         const changedItems = cart
           .filter((newItem) => {
-            const oldItem = initialCart.find((i) => i.stockId === newItem.stockId);
+            const oldItem = initialCart.find(
+              (i) => i.stockId === newItem.stockId,
+            );
             return !oldItem || oldItem.quantity !== newItem.quantity;
           })
-          .map((i) => `${i.name}-undefined`); 
+          .map((i) => `${i.name}-undefined`);
 
         if (changedItems.length > 0) {
           setManualChangedItems(orderId, changedItems);
@@ -88,54 +85,22 @@ export default function BungkusOrderingClient({
 
       setIsNavigating(true);
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["bungkus-orders"], refetchType: "all" }),
-        queryClient.invalidateQueries({ queryKey: ["bungkus-order", orderId], refetchType: "all" }),
-        queryClient.invalidateQueries({ queryKey: ["stock-list"], refetchType: "all" })
+        queryClient.invalidateQueries({
+          queryKey: ["bungkus-orders"],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["bungkus-order", orderId],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["stock-list"],
+          refetchType: "all",
+        }),
       ]);
       router.push("/bungkus");
     },
   });
-
-  const addToCart = (s: Stock) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.stockId === s.id);
-      const currentQty = existing ? existing.quantity : 0;
-      const initialLockedQty =
-        mode === "update"
-          ? (initialCart.find((i) => i.stockId === s.id)?.quantity ?? 0)
-          : 0;
-      const available = (s.quantity ?? 0) + initialLockedQty;
-      const special = isSpecialMenu(s.name);
-
-      if (special) {
-        if (!hasMainStockAvailable) return prev;
-      } else {
-        if (currentQty >= available) return prev;
-      }
-
-      if (existing)
-        return prev.map((i) =>
-          i.stockId === s.id ? { ...i, quantity: i.quantity + 1 } : i,
-        );
-      return [
-        ...prev,
-        { stockId: s.id, name: s.name, price: s.price, quantity: 1 },
-      ];
-    });
-  };
-
-  const removeFromCart = (stockId: number) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.stockId === stockId);
-      if (existing && existing.quantity > 1)
-        return prev.map((i) =>
-          i.stockId === stockId ? { ...i, quantity: i.quantity - 1 } : i,
-        );
-      return prev.filter((i) => i.stockId !== stockId);
-    });
-  };
-
-  const totalPrice = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   const handleSave = () => {
     if (cart.length === 0 || isPending) return;
@@ -154,7 +119,7 @@ export default function BungkusOrderingClient({
                 initialCart.find((i) => i.stockId === s.id)?.quantity ?? 0;
               const available =
                 (s.quantity ?? 0) + (mode === "update" ? initialLockedQty : 0);
-              const special = isSpecialMenu(s.name);
+              const special = isSpecialMenu(s.id);
               const canAdd = special
                 ? hasMainStockAvailable
                 : currentQty < available;

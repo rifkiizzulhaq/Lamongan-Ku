@@ -10,6 +10,7 @@ export interface StockFormItem {
   price: number;
   quantity: number | null;
   sisaKemarin: number;
+  isUnlimited: boolean;
 }
 
 export interface TableItem {

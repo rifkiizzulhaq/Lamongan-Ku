@@ -1,33 +1,26 @@
 import type { WeatherLog } from "@/db/schema";
+import { toZonedTime, format } from "date-fns-tz";
+import { subDays, set } from "date-fns";
+import { id } from "date-fns/locale";
+
+const TIMEZONE = "Asia/Jakarta";
 
 export function getWibDate(date: Date | string | number = new Date()): Date {
-  return new Date(
-    new Date(date).toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
-  );
+  return toZonedTime(new Date(date), TIMEZONE);
 }
 
 export function getLastFixDate(): { targetDate: Date; endOfFixDate: Date } {
   const wibNow = getWibDate();
   const currentHour = wibNow.getHours();
-  const targetWib = new Date(wibNow);
 
-  if (currentHour >= 6) {
-    targetWib.setDate(targetWib.getDate() - 1);
-  } else {
-    targetWib.setDate(targetWib.getDate() - 2);
-  }
+  const targetWib = currentHour >= 6 ? subDays(wibNow, 1) : subDays(wibNow, 2);
 
-  const y = targetWib.getFullYear();
-  const m = String(targetWib.getMonth() + 1).padStart(2, "0");
-  const d = String(targetWib.getDate()).padStart(2, "0");
-  const targetDate = new Date(`${y}-${m}-${d}T00:00:00+07:00`);
+  const targetDateStr = format(targetWib, "yyyy-MM-dd'T'00:00:00XXX", { timeZone: TIMEZONE });
+  const targetDate = new Date(targetDateStr);
 
-  const endWib = new Date(targetWib);
-  endWib.setDate(endWib.getDate() + 1);
-  const yE = endWib.getFullYear();
-  const mE = String(endWib.getMonth() + 1).padStart(2, "0");
-  const dE = String(endWib.getDate()).padStart(2, "0");
-  const endOfFixDate = new Date(`${yE}-${mE}-${dE}T02:00:00+07:00`);
+  const endWib = set(targetWib, { hours: 2, minutes: 0, seconds: 0, milliseconds: 0 });
+  const endOfFixDateStr = format(endWib, "yyyy-MM-dd'T'02:00:00XXX", { timeZone: TIMEZONE });
+  const endOfFixDate = new Date(new Date(endOfFixDateStr).getTime() + 24 * 60 * 60 * 1000);
 
   return { targetDate, endOfFixDate };
 }
@@ -35,23 +28,15 @@ export function getLastFixDate(): { targetDate: Date; endOfFixDate: Date } {
 export function getAutoCloseTargetDate(): Date {
   const wibNow = getWibDate();
   const currentHour = wibNow.getHours();
-  const targetWib = new Date(wibNow);
-
-  if (currentHour >= 2) {
-    targetWib.setDate(targetWib.getDate() - 1);
-  } else {
-    targetWib.setDate(targetWib.getDate() - 2);
-  }
-
-  const y = targetWib.getFullYear();
-  const m = String(targetWib.getMonth() + 1).padStart(2, "0");
-  const d = String(targetWib.getDate()).padStart(2, "0");
-  return new Date(`${y}-${m}-${d}T00:00:00+07:00`);
+  
+  const targetWib = currentHour >= 2 ? subDays(wibNow, 1) : subDays(wibNow, 2);
+  const targetDateStr = format(targetWib, "yyyy-MM-dd'T'00:00:00XXX", { timeZone: TIMEZONE });
+  return new Date(targetDateStr);
 }
 
 export function getShiftDate(date: Date | string | number): Date {
   const wib = getWibDate(date);
-  if (wib.getHours() < 6) wib.setDate(wib.getDate() - 1);
+  if (wib.getHours() < 6) return subDays(wib, 1);
   return wib;
 }
 
@@ -71,15 +56,9 @@ export function matchWeather(time: string, logs: WeatherLog[]): string {
 }
 
 export function formatLabel(d: Date, suffix: string): string {
-  const hari = d.toLocaleDateString("id-ID", {
-    weekday: "long",
-    timeZone: "Asia/Jakarta",
-  });
-  const tgl = d.toLocaleDateString("id-ID", {
-    day: "numeric",
-    month: "short",
-    timeZone: "Asia/Jakarta",
-  });
+  const wibDate = getWibDate(d);
+  const hari = format(wibDate, "EEEE", { locale: id });
+  const tgl = format(wibDate, "d MMM", { locale: id });
   return `${hari} ${suffix} (${tgl})`;
 }
 
@@ -94,7 +73,6 @@ export function countPortion(
     return target === "dine" ? isDine : !isDine;
   }).length;
 }
-
 
 export function dominantWeather(logs: WeatherLog[]): string {
   const c = { cerah: 0, mendung: 0, hujan: 0 };

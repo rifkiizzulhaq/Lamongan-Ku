@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import CardOrdering from "@/src/features/karyawan/pos/components/CardOrdering";
@@ -13,12 +13,11 @@ import {
   updateMakanItems,
 } from "@/src/server/karyawan/meja/meja.server";
 import { checkIfReportedToday } from "@/src/server/karyawan/more/more.server";
-import { CartItem } from "@/interfaces/order";
-import type { Stock } from "@/db/schema";
 import PageHeaderSkeleton from "@/src/components/ui/PageHeaderSkeleton";
 import CardOrderingSkeleton from "@/src/features/karyawan/pos/components/CardOrderingSkeleton";
 import { useUiStore } from "@/src/store/uiStore";
 import { useNotificationStore } from "@/src/store/notificationStore";
+import { useCart } from "@/src/hooks/useCart";
 
 function MakanContent() {
   const { addToast } = useUiStore();
@@ -36,7 +35,6 @@ function MakanContent() {
   const customerType = searchParams.get("tipe") || "Sendiri";
 
   const [isTakeaway, setIsTakeaway] = useState(false);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [initialCartLoaded, setInitialCartLoaded] = useState(mode === "create");
 
   const { data: isClosed = false } = useQuery({
@@ -55,10 +53,29 @@ function MakanContent() {
     enabled: mode === "update" && !!orderId,
   });
 
-  if (mode === "update" && orderData && !initialCartLoaded) {
-    setCart(orderData.cartItems.map((item) => ({ ...item })));
-    setInitialCartLoaded(true);
-  }
+  const {
+    cart,
+    setCart,
+    isSpecialMenu,
+    hasMainStockAvailable,
+    addToCart,
+    removeFromCart,
+    totalPrice,
+  } = useCart({
+    stockList,
+    initialCart: orderData?.cartItems,
+    mode,
+  });
+
+  useEffect(() => {
+    const loadInitialCart = () => {
+      if (mode === "update" && orderData && !initialCartLoaded) {
+        setCart(orderData.cartItems.map((item) => ({ ...item })));
+        setInitialCartLoaded(true);
+      }
+    };
+    loadInitialCart();
+  }, [mode, orderData, initialCartLoaded, setCart]);
 
   const queryClient = useQueryClient();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -88,7 +105,9 @@ function MakanContent() {
         const changedItems = cart
           .filter((newItem) => {
             const oldItem = orderData.cartItems.find(
-              (i) => i.stockId === newItem.stockId && i.isTakeaway === newItem.isTakeaway
+              (i) =>
+                i.stockId === newItem.stockId &&
+                i.isTakeaway === newItem.isTakeaway,
             );
             return !oldItem || oldItem.quantity !== newItem.quantity;
           })
@@ -102,95 +121,30 @@ function MakanContent() {
 
       setIsNavigating(true);
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["table-orders", tableId], refetchType: "all" }),
-        queryClient.invalidateQueries({ queryKey: ["makan-order", orderId], refetchType: "all" }),
-        queryClient.invalidateQueries({ queryKey: ["table", tableId], refetchType: "all" }),
-        queryClient.invalidateQueries({ queryKey: ["tables-karyawan"], refetchType: "all" }),
-        queryClient.invalidateQueries({ queryKey: ["stock-list"], refetchType: "all" })
+        queryClient.invalidateQueries({
+          queryKey: ["table-orders", tableId],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["makan-order", orderId],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["table", tableId],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["tables-karyawan"],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["stock-list"],
+          refetchType: "all",
+        }),
       ]);
       router.push(`/meja/${tableId}`);
     },
   });
-
-  const specialZeroStockItems = ["nasi", "teh manis", "sambal"];
-  const isSpecialMenu = (name: string) =>
-    specialZeroStockItems.includes(name.trim().toLowerCase());
-
-  const hasMainStockAvailable = stockList?.some((s) => {
-    if (isSpecialMenu(s.name)) return false;
-    const initialLockedQty =
-      mode === "update" && orderData
-        ? orderData.cartItems
-          .filter((i) => i.stockId === s.id)
-          .reduce((sum, item) => sum + item.quantity, 0)
-        : 0;
-    return (s.quantity ?? 0) + initialLockedQty > 0;
-  });
-
-  const addToCart = (s: Stock) => {
-    setCart((prev) => {
-      const existing = prev.find(
-        (i) => i.stockId === s.id && i.isTakeaway === isTakeaway,
-      );
-
-      const currentTotalQtyForStock = prev
-        .filter((i) => i.stockId === s.id)
-        .reduce((sum, item) => sum + item.quantity, 0);
-      const initialLockedQty =
-        mode === "update" && orderData
-          ? orderData.cartItems
-            .filter((i) => i.stockId === s.id)
-            .reduce((sum, item) => sum + item.quantity, 0)
-          : 0;
-
-      const available = (s.quantity ?? 0) + initialLockedQty;
-      const special = isSpecialMenu(s.name);
-
-      if (special) {
-        if (!hasMainStockAvailable) return prev;
-      } else {
-        if (currentTotalQtyForStock >= available) return prev;
-      }
-
-      if (existing) {
-        return prev.map((i) =>
-          i.stockId === s.id && i.isTakeaway === isTakeaway
-            ? { ...i, quantity: i.quantity + 1 }
-            : i,
-        );
-      }
-      return [
-        ...prev,
-        {
-          stockId: s.id,
-          name: s.name,
-          price: s.price,
-          quantity: 1,
-          isTakeaway,
-        },
-      ];
-    });
-  };
-
-  const removeFromCart = (stockId: number) => {
-    setCart((prev) => {
-      const existing = prev.find(
-        (i) => i.stockId === stockId && i.isTakeaway === isTakeaway,
-      );
-      if (existing && existing.quantity > 1) {
-        return prev.map((i) =>
-          i.stockId === stockId && i.isTakeaway === isTakeaway
-            ? { ...i, quantity: i.quantity - 1 }
-            : i,
-        );
-      }
-      return prev.filter(
-        (i) => !(i.stockId === stockId && i.isTakeaway === isTakeaway),
-      );
-    });
-  };
-
-  const totalPrice = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   const handleSave = () => {
     if (cart.length === 0 || isPending) return;
@@ -238,11 +192,11 @@ function MakanContent() {
             const initialLockedQty =
               mode === "update" && orderData
                 ? orderData.cartItems
-                  .filter((i) => i.stockId === s.id)
-                  .reduce((sum, item) => sum + item.quantity, 0)
+                    .filter((i) => i.stockId === s.id)
+                    .reduce((sum, item) => sum + item.quantity, 0)
                 : 0;
             const available = (s.quantity ?? 0) + initialLockedQty;
-            const special = isSpecialMenu(s.name);
+            const special = isSpecialMenu(s.id);
             const canAdd = special
               ? hasMainStockAvailable
               : currentTotalQtyForStock < available;
@@ -262,11 +216,11 @@ function MakanContent() {
                 disabled={!canAdd || isPending || isNavigating}
                 onAdd={() => {
                   if (isPending || isNavigating) return;
-                  addToCart(s);
+                  addToCart(s, isTakeaway);
                 }}
                 onRemove={() => {
                   if (isPending || isNavigating) return;
-                  removeFromCart(s.id);
+                  removeFromCart(s.id, isTakeaway);
                 }}
               />
             );

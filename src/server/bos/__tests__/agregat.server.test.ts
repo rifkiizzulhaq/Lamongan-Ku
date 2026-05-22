@@ -10,11 +10,16 @@ vi.mock("@/lib/auth-guard", () => ({
 }));
 
 const createChainableQuery = (data: unknown[]) => {
-  const query: unknown = Promise.resolve(data);
-  (query as any).where = vi.fn(() => query);
-  (query as any).orderBy = vi.fn(() => query);
-  (query as any).groupBy = vi.fn(() => query);
-  (query as any).leftJoin = vi.fn(() => query);
+  const query = Promise.resolve(data) as Promise<unknown[]> & {
+    where: () => unknown;
+    orderBy: () => unknown;
+    groupBy: () => unknown;
+    leftJoin: () => unknown;
+  };
+  query.where = vi.fn(() => query);
+  query.orderBy = vi.fn(() => query);
+  query.groupBy = vi.fn(() => query);
+  query.leftJoin = vi.fn(() => query);
   return query;
 };
 

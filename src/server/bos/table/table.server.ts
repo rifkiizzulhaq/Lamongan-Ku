@@ -20,7 +20,8 @@ export async function getAllTables() {
   try {
     await requireAuth(["bos"]);
     return await db.select().from(dining_table).orderBy(dining_table.createdAt);
-  } catch {
+  } catch (error) {
+    console.error("Error fetching tables:", error);
     return [];
   }
 }

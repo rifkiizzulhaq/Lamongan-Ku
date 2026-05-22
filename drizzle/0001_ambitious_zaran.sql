@@ -1,0 +1,1 @@
+ALTER TABLE "stock" ADD COLUMN "is_unlimited" integer DEFAULT 0 NOT NULL;
