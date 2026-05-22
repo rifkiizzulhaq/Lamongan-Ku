@@ -356,7 +356,7 @@ export async function deleteMakanOrder(orderId: number) {
     return { success: true };
   } catch (error) {
     console.error("Error deleting makan order:", error);
-    return { success: false };
+    return { success: false, error: "Gagal menghapus pesanan" };
   }
 }
 
@@ -366,36 +366,37 @@ export async function payMakanOrder(orderId: number) {
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
     });
-    if (!order) return { success: false };
+    if (!order) return { success: false, error: "Pesanan tidak ditemukan" };
 
-    await db
-      .update(orders)
-      .set({ status: "selesai" })
-      .where(eq(orders.id, orderId));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(orders)
+        .set({ status: "selesai" })
+        .where(eq(orders.id, orderId));
 
-    const { startOfDay, endOfDay } = getShiftWaktu();
+      const { startOfDay, endOfDay } = getShiftWaktu();
 
-    let currentReport = await db.query.daily_reports.findFirst({
-      where: and(
-        gte(daily_reports.createdAt, startOfDay),
-        lte(daily_reports.createdAt, endOfDay),
-      ),
-      orderBy: (reports, { desc }) => [desc(reports.createdAt)],
+      let currentReport = await tx.query.daily_reports.findFirst({
+        where: and(
+          gte(daily_reports.createdAt, startOfDay),
+          lte(daily_reports.createdAt, endOfDay),
+        ),
+        orderBy: (reports, { desc }) => [desc(reports.createdAt)],
+      });
+
+      if (!currentReport) {
+        const [newReport] = await tx
+          .insert(daily_reports)
+          .values({ systemRevenue: 0, actualRevenue: 0 })
+          .returning();
+        currentReport = newReport;
+      }
+
+      await tx
+        .update(daily_reports)
+        .set({ systemRevenue: sql`${daily_reports.systemRevenue} + ${order.totalPrice}` })
+        .where(eq(daily_reports.id, currentReport.id));
     });
-
-    if (!currentReport) {
-      const [newReport] = await db
-        .insert(daily_reports)
-        .values({ systemRevenue: 0, actualRevenue: 0 })
-        .returning();
-      currentReport = newReport;
-    }
-
-    const newSystemRevenue = currentReport.systemRevenue + order.totalPrice;
-    await db
-      .update(daily_reports)
-      .set({ systemRevenue: newSystemRevenue })
-      .where(eq(daily_reports.id, currentReport.id));
 
     if (order.diningTableId) {
       revalidatePath(`/meja/${order.diningTableId}`);
@@ -406,6 +407,6 @@ export async function payMakanOrder(orderId: number) {
     return { success: true };
   } catch (error) {
     console.error("Error paying makan order:", error);
-    return { success: false };
+    return { success: false, error: "Gagal memproses pembayaran" };
   }
 }

@@ -12,6 +12,7 @@ import {
 } from "@/src/server/karyawan/bungkus/bungkus.server";
 import { checkIfReportedToday } from "@/src/server/karyawan/more/more.server";
 import type { Stock } from "@/db/schema";
+import { useUiStore } from "@/src/store/uiStore";
 
 interface Props {
   stockList: Stock[];
@@ -26,6 +27,7 @@ export default function BungkusOrderingClient({
   orderId,
   initialCart = [],
 }: Props) {
+  const { addToast } = useUiStore();
   const [cart, setCart] = useState<CartItem[]>(initialCart);
   const router = useRouter();
 
@@ -56,7 +58,11 @@ export default function BungkusOrderingClient({
       }
       return create(payload);
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && res.success === false) {
+        addToast(res.error || "Gagal menyimpan pesanan", "error");
+        return;
+      }
       setIsNavigating(true);
       router.push("/bungkus");
     },

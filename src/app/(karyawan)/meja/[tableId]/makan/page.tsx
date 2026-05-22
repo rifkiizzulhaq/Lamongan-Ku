@@ -17,8 +17,10 @@ import { CartItem } from "@/interfaces/order";
 import type { Stock } from "@/db/schema";
 import PageHeaderSkeleton from "@/src/components/ui/PageHeaderSkeleton";
 import CardOrderingSkeleton from "@/src/features/karyawan/pos/components/CardOrderingSkeleton";
+import { useUiStore } from "@/src/store/uiStore";
 
 function MakanContent() {
+  const { addToast } = useUiStore();
   const router = useRouter();
   const params = useParams();
   const tableIdStr = Array.isArray(params?.tableId)
@@ -69,7 +71,11 @@ function MakanContent() {
       }
       return createMakanOrder(tableId, customerType, payload);
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && res.success === false) {
+        addToast(res.error || "Gagal menyimpan pesanan", "error");
+        return;
+      }
       setIsNavigating(true);
       queryClient.invalidateQueries({ queryKey: ["table-orders", tableId] });
       queryClient.invalidateQueries({ queryKey: ["makan-order", orderId] });

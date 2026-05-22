@@ -10,6 +10,7 @@ import { update, deletes } from "@/src/server/karyawan/bungkus/bungkus.server";
 import { LuTrash2, LuLoader } from "react-icons/lu";
 import { OrderItem } from "@/interfaces/order";
 import { useNotificationStore } from "@/src/store/notificationStore";
+import { useUiStore } from "@/src/store/uiStore";
 
 export interface CardBungkusProps {
   orderId: string;
@@ -29,6 +30,7 @@ export default function CardBungkus({
   const [showPayment, setShowPayment] = useState(false);
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { addToast } = useUiStore();
   const highlightedOrders = useNotificationStore((s) => s.highlightedOrders);
   const unseenUpdatedOrders = useNotificationStore(
     (s) => s.unseenUpdatedOrders,
@@ -90,12 +92,22 @@ export default function CardBungkus({
 
   const { mutate: hapus, isPending: isDeleting } = useMutation({
     mutationFn: () => deletes(parseInt(orderId, 10)),
-    onSuccess: invalidateAndRefresh,
+    onSuccess: (res) => {
+      if (res && res.success === false) {
+        addToast(res.error || "Gagal menghapus pesanan", "error");
+        return;
+      }
+      invalidateAndRefresh();
+    },
   });
 
   const { mutate: bayar, isPending: isProcessing } = useMutation({
     mutationFn: () => update(parseInt(orderId, 10), "selesai"),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && res.success === false) {
+        addToast(res.error || "Gagal menyelesaikan pesanan", "error");
+        return;
+      }
       setShowPayment(false);
       invalidateAndRefresh();
     },

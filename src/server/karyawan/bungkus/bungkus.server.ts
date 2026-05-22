@@ -98,7 +98,7 @@ export async function updateItems(
     orderId = parsed.orderId;
     items = parsed.items;
 
-    if (items.length === 0) return { success: false };
+    if (items.length === 0) return { success: false, error: "Keranjang kosong" };
 
     const oldItems = await db.query.order_items.findMany({
       where: eq(order_items.orderId, orderId),
@@ -164,7 +164,7 @@ export async function updateItems(
     return { success: true };
   } catch (error) {
     console.error("Error updating bungkus items:", error);
-    return { success: false };
+    return { success: false, error: "Gagal mengupdate pesanan" };
   }
 }
 
@@ -183,7 +183,7 @@ export async function create(items: { stockId: number; quantity: number }[]) {
       };
     }
 
-    if (items.length === 0) return { success: false };
+    if (items.length === 0) return { success: false, error: "Keranjang kosong" };
 
     const stockData = await db.query.stock.findMany({
       where: inArray(
@@ -270,8 +270,9 @@ export async function update(orderId: number, status: string) {
     await db.update(orders).set({ status }).where(eq(orders.id, orderId));
     revalidatePath("/bungkus");
     return { success: true };
-  } catch {
-    return { success: false };
+  } catch (error) {
+    console.error("Server error:", error);
+    return { success: false, error: "Terjadi kesalahan pada server" };
   }
 }
 
@@ -288,24 +289,22 @@ export async function deletes(orderId: number) {
         (stockDelta[item.stockId] ?? 0) + item.quantity;
     }
 
-    const restorePromises = Object.entries(stockDelta).map(
-      ([stockIdStr, qty]) => {
+    await db.transaction(async (tx) => {
+      await tx.delete(orders).where(eq(orders.id, orderId));
+
+      for (const [stockIdStr, qty] of Object.entries(stockDelta)) {
         const stockId = parseInt(stockIdStr);
-        return db
+        await tx
           .update(stock)
           .set({ quantity: sql`${stock.quantity} + ${qty}` })
           .where(eq(stock.id, stockId));
-      },
-    );
-
-    await Promise.all([
-      db.delete(orders).where(eq(orders.id, orderId)),
-      ...restorePromises,
-    ]);
+      }
+    });
 
     revalidatePath("/bungkus");
     return { success: true };
-  } catch {
-    return { success: false };
+  } catch (error) {
+    console.error("Server error:", error);
+    return { success: false, error: "Terjadi kesalahan pada server" };
   }
 }

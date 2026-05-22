@@ -99,67 +99,66 @@ export async function saveClosingReport(payload: ClosingReportPayload) {
 
     let reportId: number;
 
-    if (existing) {
-      const hasWeather = await db.query.weather_logs.findFirst({
-        where: eq(weather_logs.reportId, existing.id),
-      });
+    await db.transaction(async (tx) => {
+      if (existing) {
+        const hasWeather = await tx.query.weather_logs.findFirst({
+          where: eq(weather_logs.reportId, existing.id),
+        });
 
-      if (hasWeather) {
-        return {
-          success: false,
-          error: "Laporan untuk hari ini sudah terkirim.",
-        };
+        if (hasWeather) {
+          throw new Error("Laporan untuk hari ini sudah terkirim.");
+        }
+
+        await tx
+          .update(daily_reports)
+          .set({
+            note: payload.note || null,
+            systemRevenue: totalRev,
+            actualRevenue: totalRev,
+          })
+          .where(eq(daily_reports.id, existing.id));
+        reportId = existing.id;
+      } else {
+        const [newReport] = await tx
+          .insert(daily_reports)
+          .values({
+            note: payload.note || null,
+            systemRevenue: totalRev,
+            actualRevenue: totalRev,
+          })
+          .returning();
+        reportId = newReport.id;
       }
 
-      await db
-        .update(daily_reports)
-        .set({
-          note: payload.note || null,
-          systemRevenue: totalRev,
-          actualRevenue: totalRev,
-        })
-        .where(eq(daily_reports.id, existing.id));
-      reportId = existing.id;
-    } else {
-      const [newReport] = await db
-        .insert(daily_reports)
-        .values({
-          note: payload.note || null,
-          systemRevenue: totalRev,
-          actualRevenue: totalRev,
-        })
-        .returning();
-      reportId = newReport.id;
-    }
+      const weatherData = payload.weatherSlots
+        .filter((s) => s.cuaca !== null)
+        .map((s) => ({
+          reportId: reportId,
+          timeRange: s.jam,
+          weather: s.cuaca as string,
+        }));
 
-    const weatherData = payload.weatherSlots
-      .filter((s) => s.cuaca !== null)
-      .map((s) => ({
+      if (weatherData.length > 0) {
+        await tx.insert(weather_logs).values(weatherData);
+      }
+
+      const snapshotData = payload.stockSnapshots.map((s) => ({
         reportId: reportId,
-        timeRange: s.jam,
-        weather: s.cuaca as string,
+        stockId: s.stockId,
+        sisaQuantity: s.sisa,
       }));
 
-    if (weatherData.length > 0) {
-      await db.insert(weather_logs).values(weatherData);
-    }
+      if (snapshotData.length > 0) {
+        await tx.insert(daily_stock_snapshots).values(snapshotData);
 
-    const snapshotData = payload.stockSnapshots.map((s) => ({
-      reportId: reportId,
-      stockId: s.stockId,
-      sisaQuantity: s.sisa,
-    }));
-
-    if (snapshotData.length > 0) {
-      await db.insert(daily_stock_snapshots).values(snapshotData);
-
-      for (const item of payload.stockSnapshots) {
-        await db
-          .update(stock)
-          .set({ quantity: 0 })
-          .where(eq(stock.id, item.stockId));
+        for (const item of payload.stockSnapshots) {
+          await tx
+            .update(stock)
+            .set({ quantity: 0 })
+            .where(eq(stock.id, item.stockId));
+        }
       }
-    }
+    });
 
     revalidatePath("/dashboard");
     revalidatePath("/more");
@@ -167,6 +166,9 @@ export async function saveClosingReport(payload: ClosingReportPayload) {
     return { success: true };
   } catch (error) {
     console.error("Error saving closing report:", error);
+    if (error instanceof Error && error.message === "Laporan untuk hari ini sudah terkirim.") {
+      return { success: false, error: error.message };
+    }
     return { success: false, error: "Gagal menyimpan laporan" };
   }
 }

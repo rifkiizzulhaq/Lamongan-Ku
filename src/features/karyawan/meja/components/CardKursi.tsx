@@ -12,6 +12,7 @@ import {
 } from "@/src/server/karyawan/meja/meja.server";
 import { KursiItem } from "@/interfaces/order";
 import { useNotificationStore } from "@/src/store/notificationStore";
+import { useUiStore } from "@/src/store/uiStore";
 
 export interface CardKursiProps {
   id: string;
@@ -34,6 +35,7 @@ export default function CardKursi({
 }: CardKursiProps & { label: string; tipe: string }) {
   const [showPayment, setShowPayment] = useState(false);
   const queryClient = useQueryClient();
+  const { addToast } = useUiStore();
   const highlightedOrders = useNotificationStore((s) => s.highlightedOrders);
   const unseenUpdatedOrders = useNotificationStore(
     (s) => s.unseenUpdatedOrders,
@@ -92,7 +94,11 @@ export default function CardKursi({
       deleteMakanOrder(
         typeof orderId === "string" ? parseInt(orderId) : orderId,
       ),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && res.success === false) {
+        addToast(res.error || "Gagal menghapus pesanan", "error");
+        return;
+      }
       setIsNavigating(true);
       queryClient.invalidateQueries({ queryKey: ["table-orders", tableId] });
       queryClient.invalidateQueries({ queryKey: ["tables-karyawan"] });
@@ -103,7 +109,11 @@ export default function CardKursi({
   const { mutate: bayar, isPending: isPaying } = useMutation({
     mutationFn: () =>
       payMakanOrder(typeof orderId === "string" ? parseInt(orderId) : orderId),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && res.success === false) {
+        addToast(res.error || "Gagal menyelesaikan pembayaran", "error");
+        return;
+      }
       queryClient.invalidateQueries({ queryKey: ["table-orders", tableId] });
       queryClient.invalidateQueries({ queryKey: ["tables-karyawan"] });
       setShowPayment(false);
