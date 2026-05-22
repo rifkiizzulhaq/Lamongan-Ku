@@ -6,15 +6,20 @@ import CardBungkus from "./CardBungkus";
 import { getAll } from "@/src/server/karyawan/bungkus/bungkus.server";
 import { useSupabaseRealtime } from "@/src/hooks/useSupabaseRealtime";
 import CardBungkusSkeleton from "./CardBungkusSkeleton";
+import { LuLoader } from "react-icons/lu";
 
-export default function BungkusClient() {
+import Link from "next/link";
+import Button from "@/src/components/ui/Button";
+import { LuPlus } from "react-icons/lu";
+
+export default function BungkusClient({ isClosed }: { isClosed: boolean }) {
   useSupabaseRealtime("orders", ["bungkus-orders"]);
-
   const {
     data: infiniteData,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isLoading,
   } = useInfiniteQuery({
     queryKey: ["bungkus-orders"],
     queryFn: async ({ pageParam = 1 }) => {
@@ -59,39 +64,60 @@ export default function BungkusClient() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-30 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
-      {orders.length === 0 ? (
-        <p className="text-center text-neutral-400 dark:text-neutral-600 text-sm mt-10">
-          Belum ada pesanan bungkus.
-        </p>
-      ) : (
-        orders.map((pesanan) => (
-          <CardBungkus
-            key={pesanan.orderId}
-            orderId={pesanan.orderId}
-            id={pesanan.id}
-            totalPrice={pesanan.totalPrice}
-            status={pesanan.status}
-            items={pesanan.items}
-          />
-        ))
-      )}
-
-      {isFetchingNextPage && (
-        <div className="w-full py-4 flex justify-center items-center">
-          <CardBungkusSkeleton count={5} />
+    <>
+      {!isLoading && (
+        <div className="absolute bottom-15 right-0 z-50">
+          {isClosed ? (
+            <div className="flex items-center gap-1 bg-neutral-400 text-white cursor-not-allowed shadow-lg font-bold py-2 px-3 rounded-full opacity-60">
+              Warung Tutup
+            </div>
+          ) : (
+            <Link href="/bungkus/ordering">
+              <Button className="flex items-center gap-1 dark:bg-white bg-neutral-800 text-white hover:bg-neutral-200 shadow-lg dark:text-black font-bold py-2 px-3 rounded-full scale-100 active:scale-95 transition-transform">
+                <LuPlus size={24} strokeWidth={3} />
+                Tambah Pesanan
+              </Button>
+            </Link>
+          )}
         </div>
       )}
 
-      {hasNextPage && !isFetchingNextPage && (
-        <div ref={observerTarget} className="w-full h-10" />
-      )}
+      <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-30 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
+        {isLoading ? (
+          <CardBungkusSkeleton count={5} />
+        ) : orders.length === 0 ? (
+          <p className="text-center text-neutral-400 dark:text-neutral-600 text-sm mt-10">
+            Belum ada pesanan bungkus.
+          </p>
+        ) : (
+          orders.map((pesanan) => (
+            <CardBungkus
+              key={pesanan.orderId}
+              orderId={pesanan.orderId}
+              id={pesanan.id}
+              totalPrice={pesanan.totalPrice}
+              status={pesanan.status}
+              items={pesanan.items}
+            />
+          ))
+        )}
 
-      {!hasNextPage && orders.length > 0 && (
-        <p className="text-center text-xs text-neutral-400 py-4">
-          Semua antrean telah ditampilkan.
-        </p>
-      )}
-    </div>
+        {isFetchingNextPage && (
+          <div className="w-full py-4 flex justify-center items-center">
+            <LuLoader className="animate-spin text-orange" size={24} />
+          </div>
+        )}
+
+        {hasNextPage && !isFetchingNextPage && (
+          <div ref={observerTarget} className="w-full h-10" />
+        )}
+
+        {!hasNextPage && orders.length > 0 && (
+          <p className="text-center text-xs text-neutral-400 py-4">
+            Semua antrean telah ditampilkan.
+          </p>
+        )}
+      </div>
+    </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import CardOrdering from "@/src/features/karyawan/pos/components/CardOrdering";
 import Cart from "@/src/features/karyawan/pos/components/Cart";
 import { CartItem } from "@/interfaces/order";
@@ -13,6 +13,7 @@ import {
 import { checkIfReportedToday } from "@/src/server/karyawan/more/more.server";
 import type { Stock } from "@/db/schema";
 import { useUiStore } from "@/src/store/uiStore";
+import { useNotificationStore } from "@/src/store/notificationStore";
 
 interface Props {
   stockList: Stock[];
@@ -30,6 +31,13 @@ export default function BungkusOrderingClient({
   const { addToast } = useUiStore();
   const [cart, setCart] = useState<CartItem[]>(initialCart);
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const setManualChangedItems = useNotificationStore(
+    (s) => s.setManualChangedItems,
+  );
+  const addUnseenUpdatedOrder = useNotificationStore(
+    (s) => s.addUnseenUpdatedOrder,
+  );
 
   const { data: isClosed = false } = useQuery({
     queryKey: ["check-reported-today", new Date().toDateString()],
@@ -58,12 +66,32 @@ export default function BungkusOrderingClient({
       }
       return create(payload);
     },
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (res && res.success === false) {
         addToast(res.error || "Gagal menyimpan pesanan", "error");
         return;
       }
+      
+      if (mode === "update" && orderId) {
+        const changedItems = cart
+          .filter((newItem) => {
+            const oldItem = initialCart.find((i) => i.stockId === newItem.stockId);
+            return !oldItem || oldItem.quantity !== newItem.quantity;
+          })
+          .map((i) => `${i.name}-undefined`); 
+
+        if (changedItems.length > 0) {
+          setManualChangedItems(orderId, changedItems);
+          addUnseenUpdatedOrder(orderId);
+        }
+      }
+
       setIsNavigating(true);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["bungkus-orders"], refetchType: "all" }),
+        queryClient.invalidateQueries({ queryKey: ["bungkus-order", orderId], refetchType: "all" }),
+        queryClient.invalidateQueries({ queryKey: ["stock-list"], refetchType: "all" })
+      ]);
       router.push("/bungkus");
     },
   });
@@ -138,9 +166,15 @@ export default function BungkusOrderingClient({
                   price={s.price}
                   quantity={currentQty}
                   sisa={special ? undefined : available - currentQty}
-                  disabled={!canAdd}
-                  onAdd={() => addToCart(s)}
-                  onRemove={() => removeFromCart(s.id)}
+                  disabled={!canAdd || isPending || isNavigating}
+                  onAdd={() => {
+                    if (isPending || isNavigating) return;
+                    addToCart(s);
+                  }}
+                  onRemove={() => {
+                    if (isPending || isNavigating) return;
+                    removeFromCart(s.id);
+                  }}
                 />
               );
             })(),

@@ -65,7 +65,7 @@ export default function PaymentModal({
     <div className="fixed inset-0 z-60 flex items-end justify-center">
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={() => !loading && onClose()}
       />
       <div className="relative w-full max-w-md bg-neutral-900 rounded-t-3xl overflow-hidden shadow-2xl z-10">
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-neutral-800">
@@ -78,8 +78,9 @@ export default function PaymentModal({
             </p>
           </div>
           <Button
-            onClick={onClose}
-            className="text-neutral-400 hover:text-white transition-colors"
+            onClick={() => !loading && onClose()}
+            disabled={loading}
+            className={`transition-colors ${loading ? "text-neutral-600 cursor-not-allowed" : "text-neutral-400 hover:text-white"}`}
           >
             <LuX size={22} strokeWidth={2.5} />
           </Button>

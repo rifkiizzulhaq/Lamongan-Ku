@@ -1,3 +1,5 @@
+import React from "react";
+
 interface ButtonProps {
     className?: string;
     children: React.ReactNode;
@@ -19,4 +21,4 @@ export default function Button({ className, children, title, type = "button", di
             {children}
         </button>
     );
-};
+}

@@ -28,7 +28,6 @@ export default function CardBungkus({
   items,
 }: CardBungkusProps) {
   const [showPayment, setShowPayment] = useState(false);
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { addToast } = useUiStore();
   const highlightedOrders = useNotificationStore((s) => s.highlightedOrders);
@@ -43,6 +42,10 @@ export default function CardBungkus({
   const clearUnseenUpdatedOrder = useNotificationStore(
     (s) => s.clearUnseenUpdatedOrder,
   );
+  const manualChangedItemsMap = useNotificationStore(
+    (s) => s.manualChangedItems,
+  );
+  const manualChangedItems = manualChangedItemsMap[parsedOrderId];
 
   const prevItemsRef = useRef<typeof items>(items);
   const [changedItemNames, setChangedItemNames] = useState<Set<string>>(
@@ -50,6 +53,11 @@ export default function CardBungkus({
   );
 
   useEffect(() => {
+    if (manualChangedItems && manualChangedItems.length > 0) {
+      setChangedItemNames(new Set(manualChangedItems));
+      return;
+    }
+
     if (hasUnseen || isHighlighted) {
       const prev = prevItemsRef.current;
       const changed = new Set<string>();
@@ -74,7 +82,7 @@ export default function CardBungkus({
 
     prevItemsRef.current = items;
     setChangedItemNames(new Set());
-  }, [items, isHighlighted, hasUnseen]);
+  }, [items, isHighlighted, hasUnseen, manualChangedItems]);
 
   useEffect(() => {
     if (hasUnseen) {
@@ -82,12 +90,20 @@ export default function CardBungkus({
     }
   }, [unseenUpdatedOrders, parsedOrderId, activateHighlight, hasUnseen]);
 
-  const [isNavigating, setIsNavigating] = useState(false);
-
   const invalidateAndRefresh = () => {
-    setIsNavigating(true);
-    queryClient.invalidateQueries({ queryKey: ["bungkus"] });
-    router.refresh();
+    queryClient.invalidateQueries({ queryKey: ["bungkus-orders"] });
+  };
+
+  const optimisticRemove = () => {
+    queryClient.setQueryData(["bungkus-orders"], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        pages: old.pages.map((page: any[]) =>
+          page.filter((order) => String(order.orderId) !== String(orderId))
+        ),
+      };
+    });
   };
 
   const { mutate: hapus, isPending: isDeleting } = useMutation({
@@ -97,6 +113,7 @@ export default function CardBungkus({
         addToast(res.error || "Gagal menghapus pesanan", "error");
         return;
       }
+      optimisticRemove();
       invalidateAndRefresh();
     },
   });
@@ -109,6 +126,7 @@ export default function CardBungkus({
         return;
       }
       setShowPayment(false);
+      optimisticRemove();
       invalidateAndRefresh();
     },
   });
@@ -117,10 +135,9 @@ export default function CardBungkus({
     <>
       <section
         className={`w-full h-60 rounded-xl border flex items-stretch shadow-sm transition-all duration-500 cursor-default group
-          ${
-            isHighlighted
-              ? "border-yellow-400 dark:border-yellow-500 ring-2 ring-yellow-400 dark:ring-yellow-500 bg-yellow-50 dark:bg-yellow-900/10"
-              : "bg-white dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 hover:border-orange-500/50"
+          ${isHighlighted
+            ? "border-yellow-400 dark:border-yellow-500 ring-2 ring-yellow-400 dark:ring-yellow-500 bg-yellow-50 dark:bg-yellow-900/10"
+            : "bg-white dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 hover:border-orange-500/50"
           }
         `}
       >
@@ -130,9 +147,15 @@ export default function CardBungkus({
           ></div>
           <div className="w-full h-full flex flex-col justify-between">
             <Link
-              href={`/bungkus/ordering?mode=update&orderId=${orderId}`}
-              className="flex flex-col items-center justify-between px-5 py-3"
-              onClick={() => clearUnseenUpdatedOrder(parsedOrderId)}
+              href={isDeleting || isProcessing ? "#" : `/bungkus/ordering?mode=update&orderId=${orderId}`}
+              className={`flex flex-col items-center justify-between px-5 py-3 ${isDeleting || isProcessing ? "pointer-events-none opacity-50" : ""}`}
+              onClick={(e) => {
+                if (isDeleting || isProcessing) {
+                  e?.preventDefault();
+                  return;
+                }
+                clearUnseenUpdatedOrder(parsedOrderId);
+              }}
             >
               <div className="w-full flex items-center justify-between">
                 <h1 className="text-lg font-bold text-gray-800 dark:text-white uppercase">
@@ -157,11 +180,10 @@ export default function CardBungkus({
               </div>
               <div
                 className={`w-full flex flex-wrap content-start gap-2 rounded-lg p-2.5 mt-3 overflow-y-auto max-h-24 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 transition-all duration-500
-                ${
-                  hasUnseen
+                ${hasUnseen
                     ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-600"
                     : "bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800"
-                }
+                  }
               `}
               >
                 {hasUnseen && !isHighlighted && (
@@ -179,10 +201,9 @@ export default function CardBungkus({
                     <div
                       key={i}
                       className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md shadow-sm transition-all duration-500 cursor-default
-                        ${
-                          isItemChanged
-                            ? "bg-yellow-100 dark:bg-yellow-800/40 border border-yellow-400 dark:border-yellow-500"
-                            : "bg-white dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 hover:border-orange-400/50 dark:hover:border-orange-500/50"
+                        ${isItemChanged
+                          ? "bg-yellow-100 dark:bg-yellow-800/40 border border-yellow-400 dark:border-yellow-500"
+                          : "bg-white dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 hover:border-orange-400/50 dark:hover:border-orange-500/50"
                         }
                       `}
                     >
@@ -198,11 +219,10 @@ export default function CardBungkus({
                       </span>
                       <span
                         className={`flex items-center justify-center min-w-5 h-5 font-bold rounded text-[10px]
-                        ${
-                          isItemChanged
+                        ${isItemChanged
                             ? "bg-yellow-300 text-yellow-900 dark:bg-yellow-600 dark:text-yellow-100"
                             : "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400"
-                        }
+                          }
                       `}
                       >
                         {item.q}x
@@ -215,18 +235,22 @@ export default function CardBungkus({
             <div className="flex">
               <Button
                 onClick={() => hapus()}
-                disabled={isDeleting || isNavigating}
+                disabled={isDeleting}
                 className="h-12 w-16 shrink-0 bg-red-500 text-white hover:bg-red-600 dark:bg-red-900 dark:hover:bg-red-700 uppercase font-bold rounded-none text-xs transition-colors mt-auto z-10 relative flex items-center justify-center disabled:opacity-50"
               >
-                {isDeleting || isNavigating ? (
+                {isDeleting ? (
                   <LuLoader className="animate-spin" />
                 ) : (
                   <LuTrash2 size={18} strokeWidth={2.5} />
                 )}
               </Button>
               <Button
-                onClick={() => setShowPayment(true)}
-                className="h-12 flex-1 bg-black text-white hover:bg-neutral-800 dark:bg-neutral-900 dark:hover:bg-black uppercase font-bold rounded-br-xl mt-auto z-10 relative transition-colors"
+                onClick={(e) => {
+                  e?.stopPropagation();
+                  setShowPayment(true);
+                }}
+                disabled={isDeleting || isProcessing}
+                className="h-12 flex-1 bg-black text-white hover:bg-neutral-800 dark:bg-neutral-900 dark:hover:bg-black uppercase font-bold rounded-br-xl mt-auto z-10 relative transition-colors disabled:opacity-50"
               >
                 Bayar
               </Button>

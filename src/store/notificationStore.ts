@@ -7,6 +7,7 @@ interface NotificationStore {
   unseenUpdatedOrders: number[];
   highlightedOrders: number[];
   highlightTimeouts: Record<number, NodeJS.Timeout | undefined>;
+  manualChangedItems: Record<number, string[]>;
   setHasNewBungkus: (val: boolean) => void;
   setHasNewMeja: (val: boolean) => void;
   addNewMejaId: (id: number) => void;
@@ -14,6 +15,7 @@ interface NotificationStore {
   addUnseenUpdatedOrder: (orderId: number) => void;
   clearUnseenUpdatedOrder: (orderId: number) => void;
   activateHighlight: (orderId: number) => void;
+  setManualChangedItems: (orderId: number, items: string[]) => void;
 }
 
 export const useNotificationStore = create<NotificationStore>((set) => ({
@@ -23,6 +25,7 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
   unseenUpdatedOrders: [],
   highlightedOrders: [],
   highlightTimeouts: {} as Record<number, NodeJS.Timeout>,
+  manualChangedItems: {},
   setHasNewBungkus: (val) => set({ hasNewBungkus: val }),
   setHasNewMeja: (val) => set({ hasNewMeja: val }),
   addNewMejaId: (id) =>
@@ -74,4 +77,11 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
       };
     });
   },
+  setManualChangedItems: (orderId, items) =>
+    set((state) => ({
+      manualChangedItems: {
+        ...state.manualChangedItems,
+        [orderId]: items,
+      },
+    })),
 }));

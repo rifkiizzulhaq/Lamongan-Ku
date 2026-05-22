@@ -18,6 +18,7 @@ import type { Stock } from "@/db/schema";
 import PageHeaderSkeleton from "@/src/components/ui/PageHeaderSkeleton";
 import CardOrderingSkeleton from "@/src/features/karyawan/pos/components/CardOrderingSkeleton";
 import { useUiStore } from "@/src/store/uiStore";
+import { useNotificationStore } from "@/src/store/notificationStore";
 
 function MakanContent() {
   const { addToast } = useUiStore();
@@ -61,6 +62,12 @@ function MakanContent() {
 
   const queryClient = useQueryClient();
   const [isNavigating, setIsNavigating] = useState(false);
+  const setManualChangedItems = useNotificationStore(
+    (s) => s.setManualChangedItems,
+  );
+  const addUnseenUpdatedOrder = useNotificationStore(
+    (s) => s.addUnseenUpdatedOrder,
+  );
 
   const { mutate: simpan, isPending } = useMutation({
     mutationFn: async (
@@ -71,17 +78,36 @@ function MakanContent() {
       }
       return createMakanOrder(tableId, customerType, payload);
     },
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       if (res && res.success === false) {
         addToast(res.error || "Gagal menyimpan pesanan", "error");
         return;
       }
+
+      if (mode === "update" && orderId && orderData) {
+        const changedItems = cart
+          .filter((newItem) => {
+            const oldItem = orderData.cartItems.find(
+              (i) => i.stockId === newItem.stockId && i.isTakeaway === newItem.isTakeaway
+            );
+            return !oldItem || oldItem.quantity !== newItem.quantity;
+          })
+          .map((i) => `${i.name}-${i.isTakeaway}`);
+
+        if (changedItems.length > 0) {
+          setManualChangedItems(orderId, changedItems);
+          addUnseenUpdatedOrder(orderId);
+        }
+      }
+
       setIsNavigating(true);
-      queryClient.invalidateQueries({ queryKey: ["table-orders", tableId] });
-      queryClient.invalidateQueries({ queryKey: ["makan-order", orderId] });
-      queryClient.invalidateQueries({ queryKey: ["table", tableId] });
-      queryClient.invalidateQueries({ queryKey: ["tables-karyawan"] });
-      queryClient.invalidateQueries({ queryKey: ["stock-list"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["table-orders", tableId], refetchType: "all" }),
+        queryClient.invalidateQueries({ queryKey: ["makan-order", orderId], refetchType: "all" }),
+        queryClient.invalidateQueries({ queryKey: ["table", tableId], refetchType: "all" }),
+        queryClient.invalidateQueries({ queryKey: ["tables-karyawan"], refetchType: "all" }),
+        queryClient.invalidateQueries({ queryKey: ["stock-list"], refetchType: "all" })
+      ]);
       router.push(`/meja/${tableId}`);
     },
   });
@@ -95,8 +121,8 @@ function MakanContent() {
     const initialLockedQty =
       mode === "update" && orderData
         ? orderData.cartItems
-            .filter((i) => i.stockId === s.id)
-            .reduce((sum, item) => sum + item.quantity, 0)
+          .filter((i) => i.stockId === s.id)
+          .reduce((sum, item) => sum + item.quantity, 0)
         : 0;
     return (s.quantity ?? 0) + initialLockedQty > 0;
   });
@@ -113,8 +139,8 @@ function MakanContent() {
       const initialLockedQty =
         mode === "update" && orderData
           ? orderData.cartItems
-              .filter((i) => i.stockId === s.id)
-              .reduce((sum, item) => sum + item.quantity, 0)
+            .filter((i) => i.stockId === s.id)
+            .reduce((sum, item) => sum + item.quantity, 0)
           : 0;
 
       const available = (s.quantity ?? 0) + initialLockedQty;
@@ -212,8 +238,8 @@ function MakanContent() {
             const initialLockedQty =
               mode === "update" && orderData
                 ? orderData.cartItems
-                    .filter((i) => i.stockId === s.id)
-                    .reduce((sum, item) => sum + item.quantity, 0)
+                  .filter((i) => i.stockId === s.id)
+                  .reduce((sum, item) => sum + item.quantity, 0)
                 : 0;
             const available = (s.quantity ?? 0) + initialLockedQty;
             const special = isSpecialMenu(s.name);
@@ -233,9 +259,15 @@ function MakanContent() {
                 price={s.price}
                 quantity={currentSpecificQty}
                 sisa={special ? undefined : available - currentTotalQtyForStock}
-                disabled={!canAdd}
-                onAdd={() => addToCart(s)}
-                onRemove={() => removeFromCart(s.id)}
+                disabled={!canAdd || isPending || isNavigating}
+                onAdd={() => {
+                  if (isPending || isNavigating) return;
+                  addToCart(s);
+                }}
+                onRemove={() => {
+                  if (isPending || isNavigating) return;
+                  removeFromCart(s.id);
+                }}
               />
             );
           })}
