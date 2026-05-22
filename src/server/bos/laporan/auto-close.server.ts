@@ -8,7 +8,7 @@ import {
   daily_stock_snapshots,
   shop_status,
 } from "@/db/schema";
-import { and, gte, lte, inArray } from "drizzle-orm";
+import { and, gte, lte, inArray, eq } from "drizzle-orm";
 import { getShiftDate, getAutoCloseTargetDate } from "./utils";
 
 let activeAutoClosePromise: Promise<void> | null = null;
@@ -19,7 +19,7 @@ export async function checkAndRunAutoClose(): Promise<void> {
     return;
   }
 
-  let resolvePromise: () => void = () => {};
+  let resolvePromise: () => void = () => { };
   activeAutoClosePromise = new Promise<void>((resolve) => {
     resolvePromise = resolve;
   });
@@ -36,40 +36,33 @@ export async function checkAndRunAutoClose(): Promise<void> {
     const launchShiftDate = firstOrder
       ? getShiftDate(firstOrder.createdAt)
       : null;
-    if (launchShiftDate) {
-      launchShiftDate.setHours(0, 0, 0, 0);
-    }
 
-    if (launchShiftDate) {
-      const allReports = await db.select().from(daily_reports);
-      const idsToDeletePreLaunch: number[] = [];
-      for (const r of allReports) {
-        const sd = getShiftDate(r.createdAt);
-        sd.setHours(0, 0, 0, 0);
-        if (sd.getTime() < launchShiftDate.getTime()) {
-          idsToDeletePreLaunch.push(r.id);
-        }
-      }
-      if (idsToDeletePreLaunch.length > 0) {
-        await db
-          .delete(daily_reports)
-          .where(inArray(daily_reports.id, idsToDeletePreLaunch));
-      }
-    }
+    if (!launchShiftDate) return;
+
+    launchShiftDate.setHours(0, 0, 0, 0);
 
     const allReports = await db.select().from(daily_reports);
-    if (allReports.length > 0) {
-      const getShiftDateLocal = (date: Date): Date => {
-        const wib = new Date(
-          date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
-        );
-        if (wib.getHours() < 6) wib.setDate(wib.getDate() - 1);
-        return wib;
-      };
+    const idsToDeletePreLaunch: number[] = [];
+    for (const r of allReports) {
+      const sd = getShiftDate(r.createdAt);
+      sd.setHours(0, 0, 0, 0);
+      if (sd.getTime() < launchShiftDate.getTime()) {
+        idsToDeletePreLaunch.push(r.id);
+      }
+    }
+    if (idsToDeletePreLaunch.length > 0) {
+      await db
+        .delete(daily_reports)
+        .where(inArray(daily_reports.id, idsToDeletePreLaunch));
+    }
 
-      const grouped = new Map<string, (typeof daily_reports.$inferSelect)[]>();
-      for (const r of allReports) {
-        const sd = getShiftDateLocal(r.createdAt);
+    const currentReports = await db.query.daily_reports.findMany({
+      with: { weathers: true },
+    });
+    if (currentReports.length > 0) {
+      const grouped = new Map<string, typeof currentReports>();
+      for (const r of currentReports) {
+        const sd = getShiftDate(r.createdAt);
         const key = `${sd.getFullYear()}-${String(sd.getMonth() + 1).padStart(2, "0")}-${String(sd.getDate()).padStart(2, "0")}`;
         if (!grouped.has(key)) grouped.set(key, []);
         grouped.get(key)!.push(r);
@@ -144,17 +137,10 @@ export async function checkAndRunAutoClose(): Promise<void> {
     const rangeEnd = new Date(latestCheckDate.getTime() + 30 * 60 * 60 * 1000);
 
     const [
-      existingReportsList,
       allRangeStocks,
       allRangeOrders,
       currentStocksBulk,
     ] = await Promise.all([
-      db.query.daily_reports.findMany({
-        where: and(
-          gte(daily_reports.createdAt, checkStartDate),
-          lte(daily_reports.createdAt, rangeEnd),
-        ),
-      }),
       db.query.stock.findMany({
         where: and(
           gte(stock.updatedAt, checkStartDate),
@@ -190,10 +176,16 @@ export async function checkAndRunAutoClose(): Promise<void> {
       const stockCheckStart = new Date(`${y}-${m}-${dStr}T00:00:00+07:00`);
       const stockCheckEnd = new Date(`${y}-${m}-${dStr}T18:30:00+07:00`);
 
-      const existingReport = existingReportsList.find(
+      const existingReport = currentReports.find(
         (r) => r.createdAt >= shiftStart && r.createdAt <= shiftEnd,
       );
-      if (existingReport) continue;
+
+      const isCompletedReport = existingReport && (
+        existingReport.weathers.length > 0 ||
+        (existingReport.note && existingReport.note.includes("Sistem Otomatis:"))
+      );
+
+      if (isCompletedReport) continue;
 
       const stockSavedToday = allRangeStocks.find(
         (s) => s.updatedAt >= stockCheckStart && s.updatedAt <= stockCheckEnd,
@@ -216,20 +208,35 @@ export async function checkAndRunAutoClose(): Promise<void> {
           (acc, o) => acc + o.totalPrice,
           0,
         );
-        const [newReport] = await db
-          .insert(daily_reports)
-          .values({
-            actualRevenue: totalRevenue,
-            systemRevenue: totalRevenue,
-            note: "Sistem Otomatis: Karyawan lupa tutup warung",
-            createdAt: shiftEnd,
-          })
-          .returning({ id: daily_reports.id });
+        let newReportId;
+        if (existingReport) {
+          await db
+            .update(daily_reports)
+            .set({
+              actualRevenue: totalRevenue,
+              systemRevenue: totalRevenue,
+              note: "Sistem Otomatis: Karyawan lupa tutup warung",
+              createdAt: shiftEnd,
+            })
+            .where(eq(daily_reports.id, existingReport.id));
+          newReportId = existingReport.id;
+        } else {
+          const [newReport] = await db
+            .insert(daily_reports)
+            .values({
+              actualRevenue: totalRevenue,
+              systemRevenue: totalRevenue,
+              note: "Sistem Otomatis: Karyawan lupa tutup warung",
+              createdAt: shiftEnd,
+            })
+            .returning({ id: daily_reports.id });
+          newReportId = newReport.id;
+        }
 
         if (currentStocksBulk.length > 0) {
           await db.insert(daily_stock_snapshots).values(
             currentStocksBulk.map((s) => ({
-              reportId: newReport.id,
+              reportId: newReportId,
               stockId: s.id,
               sisaQuantity: s.quantity || 0,
               createdAt: shiftEnd,
@@ -237,20 +244,35 @@ export async function checkAndRunAutoClose(): Promise<void> {
           );
         }
       } else {
-        const [newReportLibur] = await db
-          .insert(daily_reports)
-          .values({
-            actualRevenue: 0,
-            systemRevenue: 0,
-            note: "Sistem Otomatis: Tidak ada pesanan (Libur/Tutup)",
-            createdAt: shiftEnd,
-          })
-          .returning({ id: daily_reports.id });
+        let newReportId;
+        if (existingReport) {
+          await db
+            .update(daily_reports)
+            .set({
+              actualRevenue: 0,
+              systemRevenue: 0,
+              note: "Sistem Otomatis: Tidak ada pesanan (Libur/Tutup)",
+              createdAt: shiftEnd,
+            })
+            .where(eq(daily_reports.id, existingReport.id));
+          newReportId = existingReport.id;
+        } else {
+          const [newReportLibur] = await db
+            .insert(daily_reports)
+            .values({
+              actualRevenue: 0,
+              systemRevenue: 0,
+              note: "Sistem Otomatis: Tidak ada pesanan (Libur/Tutup)",
+              createdAt: shiftEnd,
+            })
+            .returning({ id: daily_reports.id });
+          newReportId = newReportLibur.id;
+        }
 
         if (currentStocksBulk.length > 0) {
           await db.insert(daily_stock_snapshots).values(
             currentStocksBulk.map((s) => ({
-              reportId: newReportLibur.id,
+              reportId: newReportId,
               stockId: s.id,
               sisaQuantity: s.quantity || 0,
               createdAt: shiftEnd,

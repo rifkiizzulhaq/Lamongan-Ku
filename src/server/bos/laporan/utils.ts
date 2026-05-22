@@ -28,7 +28,7 @@ export function getLastFixDate(): { targetDate: Date; endOfFixDate: Date } {
 export function getAutoCloseTargetDate(): Date {
   const wibNow = getWibDate();
   const currentHour = wibNow.getHours();
-  
+
   const targetWib = currentHour >= 2 ? subDays(wibNow, 1) : subDays(wibNow, 2);
   const targetDateStr = format(targetWib, "yyyy-MM-dd'T'00:00:00XXX", { timeZone: TIMEZONE });
   return new Date(targetDateStr);

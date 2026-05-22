@@ -12,7 +12,13 @@ import Link from "next/link";
 import Button from "@/src/components/ui/Button";
 import { LuPlus } from "react-icons/lu";
 
-export default function BungkusClient({ isClosed }: { isClosed: boolean }) {
+export default function BungkusClient({
+  isClosed,
+  isClosedLoading,
+}: {
+  isClosed: boolean;
+  isClosedLoading: boolean;
+}) {
   useSupabaseRealtime("orders", ["bungkus-orders"]);
   const {
     data: infiniteData,
@@ -63,10 +69,12 @@ export default function BungkusClient({ isClosed }: { isClosed: boolean }) {
     };
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
+  const showSkeleton = isLoading || isClosedLoading;
+
   return (
     <>
-      {!isLoading && (
-        <div className="absolute bottom-15 right-0 z-50">
+      {!showSkeleton && (
+        <div className="absolute bottom-15 right-0 z-50 min-h-[48px]">
           {isClosed ? (
             <div className="flex items-center gap-1 bg-neutral-400 text-white cursor-not-allowed shadow-lg font-bold py-2 px-3 rounded-full opacity-60">
               Warung Tutup
@@ -83,7 +91,7 @@ export default function BungkusClient({ isClosed }: { isClosed: boolean }) {
       )}
 
       <div className="flex-1 overflow-y-auto flex flex-col gap-4 pb-30 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700">
-        {isLoading ? (
+        {showSkeleton ? (
           <CardBungkusSkeleton count={5} />
         ) : orders.length === 0 ? (
           <p className="text-center text-neutral-400 dark:text-neutral-600 text-sm mt-10">

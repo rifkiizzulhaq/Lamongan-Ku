@@ -57,7 +57,11 @@ export async function checkIfReportedToday() {
     with: { weathers: true },
   });
 
-  return !!(existing && existing.weathers.length > 0);
+  if (!existing) return false;
+  if (existing.weathers.length > 0) return true;
+  if (existing.note && existing.note.includes("Sistem Otomatis:")) return true;
+  
+  return false;
 }
 
 export async function saveClosingReport(payload: ClosingReportPayload) {

@@ -127,17 +127,20 @@ export async function getDashboardStats() {
     if (isClosed) {
       sisaBahan = (report.snapshots || [])
         .sort((a, b) => a.stockId - b.stockId)
+        .filter((s) => s.stock?.isUnlimited === 0)
         .map((s) => ({
           id: s.stockId,
           nama: s.stock.name,
           sisa: s.sisaQuantity,
         }));
     } else {
-      sisaBahan = currentStock.map((s) => ({
-        id: s.id,
-        nama: s.name,
-        sisa: s.quantity,
-      }));
+      sisaBahan = currentStock
+        .filter((s) => s.isUnlimited === 0)
+        .map((s) => ({
+          id: s.id,
+          nama: s.name,
+          sisa: s.quantity,
+        }));
     }
 
     return {

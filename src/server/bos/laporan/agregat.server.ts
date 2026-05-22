@@ -519,9 +519,8 @@ export async function getAggregatedAnalytics(
     soldItemsPrev.map((i) => [i.stockId, Number(i.total || 0)]),
   );
 
-  const excludedItems = ["teh manis", "nasi", "sambal"];
   const sisaBahan = stockList
-    .filter((s) => !excludedItems.includes(s.name.toLowerCase()))
+    .filter((s) => s.isUnlimited === 0)
     .map((s) => {
       const snapsCurrForItem = snapsCurr.filter((x) => x.stockId === s.id);
       const snapsPrevForItem = snapsPrev.filter((x) => x.stockId === s.id);

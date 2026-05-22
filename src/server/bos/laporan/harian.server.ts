@@ -224,9 +224,8 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     soldItemsPrev.map((i) => [i.stockId, Number(i.total || 0)]),
   );
 
-  const excludedItems = ["teh manis", "nasi", "sambal"];
   const sisaBahan = stockList
-    .filter((s) => !excludedItems.includes(s.name.toLowerCase()))
+    .filter((s) => s.isUnlimited === 0)
     .map((s) => {
       const sisaCurrent =
         snapshotsCurr.find((x) => x.stockId === s.id)?.sisaQuantity ?? 0;
