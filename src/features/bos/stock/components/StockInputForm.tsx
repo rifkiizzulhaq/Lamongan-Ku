@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useWarungStore } from "@/src/store/warungStore";
 import Button from "@/src/components/ui/Button";
 import {
@@ -167,23 +167,23 @@ export default function StockInputForm({
 
   const parseCurrency = (value: string) => value.replace(/\D/g, "");
 
+  const manualInputs = useRef<Record<number, string>>({});
+
   const handleToggleSisaKemarin = () => {
     if (!isBuka) return;
     const newValue = !useSisaKemarin;
     setUseSisaKemarin(newValue);
 
-    const newInputs: Record<number, string> = {};
-    stockList.forEach((item) => {
-      if (newValue) {
+    if (newValue) {
+      manualInputs.current = { ...stockInputs };
+      const newInputs: Record<number, string> = {};
+      stockList.forEach((item) => {
         newInputs[item.id] = item.sisaKemarin.toString();
-      } else {
-        newInputs[item.id] =
-          item.quantity !== null && item.quantity > 0
-            ? item.quantity.toString()
-            : "";
-      }
-    });
-    setStockInputs(newInputs);
+      });
+      setStockInputs(newInputs);
+    } else {
+      setStockInputs({ ...manualInputs.current });
+    }
   };
 
   const handleInputChange = (id: number, value: string) => {
