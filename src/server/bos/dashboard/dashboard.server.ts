@@ -13,7 +13,7 @@ import {
 import { gte, lte, and, sql, eq } from "drizzle-orm";
 import { unstable_noStore as noStore, revalidatePath } from "next/cache";
 import { getShiftWaktu } from "@/src/utils/date";
-import { checkAndRunAutoClose } from "@/src/server/bos/laporan/laporan.server";
+
 import { requireAuth } from "@/lib/auth-guard";
 import { z } from "zod";
 
@@ -82,7 +82,6 @@ export async function updateShopStatus(isBuka: boolean, reason?: string) {
 export async function getDashboardStats() {
   noStore();
   await requireAuth(["bos"]);
-  checkAndRunAutoClose().catch(console.error);
   const { startOfDay, endOfDay } = getShiftWaktu();
   const shopStatus = await getShopStatus();
 

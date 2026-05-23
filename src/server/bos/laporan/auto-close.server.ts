@@ -248,40 +248,42 @@ export async function checkAndRunAutoClose(): Promise<void> {
           );
         }
       } else {
-        let newReportId;
-        if (existingReport) {
-          await db
-            .update(daily_reports)
-            .set({
-              actualRevenue: 0,
-              systemRevenue: 0,
-              note: "Sistem Otomatis: Tidak ada pesanan (Libur/Tutup)",
-              createdAt: shiftEnd,
-            })
-            .where(eq(daily_reports.id, existingReport.id));
-          newReportId = existingReport.id;
-        } else {
-          const [newReportLibur] = await db
-            .insert(daily_reports)
-            .values({
-              actualRevenue: 0,
-              systemRevenue: 0,
-              note: "Sistem Otomatis: Tidak ada pesanan (Libur/Tutup)",
-              createdAt: shiftEnd,
-            })
-            .returning({ id: daily_reports.id });
-          newReportId = newReportLibur.id;
-        }
+        if (!isToday) {
+          let newReportId;
+          if (existingReport) {
+            await db
+              .update(daily_reports)
+              .set({
+                actualRevenue: 0,
+                systemRevenue: 0,
+                note: "Sistem Otomatis: Tidak ada pesanan (Libur/Tutup)",
+                createdAt: shiftEnd,
+              })
+              .where(eq(daily_reports.id, existingReport.id));
+            newReportId = existingReport.id;
+          } else {
+            const [newReportLibur] = await db
+              .insert(daily_reports)
+              .values({
+                actualRevenue: 0,
+                systemRevenue: 0,
+                note: "Sistem Otomatis: Tidak ada pesanan (Libur/Tutup)",
+                createdAt: shiftEnd,
+              })
+              .returning({ id: daily_reports.id });
+            newReportId = newReportLibur.id;
+          }
 
-        if (currentStocksBulk.length > 0) {
-          await db.insert(daily_stock_snapshots).values(
-            currentStocksBulk.map((s) => ({
-              reportId: newReportId,
-              stockId: s.id,
-              sisaQuantity: s.quantity || 0,
-              createdAt: shiftEnd,
-            })),
-          );
+          if (currentStocksBulk.length > 0) {
+            await db.insert(daily_stock_snapshots).values(
+              currentStocksBulk.map((s) => ({
+                reportId: newReportId,
+                stockId: s.id,
+                sisaQuantity: s.quantity || 0,
+                createdAt: shiftEnd,
+              })),
+            );
+          }
         }
         if (i === 0 || isToday) {
           const currentStatus = await db.query.shop_status.findFirst();

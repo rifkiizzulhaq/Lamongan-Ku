@@ -288,6 +288,33 @@ export async function update(orderId: number, status: string) {
 export async function deletes(orderId: number) {
   try {
     await requireAuth();
+    const orderInfo = await db.query.orders.findFirst({
+      where: eq(orders.id, orderId),
+      columns: { status: true, createdAt: true },
+    });
+
+    if (!orderInfo) {
+      return { success: false, error: "Pesanan tidak ditemukan" };
+    }
+
+    if (orderInfo.status === "selesai") {
+      return {
+        success: false,
+        error: "Tidak bisa menghapus pesanan yang sudah selesai",
+      };
+    }
+
+    const { startOfDay, endOfDay } = getShiftWaktu();
+    if (
+      orderInfo.createdAt < startOfDay ||
+      orderInfo.createdAt > endOfDay
+    ) {
+      return {
+        success: false,
+        error: "Hanya bisa menghapus pesanan dari shift hari ini",
+      };
+    }
+
     const oldItems = await db.query.order_items.findMany({
       where: eq(order_items.orderId, orderId),
     });

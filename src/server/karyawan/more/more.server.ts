@@ -11,7 +11,7 @@ import {
 import { eq, and, gte, lte, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getShiftWaktu } from "@/src/utils/date";
-import { checkAndRunAutoClose } from "../../bos/laporan/auto-close.server";
+
 import { requireAuth } from "@/lib/auth-guard";
 import { z } from "zod";
 
@@ -42,7 +42,6 @@ import { unstable_noStore as noStore } from "next/cache";
 export async function checkIfReportedToday() {
   noStore();
   await requireAuth();
-  await checkAndRunAutoClose();
   const status = await db.query.shop_status.findFirst();
   if (status && status.isBuka === 0) {
     return true;

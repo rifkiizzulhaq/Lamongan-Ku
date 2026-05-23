@@ -1,12 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-
-const debounceTimeouts: Record<string, NodeJS.Timeout> = {};
 
 export function useSupabaseRealtime(table: string, queryKeys: string[]) {
   const queryClient = useQueryClient();
   const queryKeysString = JSON.stringify(queryKeys);
+  const debounceTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
 
   useEffect(() => {
     const keys = JSON.parse(queryKeysString);
@@ -18,12 +17,12 @@ export function useSupabaseRealtime(table: string, queryKeys: string[]) {
         { event: "*", schema: "public", table: table },
         () => {
           keys.forEach((key: string) => {
-            if (debounceTimeouts[key]) {
-              clearTimeout(debounceTimeouts[key]);
+            if (debounceTimeouts.current[key]) {
+              clearTimeout(debounceTimeouts.current[key]);
             }
-            debounceTimeouts[key] = setTimeout(() => {
+            debounceTimeouts.current[key] = setTimeout(() => {
               queryClient.invalidateQueries({ queryKey: [key] });
-              delete debounceTimeouts[key];
+              delete debounceTimeouts.current[key];
             }, 1000);
           });
         },
