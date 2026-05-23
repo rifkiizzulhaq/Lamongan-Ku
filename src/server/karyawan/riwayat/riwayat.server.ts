@@ -45,6 +45,7 @@ export async function getHistory(page: number = 1, limitNum: number = 10) {
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "Asia/Jakarta",
     })
       .format(order.createdAt)
       .replace(/\./g, ":");

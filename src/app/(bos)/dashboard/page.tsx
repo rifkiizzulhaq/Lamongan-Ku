@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   DashboardSisaBahanItem,
@@ -47,9 +47,15 @@ export default function Page() {
     queryFn: async () => await getDashboardStats(),
   });
 
+  const lastToastTime = useRef<number>(0);
+
   useEffect(() => {
     if (isFetching && !isPending) {
-      addToast("Data terbaru disinkronisasi (Real-time)", "info");
+      const now = Date.now();
+      if (now - lastToastTime.current > 10000) {
+        addToast("Data terbaru disinkronisasi (Real-time)", "info");
+        lastToastTime.current = now;
+      }
     }
   }, [isFetching, isPending, addToast]);
 
