@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import CardOrdering from "@/src/features/karyawan/pos/components/CardOrdering";
@@ -29,7 +29,7 @@ export default function BungkusOrderingClient({
   orderId,
   initialCart = [],
 }: Props) {
-  const { addToast } = useUiStore();
+  const { addToast, removeToast } = useUiStore();
   const {
     cart,
     isSpecialMenu,
@@ -54,6 +54,8 @@ export default function BungkusOrderingClient({
 
   const [isNavigating, setIsNavigating] = useState(false);
 
+  const loadingToastId = useRef<string | null>(null);
+
   const { mutate: simpan, isPending } = useMutation({
     mutationFn: async (payload: { stockId: number; quantity: number }[]) => {
       if (mode === "update" && orderId) {
@@ -61,11 +63,22 @@ export default function BungkusOrderingClient({
       }
       return create(payload);
     },
+    onMutate: () => {
+      loadingToastId.current = addToast("Menyimpan pesanan...", "loading");
+    },
+    onSettled: () => {
+      if (loadingToastId.current) {
+        removeToast(loadingToastId.current);
+        loadingToastId.current = null;
+      }
+    },
     onSuccess: async (res) => {
       if (res && res.success === false) {
         addToast(res.error || "Gagal menyimpan pesanan", "error");
         return;
       }
+      
+      addToast(mode === "update" ? "Pesanan berhasil diupdate" : "Pesanan berhasil dibuat", "success");
 
       if (mode === "update" && orderId) {
         const changedItems = cart
@@ -152,6 +165,7 @@ export default function BungkusOrderingClient({
         cart={cart}
         totalPrice={totalPrice}
         onSave={handleSave}
+        onCancel={() => router.push("/bungkus")}
         isPending={isPending || isNavigating}
         isClosed={isClosed}
       />

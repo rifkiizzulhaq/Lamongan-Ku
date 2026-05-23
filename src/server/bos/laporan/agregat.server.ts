@@ -37,6 +37,9 @@ function computeHourlyAvg(
   numDays: number,
 ): { labels: string[]; dineIn: number[]; takeaway: number[] } {
   const hours = [
+    "12:00",
+    "13:00",
+    "14:00",
     "15:00",
     "16:00",
     "17:00",
@@ -48,7 +51,6 @@ function computeHourlyAvg(
     "23:00",
     "00:00",
     "01:00",
-    "02:00",
   ];
   const dIn = new Array<number>(hours.length).fill(0);
   const tAway = new Array<number>(hours.length).fill(0);
@@ -104,8 +106,8 @@ function aggregate({
     const y = sd.getFullYear();
     const m = String(sd.getMonth() + 1).padStart(2, "0");
     const d = String(sd.getDate()).padStart(2, "0");
-    const start = new Date(`${y}-${m}-${d}T15:00:00+07:00`);
-    const end = new Date(start.getTime() + 11 * 60 * 60 * 1000);
+    const start = new Date(`${y}-${m}-${d}T12:00:00+07:00`);
+    const end = new Date(start.getTime() + 14 * 60 * 60 * 1000);
     const hasOrders = orderList.some(
       (o) => o.createdAt >= start && o.createdAt <= end,
     );
@@ -203,7 +205,7 @@ function aggregate({
       alasanLiburTrend.push(
         monthLiburs.length > 0
           ? `Libur ${monthLiburs.length}x: ` +
-              Array.from(new Set(monthLiburs.map((r) => r.note))).join(", ")
+          Array.from(new Set(monthLiburs.map((r) => r.note))).join(", ")
           : "",
       );
 
@@ -250,8 +252,8 @@ function aggregate({
       const y = dWib.getFullYear();
       const m = String(dWib.getMonth() + 1).padStart(2, "0");
       const dStr = String(dWib.getDate()).padStart(2, "0");
-      const start = new Date(`${y}-${m}-${dStr}T15:00:00+07:00`);
-      const end = new Date(start.getTime() + 11 * 60 * 60 * 1000);
+      const start = new Date(`${y}-${m}-${dStr}T12:00:00+07:00`);
+      const end = new Date(start.getTime() + 14 * 60 * 60 * 1000);
 
       const ordersForDay = orderList.filter(
         (o) => o.createdAt >= start && o.createdAt <= end,
@@ -462,30 +464,30 @@ export async function getAggregatedAnalytics(
   const [snapsCurr, wLogsCurr] = await Promise.all([
     currIds.length > 0
       ? db
-          .select()
-          .from(daily_stock_snapshots)
-          .where(inArray(daily_stock_snapshots.reportId, currIds))
+        .select()
+        .from(daily_stock_snapshots)
+        .where(inArray(daily_stock_snapshots.reportId, currIds))
       : Promise.resolve([]),
     currIds.length > 0
       ? db
-          .select()
-          .from(weather_logs)
-          .where(inArray(weather_logs.reportId, currIds))
+        .select()
+        .from(weather_logs)
+        .where(inArray(weather_logs.reportId, currIds))
       : Promise.resolve([] as WeatherLog[]),
   ]);
 
   const [snapsPrev, wLogsPrev] = await Promise.all([
     prevIds.length > 0
       ? db
-          .select()
-          .from(daily_stock_snapshots)
-          .where(inArray(daily_stock_snapshots.reportId, prevIds))
+        .select()
+        .from(daily_stock_snapshots)
+        .where(inArray(daily_stock_snapshots.reportId, prevIds))
       : Promise.resolve([]),
     prevIds.length > 0
       ? db
-          .select()
-          .from(weather_logs)
-          .where(inArray(weather_logs.reportId, prevIds))
+        .select()
+        .from(weather_logs)
+        .where(inArray(weather_logs.reportId, prevIds))
       : Promise.resolve([] as WeatherLog[]),
   ]);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense, useEffect, useRef } from "react";
 import { useSearchParams, useRouter, useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import CardOrdering from "@/src/features/karyawan/pos/components/CardOrdering";
@@ -20,7 +20,7 @@ import { useNotificationStore } from "@/src/store/notificationStore";
 import { useCart } from "@/src/hooks/useCart";
 
 function MakanContent() {
-  const { addToast } = useUiStore();
+  const { addToast, removeToast } = useUiStore();
   const router = useRouter();
   const params = useParams();
   const tableIdStr = Array.isArray(params?.tableId)
@@ -86,6 +86,8 @@ function MakanContent() {
     (s) => s.addUnseenUpdatedOrder,
   );
 
+  const loadingToastId = useRef<string | null>(null);
+
   const { mutate: simpan, isPending } = useMutation({
     mutationFn: async (
       payload: { stockId: number; quantity: number; isTakeaway?: boolean }[],
@@ -95,11 +97,22 @@ function MakanContent() {
       }
       return createMakanOrder(tableId, customerType, payload);
     },
+    onMutate: () => {
+      loadingToastId.current = addToast("Menyimpan pesanan...", "loading");
+    },
+    onSettled: () => {
+      if (loadingToastId.current) {
+        removeToast(loadingToastId.current);
+        loadingToastId.current = null;
+      }
+    },
     onSuccess: async (res) => {
       if (res && res.success === false) {
         addToast(res.error || "Gagal menyimpan pesanan", "error");
         return;
       }
+      
+      addToast(mode === "update" ? "Pesanan berhasil diupdate" : "Pesanan berhasil dibuat", "success");
 
       if (mode === "update" && orderId && orderData) {
         const changedItems = cart
@@ -163,7 +176,7 @@ function MakanContent() {
     !initialCartLoaded
   ) {
     return (
-      <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
+      <section className="h-dvh w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
         <PageHeaderSkeleton hasTag />
         <main className="relative max-w-87.5 mx-auto w-full flex-1 flex flex-col overflow-hidden pt-2">
           <div className="flex-1 overflow-y-auto grid grid-cols-2 gap-2 pb-5 content-start">
@@ -177,9 +190,18 @@ function MakanContent() {
   }
 
   return (
-    <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
+    <section className="h-dvh w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
       <PageHeader
-        title={`Meja ${tableId}`}
+        title={
+          <div className="flex">
+            <div className="flex flex-col">
+              <span>Meja {tableId}</span>
+              <span className="text-[10px] sm:text-xs text-neutral-400 font-normal normal-case tracking-normal">
+                Tipe: <span className="capitalize">{customerType.toLowerCase()}</span>
+              </span>
+            </div>
+          </div>
+        }
         tag={isTakeaway ? "Bungkus" : "Makan di tempat"}
         onTagClick={() => setIsTakeaway(!isTakeaway)}
       />
@@ -228,31 +250,12 @@ function MakanContent() {
         </div>
       </main>
 
-      {cart.some((item) => item.isTakeaway) && (
-        <div className="px-4 py-2 bg-neutral-100 dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800">
-          <p className="text-xs font-bold text-neutral-500 mb-1">
-            DETAIL BUNGKUS:
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {cart
-              .filter((item) => item.isTakeaway)
-              .map((item, idx) => (
-                <span
-                  key={idx}
-                  className="bg-neutral-800 text-white text-[10px] font-bold px-2 py-1 rounded"
-                >
-                  Bungkus: {item.name} {item.quantity}x
-                </span>
-              ))}
-          </div>
-        </div>
-      )}
-
       <Cart
         mode={mode}
         cart={cart}
         totalPrice={totalPrice}
         onSave={handleSave}
+        onCancel={() => router.push(`/meja/${tableId}`)}
         isPending={isPending || isNavigating}
         isClosed={isClosed}
       />
@@ -264,7 +267,7 @@ export default function Page() {
   return (
     <Suspense
       fallback={
-        <section className="h-[calc(100dvh-45px)] w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
+        <section className="h-dvh w-full md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
           <PageHeaderSkeleton hasTag />
         </section>
       }

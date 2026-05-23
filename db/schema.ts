@@ -15,6 +15,7 @@ export const stock = pgTable("stock", {
   name: text("name").notNull(),
   price: integer("price").notNull(),
   quantity: integer("quantity"),
+  initialQuantity: integer("initial_quantity").notNull().default(0),
   isUnlimited: integer("is_unlimited").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

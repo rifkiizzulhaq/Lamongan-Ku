@@ -6,7 +6,6 @@ import {
   order_items,
   stock,
   dining_table,
-  daily_reports,
 } from "@/db/schema";
 import { and, eq, inArray, ne, gte, lte, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -375,31 +374,6 @@ export async function payMakanOrder(orderId: number) {
         .update(orders)
         .set({ status: "selesai" })
         .where(eq(orders.id, orderId));
-
-      const { startOfDay, endOfDay } = getShiftWaktu();
-
-      let currentReport = await tx.query.daily_reports.findFirst({
-        where: and(
-          gte(daily_reports.createdAt, startOfDay),
-          lte(daily_reports.createdAt, endOfDay),
-        ),
-        orderBy: (reports, { desc }) => [desc(reports.createdAt)],
-      });
-
-      if (!currentReport) {
-        const [newReport] = await tx
-          .insert(daily_reports)
-          .values({ systemRevenue: 0, actualRevenue: 0 })
-          .returning();
-        currentReport = newReport;
-      }
-
-      await tx
-        .update(daily_reports)
-        .set({
-          systemRevenue: sql`${daily_reports.systemRevenue} + ${order.totalPrice}`,
-        })
-        .where(eq(daily_reports.id, currentReport.id));
     });
 
     if (order.diningTableId) {

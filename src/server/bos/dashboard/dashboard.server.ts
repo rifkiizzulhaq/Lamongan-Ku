@@ -120,11 +120,16 @@ export async function getDashboardStats() {
     const pendapatan = Number(todayOrders[0]?.total || 0);
     const pesananCount = Number(todayOrders[0]?.count || 0);
 
-    const isClosed =
-      !!report && report.snapshots && report.snapshots.length > 0;
+    const isClosed = !!report && (
+      (report.weathers && report.weathers.length > 0) ||
+      (report.note && report.note.includes("Sistem Otomatis:"))
+    );
+    const hasReportSnapshots = !!report && !!report.snapshots && report.snapshots.length > 0;
+    const isStockUpdatedToday = currentStock.some((s) => s.updatedAt >= startOfDay);
+    const hasSavedStock = hasReportSnapshots || isStockUpdatedToday;
 
     let sisaBahan = [];
-    if (isClosed) {
+    if (hasReportSnapshots) {
       sisaBahan = (report.snapshots || [])
         .sort((a, b) => a.stockId - b.stockId)
         .filter((s) => s.stock?.isUnlimited === 0)
@@ -151,6 +156,7 @@ export async function getDashboardStats() {
       note: report?.note || null,
       weathers: report?.weathers || [],
       isClosed: isClosed,
+      hasSavedStock: hasSavedStock,
       shopStatus,
     };
   } catch (error) {
@@ -163,6 +169,8 @@ export async function getDashboardStats() {
       note: null,
       weathers: [],
       isClosed: false,
+      hasSavedStock: false,
+      shopStatus: { id: 1, isBuka: 1, reason: null, updatedAt: new Date() },
     };
   }
 }

@@ -65,6 +65,7 @@ export default function Page() {
     nama: s.name,
     price: s.price,
     quantity: s.quantity,
+    initialQuantity: s.initialQuantity,
     sisaKemarin: yesterdaySnapshot[s.id] ?? 0,
     isUnlimited: s.isUnlimited === 1,
   }));

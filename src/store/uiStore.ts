@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type ToastType = "success" | "error" | "info";
+type ToastType = "success" | "error" | "info" | "loading";
 
 interface ToastProps {
   id: string;
@@ -18,7 +18,7 @@ interface ConfirmModalProps {
 
 interface UiState {
   toasts: ToastProps[];
-  addToast: (message: string, type?: ToastType) => void;
+  addToast: (message: string, type?: ToastType) => string;
   removeToast: (id: string) => void;
 
   confirmModal: ConfirmModalProps;
@@ -38,6 +38,7 @@ export const useUiStore = create<UiState>((set, get) => ({
     set((state) => ({
       toasts: [...state.toasts, { id, message, type }],
     }));
+    return id;
   },
   removeToast: (id) =>
     set((state) => ({

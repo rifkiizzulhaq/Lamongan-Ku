@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   DashboardSisaBahanItem,
@@ -42,10 +42,16 @@ export default function Page() {
   useSupabaseRealtime("daily_reports", ["dashboard-stats"]);
   useSupabaseRealtime("shop_status", ["dashboard-stats"]);
 
-  const { data: stats, isPending } = useQuery({
+  const { data: stats, isPending, isFetching } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: async () => await getDashboardStats(),
   });
+
+  useEffect(() => {
+    if (isFetching && !isPending) {
+      addToast("Data terbaru disinkronisasi (Real-time)", "info");
+    }
+  }, [isFetching, isPending, addToast]);
 
   const { mutate: updateStatus, isPending: isUpdatingStatus } = useMutation({
     mutationFn: (isBuka: boolean) => updateShopStatus(isBuka, catatanLibur),
@@ -161,18 +167,16 @@ export default function Page() {
                   setPendingBuka(!pendingBuka);
                 }
               }}
-              className={`relative w-14 h-8 rounded-full transition-colors duration-300 ease-in-out focus:outline-none shrink-0 border-2 ${
-                stats.shopStatus?.isBuka === 1
+              className={`relative w-14 h-8 rounded-full transition-colors duration-300 ease-in-out focus:outline-none shrink-0 border-2 ${stats.shopStatus?.isBuka === 1
                   ? "bg-emerald-500 border-emerald-500"
                   : "bg-neutral-200 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-800"
-              }`}
+                }`}
             >
               <div
-                className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full shadow-md transform transition-transform duration-300 ease-in-out flex items-center justify-center ${
-                  stats.shopStatus?.isBuka === 1
+                className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full shadow-md transform transition-transform duration-300 ease-in-out flex items-center justify-center ${stats.shopStatus?.isBuka === 1
                     ? "translate-x-6"
                     : "translate-x-0"
-                }`}
+                  }`}
               />
             </Button>
           </div>
@@ -291,7 +295,7 @@ export default function Page() {
                 : undefined
             }
           >
-            {stats.sisaBahan && stats.sisaBahan.length > 0 ? (
+            {stats.hasSavedStock ? (
               <SisaBahanDashboardChart
                 data={stats.sisaBahan
                   .filter(
@@ -301,11 +305,12 @@ export default function Page() {
                   .map((v: DashboardSisaBahanItem) => ({
                     nama: v.nama,
                     sisa: v.sisa as number,
-                  }))}
+                  }))
+                  .sort((a: { nama: string; sisa: number }, b: { nama: string; sisa: number }) => b.sisa - a.sisa)}
               />
             ) : (
               <p className="text-xs text-neutral-400 mt-2 font-medium">
-                Tidak ada data stok tersedia.
+                Sisa bahan kosong. Silahkan simpan stok terlebih dahulu di akhir shift.
               </p>
             )}
           </StatCard>

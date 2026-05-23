@@ -24,7 +24,7 @@ export function useSupabaseRealtime(table: string, queryKeys: string[]) {
             debounceTimeouts[key] = setTimeout(() => {
               queryClient.invalidateQueries({ queryKey: [key] });
               delete debounceTimeouts[key];
-            }, 500); 
+            }, 1000);
           });
         },
       )

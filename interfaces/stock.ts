@@ -9,6 +9,7 @@ export interface StockFormItem {
   nama: string;
   price: number;
   quantity: number | null;
+  initialQuantity: number | null;
   sisaKemarin: number;
   isUnlimited: boolean;
 }

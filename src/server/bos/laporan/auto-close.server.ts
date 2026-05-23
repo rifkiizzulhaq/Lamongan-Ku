@@ -171,9 +171,9 @@ export async function checkAndRunAutoClose(): Promise<void> {
       const m = String(checkDate.getMonth() + 1).padStart(2, "0");
       const dStr = String(checkDate.getDate()).padStart(2, "0");
 
-      const shiftStart = new Date(`${y}-${m}-${dStr}T15:00:00+07:00`);
-      const shiftEnd = new Date(shiftStart.getTime() + 11 * 60 * 60 * 1000);
-      const stockCheckStart = new Date(`${y}-${m}-${dStr}T00:00:00+07:00`);
+      const shiftStart = new Date(`${y}-${m}-${dStr}T06:00:00+07:00`);
+      const shiftEnd = new Date(shiftStart.getTime() + 24 * 60 * 60 * 1000 - 1000);
+      const stockCheckStart = new Date(`${y}-${m}-${dStr}T06:00:00+07:00`);
       const stockCheckEnd = new Date(`${y}-${m}-${dStr}T18:30:00+07:00`);
 
       const existingReport = currentReports.find(

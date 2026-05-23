@@ -55,8 +55,8 @@ export default function StockInputForm({
           next[item.id] =
             prev[item.id] !== undefined
               ? prev[item.id]
-              : item.quantity !== null && item.quantity > 0
-                ? item.quantity.toString()
+              : item.initialQuantity !== null && item.initialQuantity > 0
+                ? item.initialQuantity.toString()
                 : "";
         });
         return next;

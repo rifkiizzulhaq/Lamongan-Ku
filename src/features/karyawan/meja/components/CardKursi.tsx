@@ -153,6 +153,9 @@ export default function CardKursi({
         addToast(res.error || "Gagal menyelesaikan pembayaran", "error");
         return;
       }
+      
+      addToast("Pembayaran berhasil!", "success");
+      
       setShowPayment(false);
       optimisticRemove();
       queryClient.invalidateQueries({ queryKey: ["table-orders", tableId] });
@@ -166,7 +169,7 @@ export default function CardKursi({
   return (
     <>
       <section
-        className={`w-full h-60 rounded-xl border flex items-stretch shadow-sm transition-all duration-500 cursor-default group
+        className={`w-full min-h-[15rem] rounded-xl border flex shadow-sm transition-all duration-500 cursor-default group
           ${
             isHighlighted
               ? "border-yellow-400 dark:border-yellow-500 ring-2 ring-yellow-400 dark:ring-yellow-500 bg-yellow-50 dark:bg-yellow-900/10"
@@ -174,19 +177,18 @@ export default function CardKursi({
           }
         `}
       >
-        <main className="w-full h-full flex items-center justify-between">
-          <div
-            className={`w-2 h-full rounded-l-xl flex items-center justify-center shrink-0 ${isHighlighted ? "bg-yellow-400 dark:bg-yellow-500" : "bg-orange"}`}
-          ></div>
-          <div className="w-full h-full flex flex-col justify-between">
-            <Link
-              href={
-                isDeleting || isPaying
-                  ? "#"
-                  : `/meja/${tableId}/makan?mode=update&orderId=${orderId}`
-              }
-              className={`flex flex-col items-center justify-between px-5 py-3 flex-1 overflow-hidden ${isDeleting || isPaying ? "pointer-events-none opacity-50" : ""}`}
-              onClick={(e) => {
+        <div
+          className={`w-2 rounded-l-xl flex items-center justify-center shrink-0 ${isHighlighted ? "bg-yellow-400 dark:bg-yellow-500" : "bg-orange"}`}
+        ></div>
+        <div className="flex-1 flex flex-col">
+          <Link
+            href={
+              isDeleting || isPaying
+                ? "#"
+                : `/meja/${tableId}/makan?mode=update&orderId=${orderId}`
+            }
+            className={`flex-1 w-full flex flex-col justify-start px-5 py-3 ${isDeleting || isPaying ? "pointer-events-none opacity-50" : ""}`}
+            onClick={(e) => {
                 if (isDeleting || isPaying) {
                   e?.preventDefault();
                   return;
@@ -232,7 +234,7 @@ export default function CardKursi({
                 ) : null}
               </div>
               <div
-                className={`w-full flex flex-wrap content-start gap-2 rounded-lg p-2.5 mt-3 overflow-y-auto max-h-24 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 transition-all duration-500
+                className={`w-full flex flex-wrap content-start gap-2 rounded-lg p-2.5 mt-3 transition-all duration-500
                 ${
                   hasUnseen
                     ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-600"
@@ -305,7 +307,7 @@ export default function CardKursi({
               </div>
             </Link>
 
-            <div className="flex shrink-0">
+            <div className="flex w-full mt-auto">
               <Button
                 onClick={() => hapus()}
                 disabled={isDeleting}
@@ -329,7 +331,6 @@ export default function CardKursi({
               </Button>
             </div>
           </div>
-        </main>
       </section>
 
       {showPayment && (

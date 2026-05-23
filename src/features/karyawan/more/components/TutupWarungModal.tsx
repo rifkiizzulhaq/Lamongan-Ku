@@ -44,6 +44,9 @@ const CUACA_OPTIONS: { label: CuacaOption; icon: ReactNode }[] = [
 ];
 
 const JAM_SLOTS = [
+  "12:00-13:00",
+  "13:00-14:00",
+  "14:00-15:00",
   "15:00-16:00",
   "16:00-17:00",
   "17:00-18:00",
@@ -55,6 +58,10 @@ const JAM_SLOTS = [
   "23:00-00:00",
   "00:00-01:00",
   "01:00-02:00",
+  "02:00-03:00",
+  "03:00-04:00",
+  "04:00-05:00",
+  "05:00-06:00",
 ];
 
 const OWNER_PHONE = process.env.NEXT_PUBLIC_OWNER_PHONE || "6285156630893";
@@ -91,21 +98,16 @@ export default function TutupWarungModal({
       hour: "numeric",
       hour12: false,
     });
-    const currentHour = parseInt(wibStr);
+    let currentHour = parseInt(wibStr);
+    if (currentHour === 24) currentHour = 0;
 
-    let absCurrent = currentHour;
-    if (currentHour >= 0 && currentHour <= 16) {
-      absCurrent = currentHour + 24;
-    }
+    const mapHour = (h: number) => (h - 6 < 0 ? h - 6 + 24 : h - 6);
+    const absCurrent = mapHour(currentHour);
 
-    return JAM_SLOTS.filter((jam) => {
-      const startHourStr = jam.split(":")[0];
-      const startHour = parseInt(startHourStr);
-      let absStart = startHour;
-      if (startHour >= 0 && startHour <= 16) {
-        absStart = startHour + 24;
-      }
-      return absStart <= absCurrent;
+    return JAM_SLOTS.filter((slot) => {
+      const [startStr] = slot.split("-");
+      const slotHour = parseInt(startStr);
+      return mapHour(slotHour) <= absCurrent;
     });
   };
 
@@ -209,7 +211,7 @@ export default function TutupWarungModal({
         <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-7 scrollbar-thin scrollbar-thumb-neutral-200 dark:scrollbar-thumb-neutral-700">
           <div>
             <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-3">
-              Cuaca Per Jam (15:00 - 02:00)
+              Cuaca Per Jam
             </p>
             <div className="flex gap-3 my-3 flex-wrap">
               {CUACA_OPTIONS.map((o) => (
@@ -233,11 +235,10 @@ export default function TutupWarungModal({
                         key={opt.label}
                         onClick={() => setCuacaSlot(idx, opt.label)}
                         title={opt.label}
-                        className={`flex-1 flex justify-center items-center py-1.5 rounded-lg transition-all border-2 text-[0px] ${
-                          slot.cuaca === opt.label
+                        className={`flex-1 flex justify-center items-center py-1.5 rounded-lg transition-all border-2 text-[0px] ${slot.cuaca === opt.label
                             ? "border-orange bg-orange/10 dark:bg-orange/20 text-orange"
                             : "border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 hover:border-neutral-300 text-neutral-500 dark:text-neutral-400"
-                        }`}
+                          }`}
                       >
                         {opt.icon}
                       </Button>

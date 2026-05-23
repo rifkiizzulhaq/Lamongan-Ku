@@ -69,7 +69,7 @@ export async function updateQuantities(
       items.map((item) =>
         db
           .update(stock)
-          .set({ quantity: item.quantity, updatedAt: new Date() })
+          .set({ quantity: item.quantity, initialQuantity: item.quantity, updatedAt: new Date() })
           .where(eq(stock.id, item.stockId)),
       ),
     );
@@ -99,6 +99,7 @@ export async function create(
       name: parsed.name,
       price: parsed.price,
       quantity: parsed.quantity,
+      initialQuantity: parsed.quantity,
       isUnlimited: parsed.isUnlimited ? 1 : 0,
     });
     revalidatePath("/stock");

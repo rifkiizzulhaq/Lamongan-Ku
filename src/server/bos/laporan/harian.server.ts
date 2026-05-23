@@ -37,8 +37,8 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     const y = wib.getFullYear();
     const m = String(wib.getMonth() + 1).padStart(2, "0");
     const dStr = String(wib.getDate()).padStart(2, "0");
-    const start = new Date(`${y}-${m}-${dStr}T15:00:00+07:00`);
-    const end = new Date(start.getTime() + 11 * 60 * 60 * 1000);
+    const start = new Date(`${y}-${m}-${dStr}T12:00:00+07:00`);
+    const end = new Date(start.getTime() + 14 * 60 * 60 * 1000);
     return { start, end };
   };
 
@@ -120,51 +120,50 @@ export async function getDailyAnalytics(): Promise<DailyData> {
   const [snapshotsCurr, weatherCurr] = await Promise.all([
     reportCurr[0]
       ? db
-          .select()
-          .from(daily_stock_snapshots)
-          .where(eq(daily_stock_snapshots.reportId, reportCurr[0].id))
+        .select()
+        .from(daily_stock_snapshots)
+        .where(eq(daily_stock_snapshots.reportId, reportCurr[0].id))
       : Promise.resolve([] as DailyStockSnapshot[]),
     reportCurr[0]
       ? db
-          .select()
-          .from(weather_logs)
-          .where(eq(weather_logs.reportId, reportCurr[0].id))
+        .select()
+        .from(weather_logs)
+        .where(eq(weather_logs.reportId, reportCurr[0].id))
       : Promise.resolve([] as WeatherLog[]),
   ]);
 
   const [snapshotsPrev, weatherPrev] = await Promise.all([
     reportPrev[0]
       ? db
-          .select()
-          .from(daily_stock_snapshots)
-          .where(eq(daily_stock_snapshots.reportId, reportPrev[0].id))
+        .select()
+        .from(daily_stock_snapshots)
+        .where(eq(daily_stock_snapshots.reportId, reportPrev[0].id))
       : Promise.resolve([] as DailyStockSnapshot[]),
     reportPrev[0]
       ? db
-          .select()
-          .from(weather_logs)
-          .where(eq(weather_logs.reportId, reportPrev[0].id))
+        .select()
+        .from(weather_logs)
+        .where(eq(weather_logs.reportId, reportPrev[0].id))
       : Promise.resolve([] as WeatherLog[]),
   ]);
 
-  const allOrders = [...ordersCurr, ...ordersPrev];
-  const timeLabels = Array.from(
-    new Set(
-      allOrders.map((o) =>
-        new Date(o.createdAt).toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        }),
-      ),
-    ),
-  ).sort((a, b) => {
-    const val = (t: string) => {
-      const [h, m] = t.split(":").map(Number);
-      return (h < 6 ? h + 24 : h) * 60 + m;
-    };
-    return val(a) - val(b);
-  });
+  const timeLabels = [
+    "12:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00",
+    "18:00",
+    "19:00",
+    "20:00",
+    "21:00",
+    "22:00",
+    "23:00",
+    "00:00",
+    "01:00",
+    "02:00",
+  ];
 
   const revenueCurrent = new Array<number>(timeLabels.length).fill(0);
   const revenuePrevious = new Array<number>(timeLabels.length).fill(0);
@@ -184,18 +183,21 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     cuaca: string[],
   ) => {
     orderList.forEach((o) => {
-      const label = new Date(o.createdAt).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
+      const wib = new Date(
+        new Date(o.createdAt).toLocaleString("en-US", {
+          timeZone: "Asia/Jakarta",
+        }),
+      );
+      const label = `${String(wib.getHours()).padStart(2, "0")}:00`;
       const idx = timeLabels.indexOf(label);
       if (idx === -1) return;
+      
       revenue[idx] += o.totalPrice;
       const t = o.orderType.toLowerCase();
       if (t.includes("makan") || t.includes("dine") || t.includes("tempat"))
         dineIn[idx]++;
       else takeaway[idx]++;
+      
       cuaca[idx] = matchWeather(label, wLogs);
     });
   };
@@ -278,12 +280,12 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     isLiburPrevious,
     alasanLiburCurrent: isLiburCurrent
       ? reportCurr[0]?.note ||
-        (targetIsToday ? currentShopStatus?.reason : "") ||
-        "Tidak ada aktivitas penjualan pada hari tersebut (Libur/Tutup)."
+      (targetIsToday ? currentShopStatus?.reason : "") ||
+      "Tidak ada aktivitas penjualan pada hari tersebut (Libur/Tutup)."
       : "",
     alasanLiburPrevious: isLiburPrevious
       ? reportPrev[0]?.note ||
-        "Tidak ada aktivitas penjualan pada hari tersebut (Libur/Tutup)."
+      "Tidak ada aktivitas penjualan pada hari tersebut (Libur/Tutup)."
       : "",
     revenueLabels: timeLabels,
     revenueCurrent,

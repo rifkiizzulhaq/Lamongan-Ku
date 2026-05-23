@@ -26,7 +26,15 @@ const updateItemsSchema = z.object({
 export async function getStock() {
   try {
     await requireAuth();
-    return await db.select().from(stock).orderBy(stock.createdAt);
+    const stocks = await db.select().from(stock).orderBy(stock.createdAt);
+    const { startOfDay } = getShiftWaktu();
+    
+    return stocks.map((s) => {
+      if (s.isUnlimited === 0 && s.updatedAt < startOfDay) {
+        return { ...s, quantity: 0 };
+      }
+      return s;
+    });
   } catch (error) {
     console.error("Error fetching bungkus orders:", error);
     return [];

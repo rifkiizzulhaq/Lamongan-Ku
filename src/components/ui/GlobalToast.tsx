@@ -1,7 +1,7 @@
 "use client";
 
 import { useUiStore } from "@/src/store/uiStore";
-import { LuCheck, LuTriangleAlert, LuInfo, LuX } from "react-icons/lu";
+import { LuCheck, LuTriangleAlert, LuInfo, LuX, LuLoader } from "react-icons/lu";
 import { useSyncExternalStore, useState, useEffect } from "react";
 
 function ToastItem({
@@ -14,17 +14,18 @@ function ToastItem({
   const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    if (isHovered) return;
+    if (isHovered || toast.type === "loading") return;
 
     const timer = setTimeout(() => {
       removeToast(toast.id);
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [isHovered, toast.id, removeToast]);
+  }, [isHovered, toast.id, removeToast, toast.type]);
 
   let bgColor = "bg-blue-500";
   let Icon = LuInfo;
+  let iconClass = "shrink-0 mt-0.5 sm:mt-0";
 
   if (toast.type === "success") {
     bgColor = "bg-green-500";
@@ -32,6 +33,10 @@ function ToastItem({
   } else if (toast.type === "error") {
     bgColor = "bg-red-500";
     Icon = LuTriangleAlert;
+  } else if (toast.type === "loading") {
+    bgColor = "bg-orange";
+    Icon = LuLoader;
+    iconClass = "animate-spin shrink-0 mt-0.5 sm:mt-0";
   }
 
   return (
@@ -40,7 +45,7 @@ function ToastItem({
       onMouseLeave={() => setIsHovered(false)}
       className={`flex items-start sm:items-center gap-3 w-full px-4 py-3 text-white rounded-xl shadow-lg pointer-events-auto transform transition-all animate-in slide-in-from-top-4 fade-in ${bgColor}`}
     >
-      <Icon size={20} className="shrink-0 mt-0.5 sm:mt-0" />
+      <Icon size={20} className={iconClass} />
       <p className="text-sm font-medium flex-1 overflow-hidden">
         {toast.message}
       </p>

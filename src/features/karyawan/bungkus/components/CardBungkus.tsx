@@ -133,34 +133,36 @@ export default function CardBungkus({
         addToast(res.error || "Gagal menyelesaikan pesanan", "error");
         return;
       }
+
+      addToast("Pesanan selesai & Pembayaran berhasil!", "success");
+
       setShowPayment(false);
       optimisticRemove();
-      invalidateAndRefresh();
+      queryClient.invalidateQueries({ queryKey: ["bungkus-orders"] });
     },
   });
 
   return (
     <>
       <section
-        className={`w-full h-60 rounded-xl border flex items-stretch shadow-sm transition-all duration-500 cursor-default group
+        className={`w-full min-h-[15rem] rounded-xl border flex shadow-sm transition-all duration-500 cursor-default group
           ${isHighlighted
             ? "border-yellow-400 dark:border-yellow-500 ring-2 ring-yellow-400 dark:ring-yellow-500 bg-yellow-50 dark:bg-yellow-900/10"
             : "bg-white dark:bg-neutral-700 border-neutral-300 dark:border-neutral-600 hover:border-orange-500/50"
           }
         `}
       >
-        <main className="w-full h-full flex items-center justify-between">
-          <div
-            className={`w-2 h-full rounded-l-xl shrink-0 ${isHighlighted ? "bg-yellow-400 dark:bg-yellow-500" : "bg-orange"}`}
-          ></div>
-          <div className="w-full h-full flex flex-col justify-between">
-            <Link
-              href={
-                isDeleting || isProcessing
-                  ? "#"
+        <div
+          className={`w-2 rounded-l-xl shrink-0 ${isHighlighted ? "bg-yellow-400 dark:bg-yellow-500" : "bg-orange"}`}
+        ></div>
+        <div className="flex-1 flex flex-col">
+          <Link
+            href={
+              isDeleting || isProcessing
+                ? "#"
                   : `/bungkus/ordering?mode=update&orderId=${orderId}`
               }
-              className={`flex flex-col items-center justify-between px-5 py-3 ${isDeleting || isProcessing ? "pointer-events-none opacity-50" : ""}`}
+              className={`flex-1 w-full flex flex-col justify-start px-5 py-3 ${isDeleting || isProcessing ? "pointer-events-none opacity-50" : ""}`}
               onClick={(e) => {
                 if (isDeleting || isProcessing) {
                   e?.preventDefault();
@@ -191,7 +193,7 @@ export default function CardBungkus({
                 </h4>
               </div>
               <div
-                className={`w-full flex flex-wrap content-start gap-2 rounded-lg p-2.5 mt-3 overflow-y-auto max-h-24 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 transition-all duration-500
+                className={`w-full flex flex-wrap content-start gap-2 rounded-lg p-2.5 mt-3 transition-all duration-500
                 ${hasUnseen
                     ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-600"
                     : "bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800"
@@ -244,7 +246,7 @@ export default function CardBungkus({
                 })}
               </div>
             </Link>
-            <div className="flex">
+            <div className="flex w-full mt-auto">
               <Button
                 onClick={() => hapus()}
                 disabled={isDeleting}
@@ -268,7 +270,6 @@ export default function CardBungkus({
               </Button>
             </div>
           </div>
-        </main>
       </section>
 
       {showPayment && (

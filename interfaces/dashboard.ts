@@ -14,14 +14,3 @@ export interface DashboardShopStatusItem {
   isBuka: number;
   reason: string | null;
 }
-
-export interface DashboardStatsResponse {
-  pendapatan: number;
-  pendapatanFisik: number;
-  pesananCount: number;
-  sisaBahan: DashboardSisaBahanItem[];
-  note: string | null;
-  weathers: DashboardWeatherItem[];
-  isClosed: boolean;
-  shopStatus?: DashboardShopStatusItem;
-}
