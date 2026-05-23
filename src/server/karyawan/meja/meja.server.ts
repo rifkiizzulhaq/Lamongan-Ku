@@ -184,41 +184,40 @@ export async function createMakanOrder(
       };
     });
 
-    const [newOrder] = await db
-      .insert(orders)
-      .values({
-        orderType: "makan",
-        customerType,
-        diningTableId: tableId,
-        totalPrice,
-      })
-      .returning();
+    await db.transaction(async (tx) => {
+      const [newOrder] = await tx
+        .insert(orders)
+        .values({
+          orderType: "makan",
+          customerType,
+          diningTableId: tableId,
+          totalPrice,
+        })
+        .returning();
 
-    const stockDelta: Record<number, number> = {};
-    for (const item of items) {
-      stockDelta[item.stockId] =
-        (stockDelta[item.stockId] ?? 0) + item.quantity;
-    }
+      const stockDelta: Record<number, number> = {};
+      for (const item of items) {
+        stockDelta[item.stockId] =
+          (stockDelta[item.stockId] ?? 0) + item.quantity;
+      }
 
-    const updatePromises = Object.entries(stockDelta).map(
-      ([stockIdStr, qty]) => {
-        const stockId = parseInt(stockIdStr);
-        const s = stockData.find((st) => st.id === stockId);
-        if (!s || s.quantity === null) return Promise.resolve();
-        const newQty = Math.max(s.quantity - qty, 0);
-        return db
-          .update(stock)
-          .set({ quantity: newQty })
-          .where(eq(stock.id, stockId));
-      },
-    );
+      const updatePromises = Object.entries(stockDelta).map(
+        ([stockIdStr, qty]) => {
+          const stockId = parseInt(stockIdStr);
+          return tx
+            .update(stock)
+            .set({ quantity: sql`GREATEST(${stock.quantity} - ${qty}, 0)` })
+            .where(eq(stock.id, stockId));
+        },
+      );
 
-    await Promise.all([
-      db
-        .insert(order_items)
-        .values(orderItemValues.map((v) => ({ ...v, orderId: newOrder.id }))),
-      ...updatePromises,
-    ]);
+      await Promise.all([
+        tx
+          .insert(order_items)
+          .values(orderItemValues.map((v) => ({ ...v, orderId: newOrder.id }))),
+        ...updatePromises,
+      ]);
+    });
 
     revalidatePath("/meja");
     revalidatePath(`/meja/${tableId}`);
@@ -284,28 +283,25 @@ export async function updateMakanItems(
       };
     });
 
-    const updatePromises = Object.entries(stockDelta).map(
-      ([stockIdStr, delta]) => {
-        const stockId = parseInt(stockIdStr);
-        const s = stockData.find((st) => st.id === stockId);
-        if (!s || s.quantity === null) return Promise.resolve();
-        const newQty = Math.max(s.quantity + delta, 0);
-        return db
-          .update(stock)
-          .set({ quantity: newQty })
-          .where(eq(stock.id, stockId));
-      },
-    );
+    await db.transaction(async (tx) => {
+      await tx.delete(order_items).where(eq(order_items.orderId, orderId));
+      await tx.update(orders).set({ totalPrice }).where(eq(orders.id, orderId));
 
-    await Promise.all([
-      db.delete(order_items).where(eq(order_items.orderId, orderId)),
-      db.update(orders).set({ totalPrice }).where(eq(orders.id, orderId)),
-      ...updatePromises,
-    ]);
+      const updatePromises = Object.entries(stockDelta).map(
+        ([stockIdStr, delta]) => {
+          const stockId = parseInt(stockIdStr);
+          return tx
+            .update(stock)
+            .set({ quantity: sql`GREATEST(${stock.quantity} + ${delta}, 0)` })
+            .where(eq(stock.id, stockId));
+        },
+      );
+      await Promise.all(updatePromises);
 
-    await db
-      .insert(order_items)
-      .values(orderItemValues.map((v) => ({ ...v, orderId })));
+      await tx
+        .insert(order_items)
+        .values(orderItemValues.map((v) => ({ ...v, orderId })));
+    });
 
     if (orderInfo?.diningTableId) {
       revalidatePath(`/meja/${orderInfo.diningTableId}`);
@@ -334,20 +330,22 @@ export async function deleteMakanOrder(orderId: number) {
       stockDelta[old.stockId] = (stockDelta[old.stockId] ?? 0) + old.quantity;
     }
 
-    const restorePromises = Object.entries(stockDelta).map(
-      ([stockIdStr, qty]) => {
-        const stockId = parseInt(stockIdStr);
-        return db
-          .update(stock)
-          .set({ quantity: sql`${stock.quantity} + ${qty}` })
-          .where(eq(stock.id, stockId));
-      },
-    );
+    await db.transaction(async (tx) => {
+      const restorePromises = Object.entries(stockDelta).map(
+        ([stockIdStr, qty]) => {
+          const stockId = parseInt(stockIdStr);
+          return tx
+            .update(stock)
+            .set({ quantity: sql`${stock.quantity} + ${qty}` })
+            .where(eq(stock.id, stockId));
+        },
+      );
 
-    await Promise.all([
-      db.delete(orders).where(eq(orders.id, orderId)),
-      ...restorePromises,
-    ]);
+      await Promise.all([
+        tx.delete(orders).where(eq(orders.id, orderId)),
+        ...restorePromises,
+      ]);
+    });
 
     if (orderInfo?.diningTableId) {
       revalidatePath(`/meja/${orderInfo.diningTableId}`);

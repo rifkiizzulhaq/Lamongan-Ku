@@ -56,7 +56,11 @@ export async function checkAndRunAutoClose(): Promise<void> {
         .where(inArray(daily_reports.id, idsToDeletePreLaunch));
     }
 
+    const threeDaysAgo = new Date();
+    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
     const currentReports = await db.query.daily_reports.findMany({
+      where: gte(daily_reports.createdAt, threeDaysAgo),
       with: { weathers: true },
     });
     if (currentReports.length > 0) {

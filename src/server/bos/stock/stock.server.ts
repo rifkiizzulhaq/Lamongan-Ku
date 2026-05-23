@@ -65,14 +65,16 @@ export async function updateQuantities(
   try {
     await requireAuth(["bos"]);
     items = updateQuantitiesSchema.parse(items);
-    await Promise.all(
-      items.map((item) =>
-        db
-          .update(stock)
-          .set({ quantity: item.quantity, initialQuantity: item.quantity, updatedAt: new Date() })
-          .where(eq(stock.id, item.stockId)),
-      ),
-    );
+    await db.transaction(async (tx) => {
+      await Promise.all(
+        items.map((item) =>
+          tx
+            .update(stock)
+            .set({ quantity: item.quantity, initialQuantity: item.quantity, updatedAt: new Date() })
+            .where(eq(stock.id, item.stockId)),
+        ),
+      );
+    });
     revalidatePath("/stock");
     return { success: true };
   } catch (error) {
