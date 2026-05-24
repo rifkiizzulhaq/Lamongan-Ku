@@ -37,8 +37,8 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     const y = wib.getFullYear();
     const m = String(wib.getMonth() + 1).padStart(2, "0");
     const dStr = String(wib.getDate()).padStart(2, "0");
-    const start = new Date(`${y}-${m}-${dStr}T12:00:00+07:00`);
-    const end = new Date(start.getTime() + 14 * 60 * 60 * 1000);
+    const start = new Date(`${y}-${m}-${dStr}T06:00:00+07:00`);
+    const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
     return { start, end };
   };
 

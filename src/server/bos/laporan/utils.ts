@@ -18,8 +18,8 @@ export function getLastFixDate(): { targetDate: Date; endOfFixDate: Date } {
   const targetDateStr = format(targetWib, "yyyy-MM-dd'T'00:00:00XXX", { timeZone: TIMEZONE });
   const targetDate = new Date(targetDateStr);
 
-  const endWib = set(targetWib, { hours: 2, minutes: 0, seconds: 0, milliseconds: 0 });
-  const endOfFixDateStr = format(endWib, "yyyy-MM-dd'T'02:00:00XXX", { timeZone: TIMEZONE });
+  const endWib = set(targetWib, { hours: 6, minutes: 0, seconds: 0, milliseconds: 0 });
+  const endOfFixDateStr = format(endWib, "yyyy-MM-dd'T'06:00:00XXX", { timeZone: TIMEZONE });
   const endOfFixDate = new Date(new Date(endOfFixDateStr).getTime() + 24 * 60 * 60 * 1000);
 
   return { targetDate, endOfFixDate };

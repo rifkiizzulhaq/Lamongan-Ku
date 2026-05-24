@@ -6,13 +6,17 @@ import { LuLogOut, LuChevronRight } from "react-icons/lu";
 import { signOut } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
+import { useUiStore } from "@/src/store/uiStore";
+
 export default function Page() {
   const router = useRouter();
+  const { addToast } = useUiStore();
 
   const handleLogout = async () => {
     await signOut({
       fetchOptions: {
         onSuccess: () => {
+          addToast("Berhasil keluar dari akun Bos", "success");
           router.push("/");
         },
       },

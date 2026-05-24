@@ -243,8 +243,8 @@ export function aggregate({
       const y = dWib.getFullYear();
       const m = String(dWib.getMonth() + 1).padStart(2, "0");
       const dStr = String(dWib.getDate()).padStart(2, "0");
-      const start = new Date(`${y}-${m}-${dStr}T12:00:00+07:00`);
-      const end = new Date(start.getTime() + 14 * 60 * 60 * 1000);
+      const start = new Date(`${y}-${m}-${dStr}T06:00:00+07:00`);
+      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
 
       const allOrdersForShift = ordersByDate.get(`${y}-${m}-${dStr}`) || [];
       const ordersForDay = allOrdersForShift.filter(

@@ -7,6 +7,8 @@ import { LuEye, LuEyeOff, LuLoader } from "react-icons/lu";
 import Input from "@/src/components/ui/Input";
 import Button from "@/src/components/ui/Button";
 
+import { useUiStore } from "@/src/store/uiStore";
+
 export default function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,6 +16,7 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { addToast } = useUiStore();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,8 +32,10 @@ export default function LoginForm() {
           const role = sessionData?.user?.role;
 
           if (role === "bos") {
+            addToast("Berhasil masuk sebagai Bos", "success");
             router.push("/dashboard");
           } else {
+            addToast("Berhasil masuk sebagai Karyawan", "success");
             router.push("/bungkus");
           }
           router.refresh();

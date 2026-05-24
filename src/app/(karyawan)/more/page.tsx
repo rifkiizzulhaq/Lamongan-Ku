@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getStock } from "@/src/server/karyawan/bungkus/bungkus.server";
 
+import { useUiStore } from "@/src/store/uiStore";
+
 const MENU_ITEMS = [
   {
     label: "Tutup Warung",
@@ -30,6 +32,7 @@ const MENU_ITEMS = [
 export default function Page() {
   const [showTutup, setShowTutup] = useState(false);
   const router = useRouter();
+  const { addToast } = useUiStore();
 
   const { data: stockList = [] } = useQuery({
     queryKey: ["stock-list"],
@@ -43,6 +46,7 @@ export default function Page() {
       await signOut({
         fetchOptions: {
           onSuccess: () => {
+            addToast("Berhasil keluar dari akun Karyawan", "success");
             router.push("/");
           },
         },
