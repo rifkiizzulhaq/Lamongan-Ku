@@ -43,9 +43,11 @@ async function seed() {
   }
 
   const menus: (typeof stock.$inferInsert)[] = [
-    { name: "Ayam", price: 18000 },
     { name: "Lele", price: 15000 },
-    { name: "Bebek", price: 25000 },
+    { name: "Ayam Paha", price: 18000 },
+    { name: "Ayam Dada", price: 18000 },
+    { name: "Bebek Paha", price: 25000 },
+    { name: "Bebek Dada", price: 25000 },
     { name: "Nasi", price: 5000 },
     { name: "Tahu", price: 2000 },
     { name: "Tempe", price: 2000 },

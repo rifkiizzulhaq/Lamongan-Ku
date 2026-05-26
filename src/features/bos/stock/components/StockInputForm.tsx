@@ -15,7 +15,7 @@ import {
 import { create, deletes, update } from "@/src/server/bos/stock/stock.server";
 import Input from "@/src/components/ui/Input";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUiStore } from "@/src/store/uiStore";
 
 import { StockFormItem } from "@/interfaces/stock";
@@ -49,6 +49,7 @@ export default function StockInputForm({
     nama: string;
   } | null>(null);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { mutate: editItem, isPending: editing } = useMutation({
     mutationFn: ({
@@ -63,6 +64,7 @@ export default function StockInputForm({
     onSuccess: (res) => {
       if (res.success) {
         setEditTarget(null);
+        queryClient.invalidateQueries({ queryKey: ["stock-list"] });
         router.refresh();
         addToast("Item berhasil diubah!", "success");
       } else {
@@ -79,6 +81,7 @@ export default function StockInputForm({
         setNewName("");
         setNewPrice("");
         setShowAddModal(false);
+        queryClient.invalidateQueries({ queryKey: ["stock-list"] });
         router.refresh();
         addToast("Item berhasil ditambah!", "success");
       } else {
@@ -92,6 +95,7 @@ export default function StockInputForm({
     onSuccess: (res) => {
       if (res.success) {
         setDeleteTarget(null);
+        queryClient.invalidateQueries({ queryKey: ["stock-list"] });
         router.refresh();
         addToast("Item berhasil dihapus!", "success");
       } else {
