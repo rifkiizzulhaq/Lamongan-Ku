@@ -1,13 +1,7 @@
 "use server";
 
 import { db } from "@/db";
-import {
-  orders,
-  daily_reports,
-  stock,
-  daily_stock_snapshots,
-  shop_status,
-} from "@/db/schema";
+import { orders, daily_reports, stock, shop_status } from "@/db/schema";
 import { and, gte, lte, inArray, eq } from "drizzle-orm";
 import { getShiftDate, getAutoCloseTargetDate } from "./utils";
 
@@ -19,7 +13,7 @@ export async function checkAndRunAutoClose(): Promise<void> {
     return;
   }
 
-  let resolvePromise: () => void = () => { };
+  let resolvePromise: () => void = () => {};
   activeAutoClosePromise = new Promise<void>((resolve) => {
     resolvePromise = resolve;
   });
@@ -140,11 +134,7 @@ export async function checkAndRunAutoClose(): Promise<void> {
 
     const rangeEnd = new Date(latestCheckDate.getTime() + 30 * 60 * 60 * 1000);
 
-    const [
-      allRangeStocks,
-      allRangeOrders,
-      currentStocksBulk,
-    ] = await Promise.all([
+    const [allRangeStocks, allRangeOrders] = await Promise.all([
       db.query.stock.findMany({
         where: and(
           gte(stock.updatedAt, checkStartDate),
@@ -157,7 +147,6 @@ export async function checkAndRunAutoClose(): Promise<void> {
           lte(orders.createdAt, rangeEnd),
         ),
       }),
-      db.select().from(stock),
     ]);
 
     const daysToCheck = Array.from({ length: 14 }, (_, idx) => 13 - idx);
@@ -176,7 +165,9 @@ export async function checkAndRunAutoClose(): Promise<void> {
       const dStr = String(checkDate.getDate()).padStart(2, "0");
 
       const shiftStart = new Date(`${y}-${m}-${dStr}T06:00:00+07:00`);
-      const shiftEnd = new Date(shiftStart.getTime() + 24 * 60 * 60 * 1000 - 1000);
+      const shiftEnd = new Date(
+        shiftStart.getTime() + 24 * 60 * 60 * 1000 - 1000,
+      );
       const stockCheckStart = new Date(`${y}-${m}-${dStr}T06:00:00+07:00`);
       const stockCheckEnd = new Date(`${y}-${m}-${dStr}T18:30:00+07:00`);
 
@@ -184,10 +175,11 @@ export async function checkAndRunAutoClose(): Promise<void> {
         (r) => r.createdAt >= shiftStart && r.createdAt <= shiftEnd,
       );
 
-      const isCompletedReport = existingReport && (
-        existingReport.weathers.length > 0 ||
-        (existingReport.note && existingReport.note.includes("Sistem Otomatis:"))
-      );
+      const isCompletedReport =
+        existingReport &&
+        (existingReport.weathers.length > 0 ||
+          (existingReport.note &&
+            existingReport.note.includes("Sistem Otomatis:")));
 
       if (isCompletedReport) continue;
 
@@ -212,7 +204,6 @@ export async function checkAndRunAutoClose(): Promise<void> {
           (acc, o) => acc + o.totalPrice,
           0,
         );
-        let newReportId;
         if (existingReport) {
           await db
             .update(daily_reports)
@@ -223,33 +214,16 @@ export async function checkAndRunAutoClose(): Promise<void> {
               createdAt: shiftEnd,
             })
             .where(eq(daily_reports.id, existingReport.id));
-          newReportId = existingReport.id;
         } else {
-          const [newReport] = await db
-            .insert(daily_reports)
-            .values({
-              actualRevenue: totalRevenue,
-              systemRevenue: totalRevenue,
-              note: "Sistem Otomatis: Karyawan lupa tutup warung",
-              createdAt: shiftEnd,
-            })
-            .returning({ id: daily_reports.id });
-          newReportId = newReport.id;
-        }
-
-        if (currentStocksBulk.length > 0) {
-          await db.insert(daily_stock_snapshots).values(
-            currentStocksBulk.map((s) => ({
-              reportId: newReportId,
-              stockId: s.id,
-              sisaQuantity: s.quantity || 0,
-              createdAt: shiftEnd,
-            })),
-          );
+          await db.insert(daily_reports).values({
+            actualRevenue: totalRevenue,
+            systemRevenue: totalRevenue,
+            note: "Sistem Otomatis: Karyawan lupa tutup warung",
+            createdAt: shiftEnd,
+          });
         }
       } else {
         if (!isToday) {
-          let newReportId;
           if (existingReport) {
             await db
               .update(daily_reports)
@@ -260,29 +234,13 @@ export async function checkAndRunAutoClose(): Promise<void> {
                 createdAt: shiftEnd,
               })
               .where(eq(daily_reports.id, existingReport.id));
-            newReportId = existingReport.id;
           } else {
-            const [newReportLibur] = await db
-              .insert(daily_reports)
-              .values({
-                actualRevenue: 0,
-                systemRevenue: 0,
-                note: "Sistem Otomatis: Tidak ada pesanan (Libur/Tutup)",
-                createdAt: shiftEnd,
-              })
-              .returning({ id: daily_reports.id });
-            newReportId = newReportLibur.id;
-          }
-
-          if (currentStocksBulk.length > 0) {
-            await db.insert(daily_stock_snapshots).values(
-              currentStocksBulk.map((s) => ({
-                reportId: newReportId,
-                stockId: s.id,
-                sisaQuantity: s.quantity || 0,
-                createdAt: shiftEnd,
-              })),
-            );
+            await db.insert(daily_reports).values({
+              actualRevenue: 0,
+              systemRevenue: 0,
+              note: "Sistem Otomatis: Tidak ada pesanan (Libur/Tutup)",
+              createdAt: shiftEnd,
+            });
           }
         }
         if (i === 0 || isToday) {

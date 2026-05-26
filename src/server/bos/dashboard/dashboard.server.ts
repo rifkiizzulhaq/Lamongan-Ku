@@ -6,7 +6,6 @@ import {
   order_items,
   stock,
   daily_reports,
-  daily_stock_snapshots,
   shop_status,
   dining_table,
 } from "@/db/schema";
@@ -18,11 +17,6 @@ import { requireAuth } from "@/lib/auth-guard";
 import { z } from "zod";
 
 const saveRevenueSchema = z.number().min(0);
-const updateStockSchema = z.array(z.object({
-  stockId: z.number().int().positive(),
-  sisa: z.number().int().min(0)
-}));
-
 export async function getShopStatus() {
   noStore();
   await requireAuth();
@@ -86,7 +80,7 @@ export async function getDashboardStats() {
   const shopStatus = await getShopStatus();
 
   try {
-    const [todayOrders, report, currentStock] = await Promise.all([
+    const [todayOrders, report] = await Promise.all([
       db
         .select({
           total: sql<number>`coalesce(sum(${orders.totalPrice}), 0)`,
@@ -107,13 +101,9 @@ export async function getDashboardStats() {
         ),
         with: {
           weathers: true,
-          snapshots: {
-            with: { stock: true },
-          },
         },
         orderBy: (reports, { desc }) => [desc(reports.id)],
       }),
-      db.select().from(stock).orderBy(stock.id),
     ]);
 
     const pendapatan = Number(todayOrders[0]?.total || 0);
@@ -123,39 +113,14 @@ export async function getDashboardStats() {
       (report.weathers && report.weathers.length > 0) ||
       (report.note && report.note.includes("Sistem Otomatis:"))
     );
-    const hasReportSnapshots = !!report && !!report.snapshots && report.snapshots.length > 0;
-    const isStockUpdatedToday = currentStock.some((s) => s.updatedAt >= startOfDay);
-    const hasSavedStock = hasReportSnapshots || isStockUpdatedToday;
-
-    let sisaBahan = [];
-    if (hasReportSnapshots) {
-      sisaBahan = (report.snapshots || [])
-        .sort((a, b) => a.stockId - b.stockId)
-        .filter((s) => s.stock?.isUnlimited === 0)
-        .map((s) => ({
-          id: s.stockId,
-          nama: s.stock.name,
-          sisa: s.sisaQuantity,
-        }));
-    } else {
-      sisaBahan = currentStock
-        .filter((s) => s.isUnlimited === 0)
-        .map((s) => ({
-          id: s.id,
-          nama: s.name,
-          sisa: s.quantity,
-        }));
-    }
 
     return {
       pendapatan,
       pendapatanFisik: report?.actualRevenue || 0,
       pesananCount,
-      sisaBahan,
       note: report?.note || null,
       weathers: report?.weathers || [],
       isClosed: isClosed,
-      hasSavedStock: hasSavedStock,
       shopStatus,
     };
   } catch (error) {
@@ -164,11 +129,9 @@ export async function getDashboardStats() {
       pendapatan: 0,
       pendapatanFisik: 0,
       pesananCount: 0,
-      sisaBahan: [],
       note: null,
       weathers: [],
       isClosed: false,
-      hasSavedStock: false,
       shopStatus: { id: 1, isBuka: 1, reason: null, updatedAt: new Date() },
     };
   }
@@ -250,56 +213,4 @@ export async function saveActualRevenue(val: number) {
   }
 }
 
-export async function updateStockInventory(
-  items: { stockId: number; sisa: number }[],
-) {
-  try {
-    await requireAuth(["bos"]);
-    items = updateStockSchema.parse(items);
-    const { startOfDay, endOfDay } = getShiftWaktu();
 
-    await Promise.all(
-      items.map((item) =>
-        db
-          .update(stock)
-          .set({ quantity: item.sisa, updatedAt: new Date() })
-          .where(eq(stock.id, item.stockId))
-      )
-    );
-
-    const report = await db.query.daily_reports.findFirst({
-      where: and(
-        gte(daily_reports.createdAt, startOfDay),
-        lte(daily_reports.createdAt, endOfDay),
-      ),
-      orderBy: (reports, { desc }) => [desc(reports.id)],
-    });
-
-    if (report) {
-      await Promise.all(
-        items.map((item) =>
-          db
-            .update(daily_stock_snapshots)
-            .set({ sisaQuantity: item.sisa })
-            .where(
-              and(
-                eq(daily_stock_snapshots.reportId, report.id),
-                eq(daily_stock_snapshots.stockId, item.stockId),
-              ),
-            )
-        )
-      );
-    }
-
-    revalidatePath("/dashboard");
-    return { success: true };
-  } catch (error) {
-    console.error("Error updating stock inventory:", error);
-    return {
-      success: false,
-      error:
-        "Gagal simpan: " +
-        (error instanceof Error ? error.message : "Database Error"),
-    };
-  }
-}

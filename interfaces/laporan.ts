@@ -1,11 +1,3 @@
-export interface SisaBahanData {
-  nama: string;
-  sisaCurrent: number;
-  sisaPrevious: number;
-  stockAwalCurrent?: number;
-  stockAwalPrevious?: number;
-}
-
 export interface DailyData {
   timeLabel: string;
   prevTimeLabel: string;
@@ -53,8 +45,6 @@ export interface DailyData {
 
   weatherLogsCurrent?: { timeRange: string; weather: string }[];
   weatherLogsPrevious?: { timeRange: string; weather: string }[];
-
-  sisaBahan: SisaBahanData[];
 }
 
 export interface AggregatedData {
@@ -129,6 +119,4 @@ export interface AggregatedData {
   takeawayHourlyAvg?: number[];
   dineInPreviousHourlyAvg?: number[];
   takeawayPreviousHourlyAvg?: number[];
-
-  sisaBahan: SisaBahanData[];
 }

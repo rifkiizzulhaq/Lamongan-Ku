@@ -1,16 +1,9 @@
 "use server";
 
 import { db } from "@/db";
-import {
-  orders,
-  daily_reports,
-  stock,
-  daily_stock_snapshots,
-  weather_logs,
-  order_items,
-} from "@/db/schema";
+import { orders, daily_reports, weather_logs } from "@/db/schema";
 import type { WeatherLog } from "@/db/schema";
-import { and, gte, lte, desc, inArray, sum, eq } from "drizzle-orm";
+import { and, gte, lte, desc, inArray } from "drizzle-orm";
 import type { AggregatedData } from "@/interfaces/laporan";
 import { getLastFixDate, getShiftDate } from "./utils";
 import { checkAndRunAutoClose } from "./auto-close.server";
@@ -79,7 +72,7 @@ export async function getAggregatedAnalytics(
     rangeCurrentStart.getTime() - days * 24 * 60 * 60 * 1000,
   );
 
-  const [reportsCurr, reportsPrev, stockList] = await Promise.all([
+  const [reportsCurr, reportsPrev] = await Promise.all([
     db
       .select()
       .from(daily_reports)
@@ -100,7 +93,6 @@ export async function getAggregatedAnalytics(
         ),
       )
       .orderBy(desc(daily_reports.createdAt)),
-    db.select().from(stock),
   ]);
 
   const [ordersCurr, ordersPrev] = await Promise.all([
@@ -118,67 +110,24 @@ export async function getAggregatedAnalytics(
     }),
   ]);
 
-  const [soldItemsCurr, soldItemsPrev] = await Promise.all([
-    db
-      .select({
-        stockId: order_items.stockId,
-        total: sum(order_items.quantity),
-      })
-      .from(order_items)
-      .leftJoin(orders, eq(order_items.orderId, orders.id))
-      .where(
-        and(
-          gte(orders.createdAt, rangeCurrentStart),
-          lte(orders.createdAt, rangeCurrentEnd),
-        ),
-      )
-      .groupBy(order_items.stockId),
-    db
-      .select({
-        stockId: order_items.stockId,
-        total: sum(order_items.quantity),
-      })
-      .from(order_items)
-      .leftJoin(orders, eq(order_items.orderId, orders.id))
-      .where(
-        and(
-          gte(orders.createdAt, rangePreviousStart),
-          lte(orders.createdAt, rangePreviousEnd),
-        ),
-      )
-      .groupBy(order_items.stockId),
-  ]);
-
   const currIds = reportsCurr.map((r) => r.id);
   const prevIds = reportsPrev.map((r) => r.id);
 
-  const [snapsCurr, wLogsCurr] = await Promise.all([
+  const [wLogsCurr] = await Promise.all([
     currIds.length > 0
       ? db
-        .select()
-        .from(daily_stock_snapshots)
-        .where(inArray(daily_stock_snapshots.reportId, currIds))
-      : Promise.resolve([]),
-    currIds.length > 0
-      ? db
-        .select()
-        .from(weather_logs)
-        .where(inArray(weather_logs.reportId, currIds))
+          .select()
+          .from(weather_logs)
+          .where(inArray(weather_logs.reportId, currIds))
       : Promise.resolve([] as WeatherLog[]),
   ]);
 
-  const [snapsPrev, wLogsPrev] = await Promise.all([
+  const [wLogsPrev] = await Promise.all([
     prevIds.length > 0
       ? db
-        .select()
-        .from(daily_stock_snapshots)
-        .where(inArray(daily_stock_snapshots.reportId, prevIds))
-      : Promise.resolve([]),
-    prevIds.length > 0
-      ? db
-        .select()
-        .from(weather_logs)
-        .where(inArray(weather_logs.reportId, prevIds))
+          .select()
+          .from(weather_logs)
+          .where(inArray(weather_logs.reportId, prevIds))
       : Promise.resolve([] as WeatherLog[]),
   ]);
 
@@ -204,46 +153,6 @@ export async function getAggregatedAnalytics(
 
   const currHourly = computeHourlyAvg(ordersCurr, days);
   const prevHourly = computeHourlyAvg(ordersPrev, days);
-
-  const currSoldMap = Object.fromEntries(
-    soldItemsCurr.map((i) => [i.stockId, Number(i.total || 0)]),
-  );
-  const prevSoldMap = Object.fromEntries(
-    soldItemsPrev.map((i) => [i.stockId, Number(i.total || 0)]),
-  );
-
-  const sisaBahan = stockList
-    .filter((s) => s.isUnlimited === 0)
-    .map((s) => {
-      const snapsCurrForItem = snapsCurr.filter((x) => x.stockId === s.id);
-      const snapsPrevForItem = snapsPrev.filter((x) => x.stockId === s.id);
-
-      snapsCurrForItem.sort(
-        (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt),
-      );
-      snapsPrevForItem.sort(
-        (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt),
-      );
-
-      const sisaCurrent =
-        snapsCurrForItem[snapsCurrForItem.length - 1]?.sisaQuantity ?? 0;
-      const sisaPrevious =
-        snapsPrevForItem[snapsPrevForItem.length - 1]?.sisaQuantity ?? 0;
-
-      const soldCurrent = currSoldMap[s.id] || 0;
-      const soldPrevious = prevSoldMap[s.id] || 0;
-
-      const stockAwalCurrent = sisaCurrent + soldCurrent;
-      const stockAwalPrevious = sisaPrevious + soldPrevious;
-
-      return {
-        nama: s.name,
-        sisaCurrent,
-        sisaPrevious,
-        stockAwalCurrent,
-        stockAwalPrevious,
-      };
-    });
 
   return {
     timeLabel:
@@ -292,6 +201,5 @@ export async function getAggregatedAnalytics(
     takeawayHourlyAvg: currHourly.takeaway,
     dineInPreviousHourlyAvg: prevHourly.dineIn,
     takeawayPreviousHourlyAvg: prevHourly.takeaway,
-    sisaBahan,
   };
 }

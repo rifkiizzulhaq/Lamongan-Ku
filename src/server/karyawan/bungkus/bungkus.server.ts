@@ -2,9 +2,8 @@
 
 import { db } from "@/db";
 import { orders, order_items, stock } from "@/db/schema";
-import { and, eq, inArray, ne, gte, lte, count, sql } from "drizzle-orm";
+import { and, eq, inArray, ne, gte, lte, count } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { checkIfReportedToday } from "../more/more.server";
 import { getShiftWaktu } from "@/src/utils/date";
 import { requireAuth } from "@/lib/auth-guard";
 import { z } from "zod";
@@ -12,10 +11,7 @@ import { z } from "zod";
 const orderItemSchema = z.object({
   stockId: z.number().int().positive(),
   quantity: z.number().int().min(1),
-});
-
-const createOrderSchema = z.object({
-  items: z.array(orderItemSchema).min(1),
+  price: z.number().int().positive().optional(),
 });
 
 const updateItemsSchema = z.object({
@@ -27,14 +23,8 @@ export async function getStock() {
   try {
     await requireAuth();
     const stocks = await db.select().from(stock).orderBy(stock.createdAt);
-    const { startOfDay } = getShiftWaktu();
 
-    return stocks.map((s) => {
-      if (s.isUnlimited === 0 && s.updatedAt < startOfDay) {
-        return { ...s, quantity: 0 };
-      }
-      return s;
-    });
+    return stocks;
   } catch (error) {
     console.error("Error fetching bungkus orders:", error);
     return [];
@@ -126,15 +116,6 @@ export async function updateItems(
       where: inArray(stock.id, allStockIds),
     });
 
-    const stockDelta: Record<number, number> = {};
-    for (const old of oldItems) {
-      stockDelta[old.stockId] = (stockDelta[old.stockId] ?? 0) + old.quantity;
-    }
-    for (const newItem of items) {
-      stockDelta[newItem.stockId] =
-        (stockDelta[newItem.stockId] ?? 0) - newItem.quantity;
-    }
-
     let totalPrice = 0;
     const orderItemValues = items.map((item) => {
       const s = stockData.find((st) => st.id === item.stockId)!;
@@ -153,17 +134,6 @@ export async function updateItems(
       await tx.delete(order_items).where(eq(order_items.orderId, orderId));
       await tx.update(orders).set({ totalPrice }).where(eq(orders.id, orderId));
 
-      const updatePromises = Object.entries(stockDelta).map(
-        ([stockIdStr, delta]) => {
-          const stockId = parseInt(stockIdStr);
-          return tx
-            .update(stock)
-            .set({ quantity: sql`GREATEST(${stock.quantity} + ${delta}, 0)` })
-            .where(eq(stock.id, stockId));
-        },
-      );
-      await Promise.all(updatePromises);
-
       await tx
         .insert(order_items)
         .values(orderItemValues.map((v) => ({ ...v, orderId })));
@@ -177,61 +147,44 @@ export async function updateItems(
   }
 }
 
-export async function create(items: { stockId: number; quantity: number }[]) {
+export async function create(
+  items: { stockId: number; quantity: number; price?: number }[],
+) {
   try {
     await requireAuth();
-    const parsed = createOrderSchema.parse({ items });
-    items = parsed.items;
-
-    const isClosed = await checkIfReportedToday();
-    if (isClosed) {
-      return {
-        success: false,
-        error:
-          "Warung sudah tutup! Tidak bisa membuat pesanan baru hingga shift berikutnya.",
-      };
-    }
+    const { startOfDay, endOfDay } = getShiftWaktu();
 
     if (items.length === 0)
       return { success: false, error: "Keranjang kosong" };
 
-    const stockData = await db.query.stock.findMany({
-      where: inArray(
-        stock.id,
-        items.map((i) => i.stockId),
-      ),
-    });
-
     let totalPrice = 0;
     const orderItemValues = items.map((item) => {
-      const s = stockData.find((st) => st.id === item.stockId)!;
-      const subtotal = s.price * item.quantity;
+      const price = item.price ?? 0;
+      const subtotal = price * item.quantity;
       totalPrice += subtotal;
       return {
         stockId: item.stockId,
         quantity: item.quantity,
-        pricePerItem: s.price,
+        pricePerItem: price,
         subtotal,
         isTakeaway: "true",
       };
     });
 
-    const { startOfDay, endOfDay } = getShiftWaktu();
-
-    const todayOrdersCount = await db
-      .select({ val: count() })
-      .from(orders)
-      .where(
-        and(
-          eq(orders.orderType, "bungkus"),
-          gte(orders.createdAt, startOfDay),
-          lte(orders.createdAt, endOfDay),
-        ),
-      );
-
-    const dailySequence = (todayOrdersCount[0]?.val ?? 0) + 1;
-
     await db.transaction(async (tx) => {
+      const todayOrdersCount = await tx
+        .select({ val: count() })
+        .from(orders)
+        .where(
+          and(
+            eq(orders.orderType, "bungkus"),
+            gte(orders.createdAt, startOfDay),
+            lte(orders.createdAt, endOfDay),
+          ),
+        );
+
+      const dailySequence = (todayOrdersCount[0]?.val ?? 0) + 1;
+
       const [newOrder] = await tx
         .insert(orders)
         .values({
@@ -241,28 +194,9 @@ export async function create(items: { stockId: number; quantity: number }[]) {
         })
         .returning();
 
-      const stockDelta: Record<number, number> = {};
-      for (const item of items) {
-        stockDelta[item.stockId] =
-          (stockDelta[item.stockId] ?? 0) + item.quantity;
-      }
-
-      const updatePromises = Object.entries(stockDelta).map(
-        ([stockIdStr, qty]) => {
-          const stockId = parseInt(stockIdStr);
-          return tx
-            .update(stock)
-            .set({ quantity: sql`GREATEST(${stock.quantity} - ${qty}, 0)` })
-            .where(eq(stock.id, stockId));
-        },
-      );
-
-      await Promise.all([
-        tx
-          .insert(order_items)
-          .values(orderItemValues.map((v) => ({ ...v, orderId: newOrder.id }))),
-        ...updatePromises,
-      ]);
+      await tx
+        .insert(order_items)
+        .values(orderItemValues.map((v) => ({ ...v, orderId: newOrder.id })));
     });
 
     revalidatePath("/bungkus");
@@ -305,36 +239,15 @@ export async function deletes(orderId: number) {
     }
 
     const { startOfDay, endOfDay } = getShiftWaktu();
-    if (
-      orderInfo.createdAt < startOfDay ||
-      orderInfo.createdAt > endOfDay
-    ) {
+    if (orderInfo.createdAt < startOfDay || orderInfo.createdAt > endOfDay) {
       return {
         success: false,
         error: "Hanya bisa menghapus pesanan dari shift hari ini",
       };
     }
 
-    const oldItems = await db.query.order_items.findMany({
-      where: eq(order_items.orderId, orderId),
-    });
-
-    const stockDelta: Record<number, number> = {};
-    for (const item of oldItems) {
-      stockDelta[item.stockId] =
-        (stockDelta[item.stockId] ?? 0) + item.quantity;
-    }
-
     await db.transaction(async (tx) => {
       await tx.delete(orders).where(eq(orders.id, orderId));
-
-      for (const [stockIdStr, qty] of Object.entries(stockDelta)) {
-        const stockId = parseInt(stockIdStr);
-        await tx
-          .update(stock)
-          .set({ quantity: sql`${stock.quantity} + ${qty}` })
-          .where(eq(stock.id, stockId));
-      }
     });
 
     revalidatePath("/bungkus");

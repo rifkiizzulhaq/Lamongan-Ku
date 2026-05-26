@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
-  DashboardSisaBahanItem,
   DashboardWeatherItem,
 } from "@/interfaces/dashboard";
 import { useSupabaseRealtime } from "@/src/hooks/useSupabaseRealtime";
@@ -25,7 +24,7 @@ import PageHeader from "@/src/components/ui/PageHeader";
 import Button from "@/src/components/ui/Button";
 import StatCard from "@/src/features/bos/dashboard/components/StatCard";
 import RevenueChart from "@/src/features/bos/dashboard/components/RevenueChart";
-import SisaBahanDashboardChart from "@/src/features/bos/dashboard/components/SisaBahanDashboardChart";
+
 import DashboardSkeleton from "@/src/components/ui/DashboardSkeleton";
 import { useUiStore } from "@/src/store/uiStore";
 
@@ -64,6 +63,7 @@ export default function Page() {
     onSuccess: (res) => {
       if (res.success) {
         queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["shop-status"] });
         setCatatanLibur("");
         setPendingBuka(true);
         addToast("Berhasil update status warung!", "success");
@@ -283,40 +283,6 @@ export default function Page() {
             ) : (
               <p className="text-xs text-neutral-400 mt-2 font-medium">
                 Belum ada log cuaca untuk hari ini.
-              </p>
-            )}
-          </StatCard>
-
-          <StatCard
-            title="Sisa Bahan Baku Hari Ini"
-            icon={<LuShoppingBag size={20} strokeWidth={2.5} />}
-            edit={
-              stats.isClosed && stats.shopStatus?.isBuka === 1 ? (
-                <LuPen size={20} strokeWidth={2.5} />
-              ) : undefined
-            }
-            editHref={
-              stats.isClosed && stats.shopStatus?.isBuka === 1
-                ? "/dashboard/sisa-bahan"
-                : undefined
-            }
-          >
-            {stats.hasSavedStock ? (
-              <SisaBahanDashboardChart
-                data={stats.sisaBahan
-                  .filter(
-                    (v: DashboardSisaBahanItem) =>
-                      v.sisa !== undefined && v.sisa !== null,
-                  )
-                  .map((v: DashboardSisaBahanItem) => ({
-                    nama: v.nama,
-                    sisa: v.sisa as number,
-                  }))
-                  .sort((a: { nama: string; sisa: number }, b: { nama: string; sisa: number }) => b.sisa - a.sisa)}
-              />
-            ) : (
-              <p className="text-xs text-neutral-400 mt-2 font-medium">
-                Sisa bahan kosong. Silahkan simpan stok terlebih dahulu di akhir shift.
               </p>
             )}
           </StatCard>

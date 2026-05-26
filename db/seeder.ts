@@ -43,17 +43,17 @@ async function seed() {
   }
 
   const menus: (typeof stock.$inferInsert)[] = [
-    { name: "Ayam", price: 18000, quantity: 30 },
-    { name: "Lele", price: 15000, quantity: 40 },
-    { name: "Bebek", price: 25000, quantity: 30 },
-    { name: "Nasi", price: 5000, quantity: null },
-    { name: "Tahu", price: 2000, quantity: 10 },
-    { name: "Tempe", price: 2000, quantity: 10 },
-    { name: "Ampela Ati", price: 5000, quantity: 10 },
-    { name: "Kepala Ayam", price: 3000, quantity: 10 },
-    { name: "Kepala Bebek", price: 5000, quantity: 10 },
-    { name: "Teh Manis", price: 5000, quantity: null },
-    { name: "Sambal", price: 2000, quantity: null },
+    { name: "Ayam", price: 18000 },
+    { name: "Lele", price: 15000 },
+    { name: "Bebek", price: 25000 },
+    { name: "Nasi", price: 5000 },
+    { name: "Tahu", price: 2000 },
+    { name: "Tempe", price: 2000 },
+    { name: "Ampela Ati", price: 5000 },
+    { name: "Kepala Ayam", price: 3000 },
+    { name: "Kepala Bebek", price: 5000 },
+    { name: "Teh Manis", price: 5000 },
+    { name: "Sambal", price: 2000 },
   ];
 
   for (const menu of menus) {

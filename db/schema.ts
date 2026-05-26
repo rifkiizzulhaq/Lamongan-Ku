@@ -14,9 +14,6 @@ export const stock = pgTable("stock", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   price: integer("price").notNull(),
-  quantity: integer("quantity"),
-  initialQuantity: integer("initial_quantity").notNull().default(0),
-  isUnlimited: integer("is_unlimited").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -93,26 +90,6 @@ export const weather_logs = pgTable("weather_logs", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const daily_stock_snapshots = pgTable(
-  "daily_stock_snapshots",
-  {
-    id: serial("id").primaryKey(),
-    reportId: integer("report_id")
-      .notNull()
-      .references(() => daily_reports.id, { onDelete: "cascade" }),
-    stockId: integer("stock_id")
-      .notNull()
-      .references(() => stock.id),
-    sisaQuantity: integer("sisa_quantity").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-  },
-  (table) => ({
-    reportIdIndex: index("daily_stock_snapshots_report_id_idx").on(
-      table.reportId,
-    ),
-  }),
-);
-
 export const shop_status = pgTable("shop_status", {
   id: serial("id").primaryKey(),
   isBuka: integer("is_buka").notNull().default(1),
@@ -123,7 +100,6 @@ export const shop_status = pgTable("shop_status", {
 // Relasi ORM
 export const stockRelations = relations(stock, ({ many }) => ({
   orderItems: many(order_items),
-  stockSnapshots: many(daily_stock_snapshots),
 }));
 
 export const diningTableRelations = relations(dining_table, ({ many }) => ({
@@ -151,7 +127,6 @@ export const orderItemsRelations = relations(order_items, ({ one }) => ({
 
 export const dailyReportsRelations = relations(daily_reports, ({ many }) => ({
   weathers: many(weather_logs),
-  snapshots: many(daily_stock_snapshots),
 }));
 
 export const weatherLogsRelations = relations(weather_logs, ({ one }) => ({
@@ -160,20 +135,6 @@ export const weatherLogsRelations = relations(weather_logs, ({ one }) => ({
     references: [daily_reports.id],
   }),
 }));
-
-export const dailyStockSnapshotsRelations = relations(
-  daily_stock_snapshots,
-  ({ one }) => ({
-    dailyReport: one(daily_reports, {
-      fields: [daily_stock_snapshots.reportId],
-      references: [daily_reports.id],
-    }),
-    stock: one(stock, {
-      fields: [daily_stock_snapshots.stockId],
-      references: [stock.id],
-    }),
-  }),
-);
 
 export type Stock = InferSelectModel<typeof stock>;
 export type NewStock = InferInsertModel<typeof stock>;
@@ -192,11 +153,6 @@ export type NewDailyReport = InferInsertModel<typeof daily_reports>;
 
 export type WeatherLog = InferSelectModel<typeof weather_logs>;
 export type NewWeatherLog = InferInsertModel<typeof weather_logs>;
-
-export type DailyStockSnapshot = InferSelectModel<typeof daily_stock_snapshots>;
-export type NewDailyStockSnapshot = InferInsertModel<
-  typeof daily_stock_snapshots
->;
 
 export type ShopStatus = InferSelectModel<typeof shop_status>;
 export type NewShopStatus = InferInsertModel<typeof shop_status>;

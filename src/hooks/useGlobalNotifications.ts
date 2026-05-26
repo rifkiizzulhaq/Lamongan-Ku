@@ -37,6 +37,14 @@ export function useGlobalNotifications() {
           const orderId = newRow?.id || oldRow?.id;
           const orderType = newRow?.order_type;
 
+          const state = useNotificationStore.getState();
+          const isIgnored = orderId && state.ignoredUpdateOrders.includes(orderId);
+
+          if (isIgnored) {
+            state.removeIgnoredUpdateOrder(orderId);
+            return; // completely ignore this event
+          }
+
           if (isInsert && orderId) {
             recentlyInsertedIds.add(orderId);
             setTimeout(() => recentlyInsertedIds.delete(orderId), 8000);
@@ -44,7 +52,7 @@ export function useGlobalNotifications() {
 
           if (isUpdate && orderId && !recentlyInsertedIds.has(orderId)) {
             if (newRow?.status !== "selesai") {
-              useNotificationStore.getState().addUnseenUpdatedOrder(orderId);
+              state.addUnseenUpdatedOrder(orderId);
             }
           }
           if (orderType === "bungkus") {
@@ -58,7 +66,7 @@ export function useGlobalNotifications() {
               const isInsideThisTable = currentPath === `/meja/${tableId}`;
               if (!isInsideThisTable) {
                 setHasNewMeja(true);
-                useNotificationStore.getState().addNewMejaId(tableId);
+                state.addNewMejaId(tableId);
               }
             } else {
               if (!currentPath.startsWith("/meja/")) {

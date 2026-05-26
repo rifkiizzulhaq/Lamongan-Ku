@@ -1,16 +1,9 @@
 "use server";
 
 import { db } from "@/db";
-import {
-  orders,
-  daily_reports,
-  stock,
-  daily_stock_snapshots,
-  weather_logs,
-  order_items,
-} from "@/db/schema";
-import type { Order, WeatherLog, DailyStockSnapshot } from "@/db/schema";
-import { and, gte, lte, eq, sum } from "drizzle-orm";
+import { orders, daily_reports, weather_logs } from "@/db/schema";
+import type { Order, WeatherLog } from "@/db/schema";
+import { and, gte, lte, eq } from "drizzle-orm";
 import type { DailyData } from "@/interfaces/laporan";
 import {
   getWibDate,
@@ -60,90 +53,45 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     }),
   ]);
 
-  const [reportCurr, reportPrev, stockList, currentShopStatus] =
-    await Promise.all([
-      db
-        .select()
-        .from(daily_reports)
-        .where(
-          and(
-            gte(daily_reports.createdAt, currentRange.start),
-            lte(daily_reports.createdAt, currentRange.end),
-          ),
-        )
-        .limit(1),
-      db
-        .select()
-        .from(daily_reports)
-        .where(
-          and(
-            gte(daily_reports.createdAt, previousRange.start),
-            lte(daily_reports.createdAt, previousRange.end),
-          ),
-        )
-        .limit(1),
-      db.select().from(stock),
-      db.query.shop_status.findFirst(),
-    ]);
-
-  const [soldItemsCurr, soldItemsPrev] = await Promise.all([
+  const [reportCurr, reportPrev, currentShopStatus] = await Promise.all([
     db
-      .select({
-        stockId: order_items.stockId,
-        total: sum(order_items.quantity),
-      })
-      .from(order_items)
-      .leftJoin(orders, eq(order_items.orderId, orders.id))
+      .select()
+      .from(daily_reports)
       .where(
         and(
-          gte(orders.createdAt, currentRange.start),
-          lte(orders.createdAt, currentRange.end),
+          gte(daily_reports.createdAt, currentRange.start),
+          lte(daily_reports.createdAt, currentRange.end),
         ),
       )
-      .groupBy(order_items.stockId),
+      .limit(1),
     db
-      .select({
-        stockId: order_items.stockId,
-        total: sum(order_items.quantity),
-      })
-      .from(order_items)
-      .leftJoin(orders, eq(order_items.orderId, orders.id))
+      .select()
+      .from(daily_reports)
       .where(
         and(
-          gte(orders.createdAt, previousRange.start),
-          lte(orders.createdAt, previousRange.end),
+          gte(daily_reports.createdAt, previousRange.start),
+          lte(daily_reports.createdAt, previousRange.end),
         ),
       )
-      .groupBy(order_items.stockId),
+      .limit(1),
+    db.query.shop_status.findFirst(),
   ]);
 
-  const [snapshotsCurr, weatherCurr] = await Promise.all([
+  const [weatherCurr] = await Promise.all([
     reportCurr[0]
       ? db
-        .select()
-        .from(daily_stock_snapshots)
-        .where(eq(daily_stock_snapshots.reportId, reportCurr[0].id))
-      : Promise.resolve([] as DailyStockSnapshot[]),
-    reportCurr[0]
-      ? db
-        .select()
-        .from(weather_logs)
-        .where(eq(weather_logs.reportId, reportCurr[0].id))
+          .select()
+          .from(weather_logs)
+          .where(eq(weather_logs.reportId, reportCurr[0].id))
       : Promise.resolve([] as WeatherLog[]),
   ]);
 
-  const [snapshotsPrev, weatherPrev] = await Promise.all([
+  const [weatherPrev] = await Promise.all([
     reportPrev[0]
       ? db
-        .select()
-        .from(daily_stock_snapshots)
-        .where(eq(daily_stock_snapshots.reportId, reportPrev[0].id))
-      : Promise.resolve([] as DailyStockSnapshot[]),
-    reportPrev[0]
-      ? db
-        .select()
-        .from(weather_logs)
-        .where(eq(weather_logs.reportId, reportPrev[0].id))
+          .select()
+          .from(weather_logs)
+          .where(eq(weather_logs.reportId, reportPrev[0].id))
       : Promise.resolve([] as WeatherLog[]),
   ]);
 
@@ -191,13 +139,13 @@ export async function getDailyAnalytics(): Promise<DailyData> {
       const label = `${String(wib.getHours()).padStart(2, "0")}:00`;
       const idx = timeLabels.indexOf(label);
       if (idx === -1) return;
-      
+
       revenue[idx] += o.totalPrice;
       const t = o.orderType.toLowerCase();
       if (t.includes("makan") || t.includes("dine") || t.includes("tempat"))
         dineIn[idx]++;
       else takeaway[idx]++;
-      
+
       cuaca[idx] = matchWeather(label, wLogs);
     });
   };
@@ -218,36 +166,6 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     takeawayPreviousTrend,
     cuacaPrevious,
   );
-
-  const currSoldMap = Object.fromEntries(
-    soldItemsCurr.map((i) => [i.stockId, Number(i.total || 0)]),
-  );
-  const prevSoldMap = Object.fromEntries(
-    soldItemsPrev.map((i) => [i.stockId, Number(i.total || 0)]),
-  );
-
-  const sisaBahan = stockList
-    .filter((s) => s.isUnlimited === 0)
-    .map((s) => {
-      const sisaCurrent =
-        snapshotsCurr.find((x) => x.stockId === s.id)?.sisaQuantity ?? 0;
-      const sisaPrevious =
-        snapshotsPrev.find((x) => x.stockId === s.id)?.sisaQuantity ?? 0;
-
-      const soldCurrent = currSoldMap[s.id] || 0;
-      const soldPrevious = prevSoldMap[s.id] || 0;
-
-      const stockAwalCurrent = sisaCurrent + soldCurrent;
-      const stockAwalPrevious = sisaPrevious + soldPrevious;
-
-      return {
-        nama: s.name,
-        sisaCurrent,
-        sisaPrevious,
-        stockAwalCurrent,
-        stockAwalPrevious,
-      };
-    });
 
   const targetIsToday =
     currentRange.start.getTime() <= new Date().getTime() &&
@@ -280,12 +198,12 @@ export async function getDailyAnalytics(): Promise<DailyData> {
     isLiburPrevious,
     alasanLiburCurrent: isLiburCurrent
       ? reportCurr[0]?.note ||
-      (targetIsToday ? currentShopStatus?.reason : "") ||
-      "Tidak ada aktivitas penjualan pada hari tersebut (Libur/Tutup)."
+        (targetIsToday ? currentShopStatus?.reason : "") ||
+        "Tidak ada aktivitas penjualan pada hari tersebut (Libur/Tutup)."
       : "",
     alasanLiburPrevious: isLiburPrevious
       ? reportPrev[0]?.note ||
-      "Tidak ada aktivitas penjualan pada hari tersebut (Libur/Tutup)."
+        "Tidak ada aktivitas penjualan pada hari tersebut (Libur/Tutup)."
       : "",
     revenueLabels: timeLabels,
     revenueCurrent,
@@ -314,6 +232,5 @@ export async function getDailyAnalytics(): Promise<DailyData> {
       timeRange: w.timeRange,
       weather: w.weather,
     })),
-    sisaBahan,
   };
 }

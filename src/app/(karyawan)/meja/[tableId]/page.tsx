@@ -101,7 +101,12 @@ export default function Page() {
     },
   ];
 
-  if (isLoading) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || isLoading) {
     return (
       <section className="h-[calc(100dvh-45px)] md:min-h-screen dark:bg-neutral-800 flex flex-col overflow-hidden">
         <PageHeaderSkeleton hasTag />

@@ -8,6 +8,7 @@ interface NotificationStore {
   highlightedOrders: number[];
   highlightTimeouts: Record<number, NodeJS.Timeout | undefined>;
   manualChangedItems: Record<number, string[]>;
+  ignoredUpdateOrders: number[];
   setHasNewBungkus: (val: boolean) => void;
   setHasNewMeja: (val: boolean) => void;
   addNewMejaId: (id: number) => void;
@@ -16,6 +17,8 @@ interface NotificationStore {
   clearUnseenUpdatedOrder: (orderId: number) => void;
   activateHighlight: (orderId: number) => void;
   setManualChangedItems: (orderId: number, items: string[]) => void;
+  ignoreNextUpdateForOrder: (orderId: number) => void;
+  removeIgnoredUpdateOrder: (orderId: number) => void;
 }
 
 export const useNotificationStore = create<NotificationStore>((set) => ({
@@ -26,6 +29,7 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
   highlightedOrders: [],
   highlightTimeouts: {} as Record<number, NodeJS.Timeout>,
   manualChangedItems: {},
+  ignoredUpdateOrders: [],
   setHasNewBungkus: (val) => set({ hasNewBungkus: val }),
   setHasNewMeja: (val) => set({ hasNewMeja: val }),
   addNewMejaId: (id) =>
@@ -49,6 +53,16 @@ export const useNotificationStore = create<NotificationStore>((set) => ({
       unseenUpdatedOrders: state.unseenUpdatedOrders.filter(
         (id) => id !== orderId,
       ),
+    })),
+  ignoreNextUpdateForOrder: (orderId) =>
+    set((state) => ({
+      ignoredUpdateOrders: state.ignoredUpdateOrders.includes(orderId)
+        ? state.ignoredUpdateOrders
+        : [...state.ignoredUpdateOrders, orderId],
+    })),
+  removeIgnoredUpdateOrder: (orderId) =>
+    set((state) => ({
+      ignoredUpdateOrders: state.ignoredUpdateOrders.filter((id) => id !== orderId),
     })),
   activateHighlight: (orderId) => {
     set((state) => {

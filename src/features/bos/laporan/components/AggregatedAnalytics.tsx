@@ -5,7 +5,6 @@ import TrendLineChart from "./charts/TrendLineChart";
 import ComparisonBarChart from "./charts/ComparisonBarChart";
 import OrderTypeChart from "./charts/OrderTypeChart";
 import OrderTypeTimelineChart from "./charts/OrderTypeTimelineChart";
-import SisaBahanChart from "./charts/SisaBahanChart";
 import WeatherSummaryCard from "./WeatherSummaryCard";
 
 import SummaryCards from "./SummaryCards";
@@ -169,13 +168,6 @@ export default function AggregatedAnalytics({
         showComparison={showComparison}
         isDaily={false}
         intervalName={intervalName}
-      />
-
-      <SisaBahanChart
-        data={data.sisaBahan}
-        currentLabel={data.timeLabel}
-        previousLabel={data.prevTimeLabel}
-        showComparison={showComparison}
       />
     </div>
   );

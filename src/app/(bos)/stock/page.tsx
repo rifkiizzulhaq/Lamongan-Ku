@@ -5,25 +5,20 @@ import StockInputForm from "@/src/features/bos/stock/components/StockInputForm";
 import TableInputForm from "@/src/features/bos/stock/components/TableInputForm";
 import {
   getAll,
-  getYesterdaySnapshot,
 } from "@/src/server/bos/stock/stock.server";
 import { getAllTables } from "@/src/server/bos/table/table.server";
 import { getShopStatus } from "@/src/server/bos/dashboard/dashboard.server";
 import LockedPage from "@/src/components/ui/LockedPage";
 import { useQuery } from "@tanstack/react-query";
 import StockSkeleton from "@/src/features/bos/stock/components/StockSkeleton";
+import { useSupabaseRealtime } from "@/src/hooks/useSupabaseRealtime";
 
 export default function Page() {
+  useSupabaseRealtime("shop_status", ["shop-status"]);
   const { data: stockList = [], isLoading: isLoadingStock } = useQuery({
     queryKey: ["stock-list"],
     queryFn: () => getAll(),
   });
-
-  const { data: yesterdaySnapshot = {}, isLoading: isLoadingSnapshot } =
-    useQuery({
-      queryKey: ["yesterday-snapshot"],
-      queryFn: () => getYesterdaySnapshot(),
-    });
 
   const { data: tables = [], isLoading: isLoadingTables } = useQuery({
     queryKey: ["tables"],
@@ -36,7 +31,7 @@ export default function Page() {
   });
 
   const isLoading =
-    isLoadingStock || isLoadingSnapshot || isLoadingTables || isLoadingStatus;
+    isLoadingStock || isLoadingTables || isLoadingStatus;
 
   if (isLoading) {
     return (
@@ -64,10 +59,6 @@ export default function Page() {
     id: s.id,
     nama: s.name,
     price: s.price,
-    quantity: s.quantity,
-    initialQuantity: s.initialQuantity,
-    sisaKemarin: yesterdaySnapshot[s.id] ?? 0,
-    isUnlimited: s.isUnlimited === 1,
   }));
 
   return (
@@ -78,7 +69,6 @@ export default function Page() {
           <StockInputForm
             stockList={stockFormItems}
             isBuka={shopStatus?.isBuka === 1}
-            hasYesterdayData={Object.keys(yesterdaySnapshot).length > 0}
           />
           <TableInputForm tables={tables} />
         </div>

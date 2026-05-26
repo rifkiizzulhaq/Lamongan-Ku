@@ -53,18 +53,8 @@ function MakanContent() {
     enabled: mode === "update" && !!orderId,
   });
 
-  const {
-    cart,
-    setCart,
-    isSpecialMenu,
-    hasMainStockAvailable,
-    addToCart,
-    removeFromCart,
-    totalPrice,
-  } = useCart({
-    stockList,
+  const { cart, setCart, addToCart, removeFromCart, totalPrice } = useCart({
     initialCart: orderData?.cartItems,
-    mode,
   });
 
   useEffect(() => {
@@ -90,7 +80,12 @@ function MakanContent() {
 
   const { mutate: simpan, isPending } = useMutation({
     mutationFn: async (
-      payload: { stockId: number; quantity: number; isTakeaway?: boolean }[],
+      payload: {
+        stockId: number;
+        quantity: number;
+        isTakeaway?: boolean;
+        price?: number;
+      }[],
     ) => {
       if (mode === "update" && orderId) {
         return updateMakanItems(orderId, payload);
@@ -111,8 +106,13 @@ function MakanContent() {
         addToast(res.error || "Gagal menyimpan pesanan", "error");
         return;
       }
-      
-      addToast(mode === "update" ? "Pesanan berhasil diupdate" : "Pesanan berhasil dibuat", "success");
+
+      addToast(
+        mode === "update"
+          ? "Pesanan berhasil diupdate"
+          : "Pesanan berhasil dibuat",
+        "success",
+      );
 
       if (mode === "update" && orderId && orderData) {
         const changedItems = cart
@@ -139,6 +139,10 @@ function MakanContent() {
           refetchType: "all",
         }),
         queryClient.invalidateQueries({
+          queryKey: ["active-antrean"],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
           queryKey: ["makan-order", orderId],
           refetchType: "all",
         }),
@@ -155,7 +159,7 @@ function MakanContent() {
           refetchType: "all",
         }),
       ]);
-      router.push(`/meja/${tableId}`);
+      router.push("/antrean");
     },
   });
 
@@ -166,11 +170,18 @@ function MakanContent() {
         stockId: i.stockId,
         quantity: i.quantity,
         isTakeaway: i.isTakeaway,
+        price: i.price,
       })),
     );
   };
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   if (
+    !mounted ||
     isLoadingStock ||
     (mode === "update" && isLoadingOrder) ||
     !initialCartLoaded
@@ -197,7 +208,8 @@ function MakanContent() {
             <div className="flex flex-col">
               <span>Meja {tableId}</span>
               <span className="text-[10px] sm:text-xs text-neutral-400 font-normal normal-case tracking-normal">
-                Tipe: <span className="capitalize">{customerType.toLowerCase()}</span>
+                Tipe:{" "}
+                <span className="capitalize">{customerType.toLowerCase()}</span>
               </span>
             </div>
           </div>
@@ -208,21 +220,6 @@ function MakanContent() {
       <main className="relative max-w-87.5 mx-auto w-full flex-1 flex flex-col overflow-hidden pt-2">
         <div className="flex-1 overflow-y-auto grid grid-cols-2 gap-2 pb-5 content-start">
           {stockList.map((s) => {
-            const currentTotalQtyForStock = cart
-              .filter((i) => i.stockId === s.id)
-              .reduce((sum, item) => sum + item.quantity, 0);
-            const initialLockedQty =
-              mode === "update" && orderData
-                ? orderData.cartItems
-                    .filter((i) => i.stockId === s.id)
-                    .reduce((sum, item) => sum + item.quantity, 0)
-                : 0;
-            const available = (s.quantity ?? 0) + initialLockedQty;
-            const special = isSpecialMenu(s.id);
-            const canAdd = special
-              ? hasMainStockAvailable
-              : currentTotalQtyForStock < available;
-
             const currentSpecificQty =
               cart.find(
                 (i) => i.stockId === s.id && i.isTakeaway === isTakeaway,
@@ -234,8 +231,7 @@ function MakanContent() {
                 name={s.name}
                 price={s.price}
                 quantity={currentSpecificQty}
-                sisa={special ? undefined : available - currentTotalQtyForStock}
-                disabled={!canAdd || isPending || isNavigating}
+                disabled={isPending || isNavigating}
                 onAdd={() => {
                   if (isPending || isNavigating) return;
                   addToCart(s, isTakeaway);

@@ -18,8 +18,6 @@ import {
   getTodayOrderCount,
 } from "@/src/server/karyawan/more/more.server";
 import { CuacaSlot } from "@/interfaces/cuaca";
-import { SisaItem } from "@/interfaces/stock";
-import type { Stock } from "@/db/schema";
 import { useUiStore } from "@/src/store/uiStore";
 
 type CuacaOption = "Cerah" | "Mendung" | "Gerimis" | "Hujan";
@@ -68,10 +66,8 @@ const OWNER_PHONE = process.env.NEXT_PUBLIC_OWNER_PHONE || "6285156630893";
 
 export default function TutupWarungModal({
   onClose,
-  stockList,
 }: {
   onClose: () => void;
-  stockList: Stock[];
 }) {
   const { addToast } = useUiStore();
   const queryClient = useQueryClient();
@@ -114,15 +110,6 @@ export default function TutupWarungModal({
   const [slots, setSlots] = useState<CuacaSlot[]>(() =>
     getFilteredSlots().map((jam) => ({ jam, cuaca: null })),
   );
-  const [sisa, setSisa] = useState<SisaItem[]>(() =>
-    stockList
-      .filter((s) => s.isUnlimited === 0)
-      .map((s) => ({
-        nama: s.name,
-        sisa: s.quantity ?? 0,
-        stockId: s.id,
-      })),
-  );
   const [catatan, setCatatan] = useState("");
 
   const today = new Date()
@@ -143,19 +130,13 @@ export default function TutupWarungModal({
       const res = await saveClosingReport({
         note: catatan,
         weatherSlots: slots,
-        stockSnapshots: sisa.map((s) => ({
-          stockId: s.stockId!,
-          sisa: s.sisa ?? 0,
-        })),
       });
 
       if (!res.success) throw new Error(res.error);
       return res;
     },
     onSuccess: () => {
-      const waText = `Laporan stock harian pada\nTanggal: ${today}\n\n${sisa
-        .map((s) => `- ${s.nama}: ${s.sisa ?? 0}`)
-        .join("\n")}\n\nCatatan: ${catatan || "-"}`;
+      const waText = `Laporan harian pada\nTanggal: ${today}\n\nCatatan: ${catatan || "-"}`;
 
       const waUrl = `https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(waText)}`;
       window.open(waUrl, "_blank");
@@ -175,11 +156,7 @@ export default function TutupWarungModal({
     setSlots((prev) => prev.map((s, i) => (i === idx ? { ...s, cuaca } : s)));
   };
 
-  const setSisaItem = (idx: number, val: number) => {
-    setSisa((prev) =>
-      prev.map((m, i) => (i === idx ? { ...m, sisa: Math.max(0, val) } : m)),
-    );
-  };
+
 
   return (
     <div className="fixed inset-0 z-60 flex items-end justify-center">
@@ -244,34 +221,6 @@ export default function TutupWarungModal({
                       </Button>
                     ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-2">
-              Sisa Menu Hari Ini (Fisik)
-            </p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-              {sisa.map((item, idx) => (
-                <div
-                  key={item.nama}
-                  className="flex items-center justify-between gap-2"
-                >
-                  <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 truncate">
-                    {item.nama}
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={item.sisa === 0 ? "" : item.sisa}
-                    onChange={(e) =>
-                      setSisaItem(idx, parseInt(e.target.value) || 0)
-                    }
-                    placeholder="0"
-                    className="w-12 h-7 bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-center text-xs font-black rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-orange transition-colors placeholder:text-neutral-400 shrink-0"
-                  />
                 </div>
               ))}
             </div>

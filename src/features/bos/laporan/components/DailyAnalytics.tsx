@@ -4,7 +4,6 @@ import { DailyData } from "@/interfaces/laporan";
 import TrendLineChart from "./charts/TrendLineChart";
 import OrderTypeChart from "./charts/OrderTypeChart";
 import OrderTypeTimelineChart from "./charts/OrderTypeTimelineChart";
-import SisaBahanChart from "./charts/SisaBahanChart";
 import WeatherSummaryCard from "./WeatherSummaryCard";
 import SummaryCards from "./SummaryCards";
 import { LuInfo } from "react-icons/lu";
@@ -22,7 +21,9 @@ export default function DailyAnalytics({ data }: Props) {
         <div className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-4 rounded-xl flex gap-3 items-start">
           <LuInfo className="shrink-0 mt-0.5" size={18} />
           <div>
-            <p className="font-bold text-sm">Warung Libur Pada {data.timeLabel}</p>
+            <p className="font-bold text-sm">
+              Warung Libur Pada {data.timeLabel}
+            </p>
             <p className="text-xs mt-1">
               {data.alasanLiburCurrent || "Tidak ada alasan spesifik."}
             </p>
@@ -119,13 +120,6 @@ export default function DailyAnalytics({ data }: Props) {
         previousLabel={data.prevTimeLabel}
         showComparison={showComparison}
         isDaily={true}
-      />
-
-      <SisaBahanChart
-        data={data.sisaBahan}
-        currentLabel={data.timeLabel}
-        previousLabel={data.prevTimeLabel}
-        showComparison={showComparison}
       />
     </div>
   );

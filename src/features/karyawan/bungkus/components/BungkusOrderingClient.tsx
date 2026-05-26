@@ -32,12 +32,11 @@ export default function BungkusOrderingClient({
   const { addToast, removeToast } = useUiStore();
   const {
     cart,
-    isSpecialMenu,
-    hasMainStockAvailable,
+
     addToCart,
     removeFromCart,
     totalPrice,
-  } = useCart({ stockList, initialCart, mode });
+  } = useCart({ initialCart });
   const router = useRouter();
   const queryClient = useQueryClient();
   const setManualChangedItems = useNotificationStore(
@@ -57,7 +56,9 @@ export default function BungkusOrderingClient({
   const loadingToastId = useRef<string | null>(null);
 
   const { mutate: simpan, isPending } = useMutation({
-    mutationFn: async (payload: { stockId: number; quantity: number }[]) => {
+    mutationFn: async (
+      payload: { stockId: number; quantity: number; price?: number }[],
+    ) => {
       if (mode === "update" && orderId) {
         return updateItems(orderId, payload);
       }
@@ -77,8 +78,13 @@ export default function BungkusOrderingClient({
         addToast(res.error || "Gagal menyimpan pesanan", "error");
         return;
       }
-      
-      addToast(mode === "update" ? "Pesanan berhasil diupdate" : "Pesanan berhasil dibuat", "success");
+
+      addToast(
+        mode === "update"
+          ? "Pesanan berhasil diupdate"
+          : "Pesanan berhasil dibuat",
+        "success",
+      );
 
       if (mode === "update" && orderId) {
         const changedItems = cart
@@ -103,6 +109,10 @@ export default function BungkusOrderingClient({
           refetchType: "all",
         }),
         queryClient.invalidateQueries({
+          queryKey: ["active-antrean"],
+          refetchType: "all",
+        }),
+        queryClient.invalidateQueries({
           queryKey: ["bungkus-order", orderId],
           refetchType: "all",
         }),
@@ -111,13 +121,19 @@ export default function BungkusOrderingClient({
           refetchType: "all",
         }),
       ]);
-      router.push("/bungkus");
+      router.push("/antrean");
     },
   });
 
   const handleSave = () => {
     if (cart.length === 0 || isPending) return;
-    simpan(cart.map((i) => ({ stockId: i.stockId, quantity: i.quantity })));
+    simpan(
+      cart.map((i) => ({
+        stockId: i.stockId,
+        quantity: i.quantity,
+        price: i.price,
+      })),
+    );
   };
 
   return (
@@ -128,23 +144,13 @@ export default function BungkusOrderingClient({
             (() => {
               const currentQty =
                 cart.find((i) => i.stockId === s.id)?.quantity ?? 0;
-              const initialLockedQty =
-                initialCart.find((i) => i.stockId === s.id)?.quantity ?? 0;
-              const available =
-                (s.quantity ?? 0) + (mode === "update" ? initialLockedQty : 0);
-              const special = isSpecialMenu(s.id);
-              const canAdd = special
-                ? hasMainStockAvailable
-                : currentQty < available;
-
               return (
                 <CardOrdering
                   key={s.id}
                   name={s.name}
                   price={s.price}
                   quantity={currentQty}
-                  sisa={special ? undefined : available - currentQty}
-                  disabled={!canAdd || isPending || isNavigating}
+                  disabled={isPending || isNavigating}
                   onAdd={() => {
                     if (isPending || isNavigating) return;
                     addToCart(s);
