@@ -103,7 +103,7 @@ export default function BungkusOrderingClient({
       }
 
       setIsNavigating(true);
-      await Promise.all([
+      Promise.all([
         queryClient.invalidateQueries({
           queryKey: ["bungkus-orders"],
           refetchType: "all",

@@ -114,7 +114,7 @@ export default function CardBungkus({
       };
     });
 
-    queryClient.setQueryData(["active-antrean"], (old: any) => {
+    queryClient.setQueriesData({ queryKey: ["active-antrean"] }, (old: any) => {
       if (!old || !old.pages || !Array.isArray(old.pages)) return old;
 
       return {
@@ -154,6 +154,7 @@ export default function CardBungkus({
       setShowPayment(false);
       optimisticRemove();
       queryClient.invalidateQueries({ queryKey: ["bungkus-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["active-antrean"] });
     },
   });
 

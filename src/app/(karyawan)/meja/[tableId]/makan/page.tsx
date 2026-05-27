@@ -133,7 +133,7 @@ function MakanContent() {
       }
 
       setIsNavigating(true);
-      await Promise.all([
+      Promise.all([
         queryClient.invalidateQueries({
           queryKey: ["table-orders", tableId],
           refetchType: "all",
