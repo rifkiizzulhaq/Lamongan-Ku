@@ -118,7 +118,8 @@ export default function CardBungkus({
     });
 
     queryClient.setQueriesData({ queryKey: ["active-antrean"] }, (old: unknown) => {
-      const data = old as { pages?: { orders: Record<string, unknown>[] }[] };
+      type AntreanOrder = { id: string | number; [key: string]: unknown };
+      const data = old as { pages?: { orders: AntreanOrder[] }[] };
       if (!data || !data.pages || !Array.isArray(data.pages)) return old;
 
       return {
@@ -169,7 +170,8 @@ export default function CardBungkus({
       const previous = queryClient.getQueryData(["bungkus-orders"]);
 
       queryClient.setQueriesData({ queryKey: ["bungkus-orders"] }, (old: unknown) => {
-        const data = old as { pages?: Record<string, unknown>[][] };
+        type OrderType = { id: string | number; [key: string]: unknown };
+        const data = old as { pages?: OrderType[][] };
         if (!data || !data.pages) return old;
         return {
           ...data,

@@ -110,7 +110,8 @@ export default function CardKursi({
 
   const optimisticRemove = () => {
     queryClient.setQueryData(["table-orders", tableId], (old: unknown) => {
-      const data = old as { pages?: Record<string, unknown>[][] } | Record<string, unknown>[];
+      type OrderType = { id: string | number; [key: string]: unknown };
+      const data = old as { pages?: OrderType[][] } | OrderType[];
       if (!data) return old;
 
       if ("pages" in data && Array.isArray(data.pages)) {
@@ -136,7 +137,8 @@ export default function CardKursi({
     });
 
     queryClient.setQueriesData({ queryKey: ["active-antrean"] }, (old: unknown) => {
-      const data = old as { pages?: { orders: Record<string, unknown>[] }[] };
+      type AntreanOrder = { id: string | number; [key: string]: unknown };
+      const data = old as { pages?: { orders: AntreanOrder[] }[] };
       if (!data || !data.pages || !Array.isArray(data.pages)) return old;
 
       return {
@@ -195,7 +197,8 @@ export default function CardKursi({
       const previous = queryClient.getQueryData(["table-orders", tableId]);
       
       queryClient.setQueriesData({ queryKey: ["table-orders", tableId] }, (old: unknown) => {
-        const data = old as Record<string, unknown>[];
+        type OrderType = { id: string | number; [key: string]: unknown };
+        const data = old as OrderType[];
         if (!data || !Array.isArray(data)) return old;
         return data.map((o) => 
           String(o.id) === String(orderId) ? { ...o, isPinned: !isPinned } : o

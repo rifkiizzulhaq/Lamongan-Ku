@@ -104,7 +104,8 @@ export default function CardAntrean({ order, tables }: AntreanOrderProps) {
       const targetTable = tables.find((t) => t.id === tableId);
 
       queryClient.setQueryData(["active-antrean"], (old: unknown) => {
-        const data = old as { pages?: { orders: Record<string, unknown>[] }[] };
+        type AntreanOrder = { id: string | number; [key: string]: unknown };
+        const data = old as { pages?: { orders: AntreanOrder[] }[] };
         if (!data || !data.pages || !Array.isArray(data.pages)) return old;
 
         return {
@@ -164,7 +165,8 @@ export default function CardAntrean({ order, tables }: AntreanOrderProps) {
       const previous = queryClient.getQueryData(["active-antrean"]);
       
       queryClient.setQueriesData({ queryKey: ["active-antrean"] }, (old: unknown) => {
-        const data = old as { pages?: { orders: Record<string, unknown>[] }[] };
+        type AntreanOrder = { id: string | number; [key: string]: unknown };
+        const data = old as { pages?: { orders: AntreanOrder[] }[] };
         if (!data || !data.pages) return old;
         return {
           ...data,
