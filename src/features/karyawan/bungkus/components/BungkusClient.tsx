@@ -35,6 +35,7 @@ export default function BungkusClient({
         id: r.label,
         totalPrice: r.totalPrice,
         status: r.status,
+        isPinned: r.isPinned,
         items: r.items,
       }));
     },
@@ -105,6 +106,7 @@ export default function BungkusClient({
               id={pesanan.id}
               totalPrice={pesanan.totalPrice}
               status={pesanan.status}
+              isPinned={pesanan.isPinned}
               items={pesanan.items}
             />
           ))

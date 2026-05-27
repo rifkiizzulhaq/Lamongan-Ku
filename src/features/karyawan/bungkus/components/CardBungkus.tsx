@@ -117,15 +117,16 @@ export default function CardBungkus({
       };
     });
 
-    queryClient.setQueriesData({ queryKey: ["active-antrean"] }, (old: any) => {
-      if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+    queryClient.setQueriesData({ queryKey: ["active-antrean"] }, (old: unknown) => {
+      const data = old as { pages?: { orders: Record<string, unknown>[] }[] };
+      if (!data || !data.pages || !Array.isArray(data.pages)) return old;
 
       return {
-        ...old,
-        pages: old.pages.map((page: any) => ({
+        ...data,
+        pages: data.pages.map((page) => ({
           ...page,
           orders: page.orders.filter(
-            (o: { id: string | number }) => String(o.id) !== String(orderId),
+            (o) => String(o.id) !== String(orderId),
           ),
         })),
       };
@@ -166,13 +167,14 @@ export default function CardBungkus({
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ["bungkus-orders"] });
       const previous = queryClient.getQueryData(["bungkus-orders"]);
-      
-      queryClient.setQueriesData({ queryKey: ["bungkus-orders"] }, (old: any) => {
-        if (!old || !old.pages) return old;
+
+      queryClient.setQueriesData({ queryKey: ["bungkus-orders"] }, (old: unknown) => {
+        const data = old as { pages?: Record<string, unknown>[][] };
+        if (!data || !data.pages) return old;
         return {
-          ...old,
-          pages: old.pages.map((page: any) => 
-            page.map((o: any) => 
+          ...data,
+          pages: data.pages.map((page) =>
+            page.map((o) =>
               String(o.id) === String(orderId) ? { ...o, isPinned: !isPinned } : o
             )
           )

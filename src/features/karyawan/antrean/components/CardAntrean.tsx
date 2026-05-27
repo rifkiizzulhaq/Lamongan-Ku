@@ -48,7 +48,7 @@ export default function CardAntrean({ order, tables }: AntreanOrderProps) {
 
       order.items.forEach((newItem) => {
         const oldItem = prev.find(
-          (i: any) =>
+          (i: { stock?: { name?: string }; isTakeaway?: string | boolean }) =>
             (i.stock?.name?.trim() || "") === (newItem.stock?.name?.trim() || "") &&
             String(i.isTakeaway) === String(newItem.isTakeaway)
         );
@@ -103,14 +103,15 @@ export default function CardAntrean({ order, tables }: AntreanOrderProps) {
       const previousAntrean = queryClient.getQueryData(["active-antrean"]);
       const targetTable = tables.find((t) => t.id === tableId);
 
-      queryClient.setQueryData(["active-antrean"], (old: any) => {
-        if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+      queryClient.setQueryData(["active-antrean"], (old: unknown) => {
+        const data = old as { pages?: { orders: Record<string, unknown>[] }[] };
+        if (!data || !data.pages || !Array.isArray(data.pages)) return old;
 
         return {
-          ...old,
-          pages: old.pages.map((page: any) => ({
+          ...data,
+          pages: data.pages.map((page) => ({
             ...page,
-            orders: page.orders.map((o: any) => {
+            orders: page.orders.map((o) => {
               if (String(o.id) === String(order.id)) {
                 return {
                   ...o,
@@ -162,13 +163,14 @@ export default function CardAntrean({ order, tables }: AntreanOrderProps) {
       await queryClient.cancelQueries({ queryKey: ["active-antrean"] });
       const previous = queryClient.getQueryData(["active-antrean"]);
       
-      queryClient.setQueriesData({ queryKey: ["active-antrean"] }, (old: any) => {
-        if (!old || !old.pages) return old;
+      queryClient.setQueriesData({ queryKey: ["active-antrean"] }, (old: unknown) => {
+        const data = old as { pages?: { orders: Record<string, unknown>[] }[] };
+        if (!data || !data.pages) return old;
         return {
-          ...old,
-          pages: old.pages.map((page: any) => ({
+          ...data,
+          pages: data.pages.map((page) => ({
             ...page,
-            orders: page.orders.map((o: any) => 
+            orders: page.orders.map((o) => 
               String(o.id) === String(order.id) ? { ...o, isPinned: !order.isPinned } : o
             )
           }))

@@ -7,14 +7,14 @@ import { requireAuth } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 import { getShiftWaktu } from "@/src/utils/date";
 
-import { sql } from "drizzle-orm";
+import { sql, SQL } from "drizzle-orm";
 
 export async function getActiveAntrean(page: number = 1, limit: number = 10, prioritizeNonLele: boolean = false) {
   try {
     await requireAuth();
     const { startOfDay, endOfDay } = getShiftWaktu();
 
-    let orderByClause: any[] = [asc(orders.createdAt)];
+    let orderByClause: SQL[] = [asc(orders.createdAt)];
 
     if (prioritizeNonLele) {
       const hasLele = sql`EXISTS (

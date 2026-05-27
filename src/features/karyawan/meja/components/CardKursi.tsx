@@ -109,13 +109,14 @@ export default function CardKursi({
   }, [unseenUpdatedOrders, parsedOrderId, activateHighlight, hasUnseen]);
 
   const optimisticRemove = () => {
-    queryClient.setQueryData(["table-orders", tableId], (old: any) => {
-      if (!old) return old;
+    queryClient.setQueryData(["table-orders", tableId], (old: unknown) => {
+      const data = old as { pages?: Record<string, unknown>[][] } | Record<string, unknown>[];
+      if (!data) return old;
 
-      if (old.pages && Array.isArray(old.pages)) {
+      if ("pages" in data && Array.isArray(data.pages)) {
         return {
-          ...old,
-          pages: old.pages.map((page: any[]) =>
+          ...data,
+          pages: data.pages.map((page) =>
             page.filter(
               (order: { id: string | number }) =>
                 String(order.id) !== String(orderId),
@@ -124,8 +125,8 @@ export default function CardKursi({
         };
       }
 
-      if (Array.isArray(old)) {
-        return old.filter(
+      if (Array.isArray(data)) {
+        return data.filter(
           (order: { id: string | number }) =>
             String(order.id) !== String(orderId),
         );
@@ -134,12 +135,13 @@ export default function CardKursi({
       return old;
     });
 
-    queryClient.setQueriesData({ queryKey: ["active-antrean"] }, (old: any) => {
-      if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+    queryClient.setQueriesData({ queryKey: ["active-antrean"] }, (old: unknown) => {
+      const data = old as { pages?: { orders: Record<string, unknown>[] }[] };
+      if (!data || !data.pages || !Array.isArray(data.pages)) return old;
 
       return {
-        ...old,
-        pages: old.pages.map((page: any) => ({
+        ...data,
+        pages: data.pages.map((page) => ({
           ...page,
           orders: page.orders.filter(
             (o: { id: string | number }) => String(o.id) !== String(orderId),
@@ -192,9 +194,10 @@ export default function CardKursi({
       await queryClient.cancelQueries({ queryKey: ["table-orders", tableId] });
       const previous = queryClient.getQueryData(["table-orders", tableId]);
       
-      queryClient.setQueriesData({ queryKey: ["table-orders", tableId] }, (old: any) => {
-        if (!old) return old;
-        return old.map((o: any) => 
+      queryClient.setQueriesData({ queryKey: ["table-orders", tableId] }, (old: unknown) => {
+        const data = old as Record<string, unknown>[];
+        if (!data || !Array.isArray(data)) return old;
+        return data.map((o) => 
           String(o.id) === String(orderId) ? { ...o, isPinned: !isPinned } : o
         );
       });
