@@ -105,12 +105,26 @@ export default function CardBungkus({
     queryClient.setQueryData(["bungkus-orders"], (old: unknown) => {
       if (!old || typeof old !== "object" || !("pages" in old)) return old;
 
-      const typedOld = old as { pages: { orderId: string }[][] };
+      const typedOld = old as { pages: { id: string | number }[][] };
       return {
         ...typedOld,
         pages: typedOld.pages.map((page) =>
-          page.filter((order) => String(order.orderId) !== String(orderId)),
+          page.filter((order) => String(order.id) !== String(orderId)),
         ),
+      };
+    });
+
+    queryClient.setQueryData(["active-antrean"], (old: any) => {
+      if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+
+      return {
+        ...old,
+        pages: old.pages.map((page: any) => ({
+          ...page,
+          orders: page.orders.filter(
+            (o: { id: string | number }) => String(o.id) !== String(orderId),
+          ),
+        })),
       };
     });
   };

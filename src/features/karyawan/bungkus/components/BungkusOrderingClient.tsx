@@ -94,7 +94,7 @@ export default function BungkusOrderingClient({
             );
             return !oldItem || oldItem.quantity !== newItem.quantity;
           })
-          .map((i) => `${i.name}-undefined`);
+          .map((i) => `${i.name}-true`);
 
         if (changedItems.length > 0) {
           setManualChangedItems(orderId, changedItems);

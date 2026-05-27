@@ -2,7 +2,7 @@
 
 import { db } from "@/db";
 import { orders, order_items, stock } from "@/db/schema";
-import { and, eq, inArray, ne, gte, lte, count } from "drizzle-orm";
+import { and, eq, inArray, ne, gte, lte, count, asc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getShiftWaktu } from "@/src/utils/date";
 import { requireAuth } from "@/lib/auth-guard";
@@ -40,6 +40,7 @@ export async function getAll(page = 1, limitNum = 5) {
       where: and(
         eq(orders.orderType, "bungkus"),
         ne(orders.status, "selesai"),
+        ne(orders.status, "dibatalkan"),
         gte(orders.createdAt, startOfDay),
         lte(orders.createdAt, endOfDay),
       ),
@@ -172,18 +173,43 @@ export async function create(
     });
 
     await db.transaction(async (tx) => {
-      const todayOrdersCount = await tx
-        .select({ val: count() })
-        .from(orders)
-        .where(
-          and(
-            eq(orders.orderType, "bungkus"),
-            gte(orders.createdAt, startOfDay),
-            lte(orders.createdAt, endOfDay),
-          ),
-        );
+      const lastOrderToday = await tx.query.orders.findFirst({
+        where: and(
+          gte(orders.createdAt, startOfDay),
+          lte(orders.createdAt, endOfDay),
+        ),
+        orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+      });
 
-      const dailySequence = (todayOrdersCount[0]?.val ?? 0) + 1;
+      let dailySequence = 1;
+      if (lastOrderToday && lastOrderToday.label) {
+        const match = lastOrderToday.label.match(/\d+$/);
+        if (match) {
+          dailySequence = parseInt(match[0], 10) + 1;
+        } else {
+          const todayOrdersCount = await tx
+            .select({ val: count() })
+            .from(orders)
+            .where(
+              and(
+                gte(orders.createdAt, startOfDay),
+                lte(orders.createdAt, endOfDay),
+              ),
+            );
+          dailySequence = (todayOrdersCount[0]?.val ?? 0) + 1;
+        }
+      } else if (lastOrderToday) {
+        const todayOrdersCount = await tx
+          .select({ val: count() })
+          .from(orders)
+          .where(
+            and(
+              gte(orders.createdAt, startOfDay),
+              lte(orders.createdAt, endOfDay),
+            ),
+          );
+        dailySequence = (todayOrdersCount[0]?.val ?? 0) + 1;
+      }
 
       const [newOrder] = await tx
         .insert(orders)
@@ -248,6 +274,27 @@ export async function deletes(orderId: number) {
 
     await db.transaction(async (tx) => {
       await tx.delete(orders).where(eq(orders.id, orderId));
+
+      const remainingOrders = await tx
+        .select()
+        .from(orders)
+        .where(
+          and(
+            gte(orders.createdAt, startOfDay),
+            lte(orders.createdAt, endOfDay),
+          )
+        )
+        .orderBy(asc(orders.createdAt));
+
+      for (let i = 0; i < remainingOrders.length; i++) {
+        const order = remainingOrders[i];
+        const newSeq = i + 1;
+        const prefix = order.orderType === "bungkus" ? "B" : "M";
+        const newLabel = `${prefix}-${String(newSeq).padStart(3, "0")}`;
+        if (order.label !== newLabel) {
+          await tx.update(orders).set({ label: newLabel }).where(eq(orders.id, order.id));
+        }
+      }
     });
 
     revalidatePath("/bungkus");

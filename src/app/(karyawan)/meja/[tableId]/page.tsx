@@ -149,11 +149,10 @@ export default function Page() {
 
           <Button
             onClick={() => setOpen((v) => !v)}
-            className={`w-12 h-12 rounded-full shadow-lg font-black text-xl flex items-center justify-center transition-all duration-200 active:scale-95 ${
-              open
-                ? "bg-orange text-white rotate-45"
-                : "bg-neutral-800 dark:bg-white text-white dark:text-black"
-            }`}
+            className={`w-12 h-12 rounded-full shadow-lg font-black text-xl flex items-center justify-center transition-all duration-200 active:scale-95 ${open
+              ? "bg-orange text-white rotate-45"
+              : "bg-neutral-800 dark:bg-white text-white dark:text-black"
+              }`}
           >
             <LuPlus size={24} strokeWidth={3} />
           </Button>
@@ -165,19 +164,22 @@ export default function Page() {
               Belum ada pesanan di meja ini.
             </div>
           ) : (
-            orders.map((order) => (
-              <CardKursi
-                key={order.id}
-                id={`M - ${order.id}`}
-                tableId={tableId}
-                orderId={order.id}
-                totalPrice={order.totalPrice}
-                status={order.status}
-                items={order.items}
-                label=""
-                tipe={order.tipe}
-              />
-            ))
+            orders.map((order) => {
+              const sequenceStr = order.label ? order.label.split('-')[1]?.trim() : String(order.id).padStart(3, "0");
+              return (
+                <CardKursi
+                  key={order.id}
+                  id={`M-${sequenceStr}`}
+                  tableId={tableId}
+                  orderId={order.id}
+                  totalPrice={order.totalPrice}
+                  status={order.status}
+                  items={order.items}
+                  label=""
+                  tipe={order.tipe}
+                />
+              );
+            })
           )}
 
           {hasNextPage && orders.length > 0 && (

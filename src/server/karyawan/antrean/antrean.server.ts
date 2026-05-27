@@ -2,17 +2,36 @@
 
 import { db } from "@/db";
 import { orders } from "@/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, and, gte, lte } from "drizzle-orm";
 import { requireAuth } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
+import { getShiftWaktu } from "@/src/utils/date";
 
-export async function getActiveAntrean(page: number = 1, limit: number = 10) {
+import { sql } from "drizzle-orm";
+
+export async function getActiveAntrean(page: number = 1, limit: number = 10, prioritizeNonLele: boolean = false) {
   try {
     await requireAuth();
+    const { startOfDay, endOfDay } = getShiftWaktu();
+
+    let orderByClause: any[] = [asc(orders.createdAt)];
+
+    if (prioritizeNonLele) {
+      const hasLele = sql`EXISTS (
+        SELECT 1 FROM order_items oi
+        JOIN stock s ON oi.stock_id = s.id
+        WHERE oi.order_id = orders.id AND s.name ILIKE '%lele%'
+      )`;
+      orderByClause = [asc(hasLele), asc(orders.createdAt)];
+    }
 
     const activeOrders = await db.query.orders.findMany({
-      where: eq(orders.status, "sedang di prosess.."),
-      orderBy: [asc(orders.createdAt)],
+      where: and(
+        eq(orders.status, "sedang di prosess.."),
+        gte(orders.createdAt, startOfDay),
+        lte(orders.createdAt, endOfDay)
+      ),
+      orderBy: orderByClause,
       limit,
       offset: (page - 1) * limit,
       with: {
@@ -28,7 +47,13 @@ export async function getActiveAntrean(page: number = 1, limit: number = 10) {
     const totalOrdersResult = await db
       .select({ count: orders.id })
       .from(orders)
-      .where(eq(orders.status, "sedang di prosess.."));
+      .where(
+        and(
+          eq(orders.status, "sedang di prosess.."),
+          gte(orders.createdAt, startOfDay),
+          lte(orders.createdAt, endOfDay)
+        )
+      );
 
     const totalOrders = totalOrdersResult.length;
     const hasNextPage = totalOrders > page * limit;
@@ -74,3 +99,23 @@ export async function getAllTables() {
     return [];
   }
 }
+
+export async function updateCustomerType(orderId: number, type: string) {
+  try {
+    await requireAuth();
+
+    await db
+      .update(orders)
+      .set({ customerType: type })
+      .where(eq(orders.id, orderId));
+
+    revalidatePath("/meja");
+    revalidatePath("/antrean");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating customer type:", error);
+    return { success: false, error: "Gagal mengupdate tipe pesanan" };
+  }
+}
+

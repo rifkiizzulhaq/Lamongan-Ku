@@ -24,13 +24,12 @@ export default function CardOrdering({
   return (
     <div
       onClick={disabled ? undefined : onAdd}
-      className={`select-none bg-white flex w-full h-30 dark:bg-neutral-800 rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98] group ${
-        inCart
+      className={`select-none bg-white flex w-full h-30 dark:bg-neutral-800 rounded-xl border overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer active:scale-[0.98] group ${inCart
           ? "border-orange dark:border-orange shadow-orange/20"
           : disabled
             ? "border-neutral-200 dark:border-neutral-700 opacity-60 cursor-not-allowed"
             : "border-neutral-200 dark:border-neutral-700"
-      }`}
+        }`}
     >
       <div
         className={`w-2 h-full shrink-0 transition-colors ${inCart ? "bg-orange" : "bg-neutral-300 dark:bg-neutral-600"}`}
@@ -57,13 +56,12 @@ export default function CardOrdering({
             onRemove?.();
           }}
           disabled={disabled && !inCart}
-          className={`h-8 w-full rounded-none text-xs font-bold uppercase tracking-widest transition-colors ${
-            inCart
+          className={`h-8 w-full rounded-none text-xs font-bold uppercase tracking-widest transition-colors ${inCart
               ? "bg-red-100 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-500/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white"
               : disabled
                 ? "bg-neutral-100 text-neutral-400 dark:bg-neutral-700 dark:text-neutral-500 cursor-not-allowed"
                 : "bg-neutral-100 text-neutral-400 dark:bg-neutral-700 dark:text-neutral-500 cursor-default"
-          }`}
+            }`}
         >
           {inCart ? "Hapus" : "+"}
         </Button>

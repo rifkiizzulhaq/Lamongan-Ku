@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { assignTableToOrder } from "@/src/server/karyawan/antrean/antrean.server";
+import { assignTableToOrder, updateCustomerType } from "@/src/server/karyawan/antrean/antrean.server";
 import { LuLoader } from "react-icons/lu";
 import { useUiStore } from "@/src/store/uiStore";
 import { useNotificationStore } from "@/src/store/notificationStore";
@@ -90,12 +90,47 @@ export default function CardAntrean({ order, tables }: AntreanOrderProps) {
       ? order.diningTable.name
       : "PILIH MEJA";
 
-  const orderIdStr = isBungkus ? `B-${order.id}` : `M-${order.id}`;
+  const sequenceStr = order.label ? order.label.split('-')[1]?.trim() : String(order.id).padStart(3, "0");
+  const orderIdStr = isBungkus ? `B-${sequenceStr}` : `M-${sequenceStr}`;
 
   const { mutate: assignTable, isPending: isAssigning } = useMutation({
     mutationFn: (tableId: number) => {
       useNotificationStore.getState().ignoreNextUpdateForOrder(order.id);
       return assignTableToOrder(order.id, tableId);
+    },
+    onMutate: async (tableId: number) => {
+      await queryClient.cancelQueries({ queryKey: ["active-antrean"] });
+      const previousAntrean = queryClient.getQueryData(["active-antrean"]);
+      const targetTable = tables.find((t) => t.id === tableId);
+
+      queryClient.setQueryData(["active-antrean"], (old: any) => {
+        if (!old || !old.pages || !Array.isArray(old.pages)) return old;
+
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            orders: page.orders.map((o: any) => {
+              if (String(o.id) === String(order.id)) {
+                return {
+                  ...o,
+                  diningTableId: tableId,
+                  orderType: "makan",
+                  diningTable: targetTable ? { name: targetTable.name } : o.diningTable,
+                };
+              }
+              return o;
+            }),
+          })),
+        };
+      });
+
+      return { previousAntrean };
+    },
+    onError: (err, newTableId, context) => {
+      if (context?.previousAntrean) {
+        queryClient.setQueryData(["active-antrean"], context.previousAntrean);
+      }
     },
     onSuccess: (res) => {
       if (!res.success) {
@@ -110,10 +145,28 @@ export default function CardAntrean({ order, tables }: AntreanOrderProps) {
     },
   });
 
+  const { mutate: updateType, isPending: isUpdatingType } = useMutation({
+    mutationFn: (type: string) => updateCustomerType(order.id, type),
+    onSuccess: (res) => {
+      if (!res.success) {
+        addToast(res.error || "Gagal", "error");
+        return;
+      }
+      queryClient.invalidateQueries({ queryKey: ["active-antrean"] });
+    },
+  });
+
   const handleTableSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const tableId = parseInt(e.target.value, 10);
     if (tableId) {
       assignTable(tableId);
+    }
+  };
+
+  const handleTypeSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val) {
+      updateType(val);
     }
   };
 
@@ -179,12 +232,28 @@ export default function CardAntrean({ order, tables }: AntreanOrderProps) {
                       <LuLoader className="animate-spin text-blue-500" />
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    {order.customerType && (
-                      <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-[10px] font-bold capitalize">
-                        Tipe: {order.customerType}
-                      </span>
-                    )}
+                  <div
+                    className="flex items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="relative flex items-center">
+                      <select
+                        className="text-[11px] font-bold bg-blue-500 text-white pl-2.5 pr-6 py-1 rounded-full outline-none focus:ring-0 cursor-pointer appearance-none capitalize shadow-sm transition-all hover:bg-blue-600 disabled:opacity-50"
+                        value={order.customerType || ""}
+                        onChange={handleTypeSelect}
+                        disabled={isUpdatingType}
+                      >
+                        <option value="" disabled>Pilih Tipe...</option>
+                        <option value="sendiri">Sendiri</option>
+                        <option value="makan bareng">Makan Bareng</option>
+                        <option value="rombongan">Rombongan</option>
+                      </select>
+                      <div className="absolute right-2 pointer-events-none text-white opacity-80">
+                        <svg className="w-3 h-3 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+                      </div>
+                    </div>
+                    {isUpdatingType && <LuLoader className="animate-spin text-blue-500" />}
+
                     {hasTakeaway && (
                       <div className="flex items-center justify-center bg-hijau text-hijau-700 dark:bg-hijau-500/30 dark:text-hijau-300 px-2 py-0.5 rounded-full">
                         <span className="text-[10px] text-left font-bold text-white">
@@ -228,40 +297,40 @@ export default function CardAntrean({ order, tables }: AntreanOrderProps) {
             {[...order.items]
               .sort((a, b) => (a.isTakeaway === "true" ? 1 : 0) - (b.isTakeaway === "true" ? 1 : 0))
               .map((item, i: number) => {
-              const isItemChanged = isHighlighted && changedItemNames.has(`${item.stock?.name}-${item.isTakeaway}`);
+                const isItemChanged = isHighlighted && changedItemNames.has(`${item.stock?.name}-${item.isTakeaway}`);
 
-              return (
-                <div
-                  key={i}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md shadow-sm transition-all duration-500
+                return (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md shadow-sm transition-all duration-500
                     ${isItemChanged
-                      ? "bg-yellow-100 dark:bg-yellow-800/40 border border-yellow-400 dark:border-yellow-500"
-                      : "bg-white dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 hover:border-orange-400/50 dark:hover:border-orange-500/50"
-                    }`}
-                >
-                  {isItemChanged ? (
-                    <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400">
-                      update:
-                    </span>
-                  ) : !isBungkus && item.isTakeaway === "true" ? (
-                    <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400">
-                      bungkus:
-                    </span>
-                  ) : null}
-                  <span className={`text-xs font-medium ${isItemChanged ? "text-yellow-800 dark:text-yellow-200" : "text-neutral-700 dark:text-neutral-300"}`}>
-                    {item.stock?.name}
-                  </span>
-                  <span className={`flex items-center justify-center min-w-5 h-5 font-bold rounded text-[10px]
-                    ${isItemChanged
-                      ? "bg-yellow-300 text-yellow-900 dark:bg-yellow-600 dark:text-yellow-100"
-                      : "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400"
-                    }`}
+                        ? "bg-yellow-100 dark:bg-yellow-800/40 border border-yellow-400 dark:border-yellow-500"
+                        : "bg-white dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 hover:border-orange-400/50 dark:hover:border-orange-500/50"
+                      }`}
                   >
-                    {item.quantity}x
-                  </span>
-                </div>
-              );
-            })}
+                    {isItemChanged ? (
+                      <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400">
+                        update:
+                      </span>
+                    ) : !isBungkus && item.isTakeaway === "true" ? (
+                      <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400">
+                        bungkus:
+                      </span>
+                    ) : null}
+                    <span className={`text-xs font-medium ${isItemChanged ? "text-yellow-800 dark:text-yellow-200" : "text-neutral-700 dark:text-neutral-300"}`}>
+                      {item.stock?.name}
+                    </span>
+                    <span className={`flex items-center justify-center min-w-5 h-5 font-bold rounded text-[10px]
+                    ${isItemChanged
+                        ? "bg-yellow-300 text-yellow-900 dark:bg-yellow-600 dark:text-yellow-100"
+                        : "bg-orange-100 text-orange-700 dark:bg-orange-500/20 dark:text-orange-400"
+                      }`}
+                    >
+                      {item.quantity}x
+                    </span>
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>
