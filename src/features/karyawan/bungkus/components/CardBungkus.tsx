@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { update, deletes } from "@/src/server/karyawan/bungkus/bungkus.server";
-import { LuTrash2, LuLoader } from "react-icons/lu";
+import { togglePinOrder } from "@/src/server/karyawan/antrean/antrean.server";
+import { LuTrash2, LuLoader, LuPin, LuPinOff } from "react-icons/lu";
 import { OrderItem } from "@/interfaces/order";
 import { useNotificationStore } from "@/src/store/notificationStore";
 import { useUiStore } from "@/src/store/uiStore";
@@ -16,6 +17,7 @@ export interface CardBungkusProps {
   id: string;
   totalPrice: number;
   status: string;
+  isPinned: boolean;
   items: OrderItem[];
 }
 
@@ -24,6 +26,7 @@ export default function CardBungkus({
   id,
   totalPrice,
   status,
+  isPinned,
   items,
 }: CardBungkusProps) {
   const [showPayment, setShowPayment] = useState(false);
@@ -158,6 +161,37 @@ export default function CardBungkus({
     },
   });
 
+  const { mutate: togglePin, isPending: isTogglingPin } = useMutation({
+    mutationFn: () => togglePinOrder(parsedOrderId, !isPinned),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["bungkus-orders"] });
+      const previous = queryClient.getQueryData(["bungkus-orders"]);
+      
+      queryClient.setQueriesData({ queryKey: ["bungkus-orders"] }, (old: any) => {
+        if (!old || !old.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => 
+            page.map((o: any) => 
+              String(o.id) === String(orderId) ? { ...o, isPinned: !isPinned } : o
+            )
+          )
+        };
+      });
+      return { previous };
+    },
+    onError: (err, newCtx, context) => {
+      if (context?.previous) {
+        queryClient.setQueriesData({ queryKey: ["bungkus-orders"] }, context.previous);
+      }
+      addToast("Gagal menyematkan pesanan", "error");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["bungkus-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["active-antrean"] });
+    }
+  });
+
   return (
     <>
       <section
@@ -169,9 +203,9 @@ export default function CardBungkus({
         `}
       >
         <div
-          className={`w-2 rounded-l-xl shrink-0 ${isHighlighted ? "bg-yellow-400 dark:bg-yellow-500" : "bg-orange"}`}
+          className={`w-2 rounded-l-xl shrink-0 ${isPinned ? "bg-neutral-400 dark:bg-neutral-500" : (isHighlighted ? "bg-yellow-400 dark:bg-yellow-500" : "bg-orange")}`}
         ></div>
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col relative">
           <Link
             href={
               isDeleting || isProcessing
@@ -188,19 +222,40 @@ export default function CardBungkus({
             }}
           >
             <div className="w-full flex items-center justify-between">
-              <h1 className="text-lg font-bold text-gray-800 dark:text-white uppercase">
-                {id}
-              </h1>
               <div className="flex items-center gap-2">
-                {hasUnseen && (
-                  <span className="flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-yellow-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+                <h1 className={`text-lg font-bold uppercase ${isPinned ? "text-neutral-500 dark:text-neutral-400" : "text-gray-800 dark:text-white"}`}>
+                  {id}
+                </h1>
+                {isPinned && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-neutral-200 dark:border-neutral-700">
+                    <LuPin size={10} /> Ditinggal
                   </span>
                 )}
-                <p className="text-lg text-neutral-600 dark:text-neutral-100 dark:font-bold">
-                  Rp {totalPrice.toLocaleString("id-ID")}
-                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    togglePin();
+                  }}
+                  disabled={isTogglingPin}
+                  className={`p-1.5 rounded-full transition-colors ${isPinned ? "text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/30" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 dark:hover:bg-neutral-800"}`}
+                  title={isPinned ? "Batal Sematkan (Hadir)" : "Sematkan (Ditinggal)"}
+                >
+                  {isTogglingPin ? <LuLoader className="animate-spin" size={18} /> : (isPinned ? <LuPin size={18} className="fill-blue-500/20" /> : <LuPinOff size={18} />)}
+                </button>
+                <div className="flex items-center gap-2">
+                  {hasUnseen && (
+                    <span className="flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-yellow-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+                    </span>
+                  )}
+                  <p className={`text-lg dark:font-bold ${isPinned ? "text-neutral-400 dark:text-neutral-500" : "text-neutral-600 dark:text-neutral-100"}`}>
+                    Rp {totalPrice.toLocaleString("id-ID")}
+                  </p>
+                </div>
               </div>
             </div>
             <div className="w-full flex items-center justify-between mt-1">

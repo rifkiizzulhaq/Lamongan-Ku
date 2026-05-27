@@ -5,6 +5,7 @@ import {
   timestamp,
   integer,
   index,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import type { InferSelectModel, InferInsertModel } from "drizzle-orm";
@@ -34,6 +35,7 @@ export const orders = pgTable(
     label: text("label"),
     customerType: text("customer_type"),
     totalPrice: integer("total_price").notNull().default(0),
+    isPinned: boolean("is_pinned").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => {

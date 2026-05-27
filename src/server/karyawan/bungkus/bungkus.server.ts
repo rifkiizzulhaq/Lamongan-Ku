@@ -55,6 +55,7 @@ export async function getAll(page = 1, limitNum = 5) {
       label: order.label || `B - ${order.id}`,
       totalPrice: order.totalPrice,
       status: order.status,
+      isPinned: order.isPinned,
       items: order.items.map((item) => ({
         n: item.stock.name,
         q: item.quantity,

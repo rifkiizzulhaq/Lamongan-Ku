@@ -86,6 +86,7 @@ export async function getOrdersByTable(
       totalPrice: order.totalPrice,
       status: order.status,
       tipe: order.customerType || "Rombongan",
+      isPinned: order.isPinned,
       items: order.items.map((item) => ({
         n: item.stock.name,
         q: item.quantity,

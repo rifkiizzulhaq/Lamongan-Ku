@@ -119,3 +119,23 @@ export async function updateCustomerType(orderId: number, type: string) {
   }
 }
 
+export async function togglePinOrder(orderId: number, isPinned: boolean) {
+  try {
+    await requireAuth();
+
+    await db
+      .update(orders)
+      .set({ isPinned })
+      .where(eq(orders.id, orderId));
+
+    revalidatePath("/antrean");
+    revalidatePath("/bungkus");
+    revalidatePath("/meja");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error toggling pin order:", error);
+    return { success: false, error: "Gagal menyematkan pesanan" };
+  }
+}
+
